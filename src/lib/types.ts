@@ -238,18 +238,50 @@ export interface Asset {
 
 export type TemplateKind = "Career" | "Trait" | "Aspiration" | "Notification";
 
+/** Provenance of a template. Built-in originals ship with Mod Constructor. */
+export type TemplateSource =
+  | "built-in-original"
+  | "user-created"
+  | "imported"
+  | "community-submission"
+  | "licensed-third-party";
+
+export type TemplateDifficulty = "beginner" | "intermediate" | "advanced";
+export type TemplateTested = "untested" | "tested" | "verified";
+
+/** Attribution block required for any non-original template. */
+export interface TemplateLicense {
+  creator: string;
+  sourceUrl?: string;
+  license: string; // e.g. "MIT", "CC-BY-4.0", "Written permission 2025-01-04"
+  attributionRequired: boolean;
+  redistributionAllowed: boolean;
+  modificationAllowed: boolean;
+  notes?: string;
+}
+
 export interface Template {
   id: ID;
   name: string;
   kind: TemplateKind;
-  author: string;
   summary: string;
-  official: boolean;
-  custom: boolean;
+  /** Provenance. */
+  source: TemplateSource;
+  /** True for read-only built-in originals shipped with Mod Constructor. */
+  builtIn?: boolean;
+  /** Required for licensed-third-party; optional for community/imported. */
+  license?: TemplateLicense;
+  difficulty: TemplateDifficulty;
+  /** Sims 4 game packs required by scaffolded records. */
+  requiredPacks: string[];
+  /** Human-readable list of what the template scaffolds. */
+  includes: string[];
+  /** Target game version this template was authored/tested against. */
+  targetGameVersion: string;
+  /** QA state. */
+  tested: TemplateTested;
   /** Serialized record body used when the user scaffolds from this template. */
   payload: unknown;
-  rating: number;
-  installs: number;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
