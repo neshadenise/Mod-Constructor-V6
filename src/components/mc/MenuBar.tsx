@@ -18,6 +18,9 @@ type MenuDef = {
 
 export function MenuBar() {
   const [open, setOpen] = useState<string | null>(null);
+  const [creditsOpen, setCreditsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
