@@ -494,7 +494,11 @@ function TraitBuilder() {
           </div>
         </Card>
 
-        <Card title="Buffs & Moodlets" className="col-span-5">
+        <Card
+          title="Buffs & Moodlets"
+          className="col-span-5"
+          action={<CopyToMenu what="all buffs" label="Copy buffs to…" disallowBranches />}
+        >
           <ul className="space-y-1.5 text-xs">
             {[
               { name: "Well-Rested Focus", dur: "6h", mood: "Focused +2", c: "blue" },
