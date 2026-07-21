@@ -2626,10 +2626,10 @@ function SettingsView() {
             updates. No project data leaves your machine.
           </p>
           <div className="mt-3 space-y-2 text-xs">
-            <Toggle label="Check for updates at launch" defaultOn />
-            <Toggle label="Notify me about new templates" defaultOn />
-            <Toggle label="Auto-download minor patches" />
-            <Toggle label="Share anonymous crash reports" />
+            <SettingToggle label="Check for updates at launch" defaultOn />
+            <SettingToggle label="Notify me about new templates" defaultOn />
+            <SettingToggle label="Auto-download minor patches" />
+            <SettingToggle label="Share anonymous crash reports" />
           </div>
           <div className="mt-3 flex items-center gap-2">
             <GhostBtn icon={Download} onClick={() => toast.success("lot51 Core Library up to date")}>
@@ -2641,11 +2641,11 @@ function SettingsView() {
 
         <Card title="Editor" className="col-span-6">
           <div className="space-y-2 text-xs">
-            <Toggle label="Autosave every 30s" defaultOn />
-            <Toggle label="Confirm before compiling" defaultOn />
-            {advanced && <Toggle label="Enable node canvas snapping" defaultOn />}
-            {advanced && <Toggle label="Show hex IDs" />}
-            {advanced && <Toggle label="Validate on save" defaultOn />}
+            <SettingToggle label="Autosave every 30s" defaultOn />
+            <SettingToggle label="Confirm before compiling" defaultOn />
+            {advanced && <SettingToggle label="Enable node canvas snapping" defaultOn />}
+            {advanced && <SettingToggle label="Show hex IDs" />}
+            {advanced && <SettingToggle label="Validate on save" defaultOn />}
             {!advanced && (
               <p className="rounded-md bg-muted/40 px-2 py-1.5 text-[11px] text-muted-foreground">
                 More editor toggles appear when Advanced mode is on.
