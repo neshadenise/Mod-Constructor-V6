@@ -12,6 +12,12 @@ export type SectionId =
   | "exporter"
   | "validation"
   | "queue"
+  | "templates"
+  | "snippets"
+  | "graph"
+  | "timeline"
+  | "analytics"
+  | "updates"
   | "settings";
 
 export const SECTION_LABEL: Record<SectionId, string> = {
@@ -28,5 +34,11 @@ export const SECTION_LABEL: Record<SectionId, string> = {
   exporter: "Package Exporter",
   validation: "Validation Center",
   queue: "Build Queue",
+  templates: "Templates",
+  snippets: "Snippets",
+  graph: "Dependency Graph",
+  timeline: "Activity Timeline",
+  analytics: "Build Analytics",
+  updates: "Update Center",
   settings: "Settings",
 };
