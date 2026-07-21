@@ -34,6 +34,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
+import { CopyToMenu } from "./CopyToMenu";
 import type { SectionId } from "./sections";
 
 /* ---------- Shared shell for builder pages ---------- */
@@ -247,11 +248,50 @@ function ProjectsView() {
 
 /* ---------- Career Builder ---------- */
 
+const CAREER_BRANCHES: Record<
+  string,
+  {
+    ranks: { lvl: number; title: string; pay: string; req: string }[];
+    perks: { name: string; tier: number }[];
+  }
+> = {
+  Astronaut: {
+    ranks: [
+      { lvl: 1, title: "Junior Cadet", pay: "§420", req: "—" },
+      { lvl: 2, title: "Navigator", pay: "§820", req: "Logic 3" },
+      { lvl: 3, title: "Space Ranger", pay: "§1,640", req: "Logic 5 · Fitness 3" },
+      { lvl: 4, title: "Commander", pay: "§2,880", req: "Logic 7 · Fitness 5" },
+      { lvl: 5, title: "Admiral", pay: "§4,280", req: "Logic 9 · Fitness 7" },
+    ],
+    perks: [
+      { name: "+2 Logic per work hour", tier: 1 },
+      { name: "Unlock Cosmic Insight moodlet", tier: 3 },
+      { name: "Free Rocket Ship at Rank 5", tier: 5 },
+    ],
+  },
+  "Interstellar Smuggler": {
+    ranks: [
+      { lvl: 1, title: "Dock Runner", pay: "§380", req: "—" },
+      { lvl: 2, title: "Cargo Hauler", pay: "§780", req: "Mischief 2" },
+      { lvl: 3, title: "Fixer", pay: "§1,540", req: "Mischief 5" },
+      { lvl: 4, title: "Kingpin", pay: "§2,900", req: "Mischief 7 · Charisma 4" },
+      { lvl: 5, title: "Ghost Captain", pay: "§4,600", req: "Mischief 9 · Charisma 6" },
+    ],
+    perks: [
+      { name: "+1 Mischief per shift", tier: 1 },
+      { name: "Contraband cache moodlet", tier: 3 },
+      { name: "Cloaked cargo ship at Rank 5", tier: 5 },
+    ],
+  },
+};
+
 function CareerBuilder() {
   const { advanced } = useAdvanced();
   const [name, setName] = useState("Interstellar Navigator");
   const [track, setTrack] = useState("Astronaut");
   const [salary, setSalary] = useState("4280");
+  const [branch, setBranch] = useState<keyof typeof CAREER_BRANCHES>("Astronaut");
+  const data = CAREER_BRANCHES[branch];
 
   return (
     <div className="space-y-4">
@@ -277,6 +317,30 @@ function CareerBuilder() {
         </div>
       )}
 
+      {/* Branch tab strip */}
+      <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 p-1">
+        {(Object.keys(CAREER_BRANCHES) as (keyof typeof CAREER_BRANCHES)[]).map((b) => (
+          <button
+            key={b}
+            onClick={() => setBranch(b)}
+            className={cn(
+              "rounded-md px-2.5 py-1 text-[11.5px] font-semibold transition-all",
+              b === branch
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {b}
+          </button>
+        ))}
+        <button
+          onClick={() => toast("New branch scaffolded")}
+          className="ml-auto inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent/60"
+        >
+          <Plus className="h-3 w-3" /> New branch
+        </button>
+      </div>
+
       <div className="grid grid-cols-12 gap-4">
         <Card title="Career Identity" className="col-span-7">
           <div className="grid grid-cols-2 gap-3">
@@ -286,7 +350,12 @@ function CareerBuilder() {
               <Field label="Internal ID" value="career_interstellar_navigator" hint="Snake_case, must be unique" />
             )}
             <Field label="Category" value="Technical" />
-            <Field label="Base Salary (§)" value={salary} onChange={setSalary} />
+            <div>
+              <Field label="Base Salary (§)" value={salary} onChange={setSalary} />
+              <div className="mt-1 flex justify-end">
+                <CopyToMenu what="salary & hours" label="Copy salary & hours to…" />
+              </div>
+            </div>
             <Field label="Work Hours" value="09:00 → 17:00" />
             <div className="col-span-2">
               <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -300,18 +369,16 @@ function CareerBuilder() {
           </div>
         </Card>
 
-        <Card title="Promotion Track" className="col-span-5">
+        <Card
+          title={`Promotion Track · ${branch}`}
+          className="col-span-5"
+          action={<CopyToMenu what={`${branch} branch`} label="Copy branch to…" />}
+        >
           <ol className="space-y-1.5 text-xs">
-            {[
-              { lvl: 1, title: "Junior Cadet", pay: "§420", req: "—" },
-              { lvl: 2, title: "Navigator", pay: "§820", req: "Logic 3" },
-              { lvl: 3, title: "Space Ranger", pay: "§1,640", req: "Logic 5 · Fitness 3" },
-              { lvl: 4, title: "Commander", pay: "§2,880", req: "Logic 7 · Fitness 5" },
-              { lvl: 5, title: "Admiral", pay: "§4,280", req: "Logic 9 · Fitness 7" },
-            ].map((r) => (
+            {data.ranks.map((r) => (
               <li
                 key={r.lvl}
-                className="flex items-center gap-2 rounded-md border border-border bg-background/60 px-2.5 py-1.5"
+                className="group flex items-center gap-2 rounded-md border border-border bg-background/60 px-2.5 py-1.5"
               >
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--blue)]/15 text-[10px] font-bold text-[var(--blue)]">
                   {r.lvl}
@@ -319,6 +386,9 @@ function CareerBuilder() {
                 <span className="flex-1 font-medium">{r.title}</span>
                 <span className="font-mono text-[11px] text-muted-foreground">{r.req}</span>
                 <span className="font-mono font-semibold">{r.pay}</span>
+                <span className="opacity-0 transition-opacity group-hover:opacity-100">
+                  <CopyToMenu what={`rank "${r.title}"`} compact />
+                </span>
               </li>
             ))}
           </ol>
@@ -327,21 +397,25 @@ function CareerBuilder() {
           </button>
         </Card>
 
-        <Card title="Perks & Rewards" className={advanced ? "col-span-6" : "col-span-12"}>
+        <Card
+          title="Perks & Rewards"
+          className={advanced ? "col-span-6" : "col-span-12"}
+          action={<CopyToMenu what="all perks" label="Copy all perks to…" />}
+        >
           <ul className="space-y-1.5 text-xs">
-            {[
-              { name: "+2 Logic per work hour", tier: 1 },
-              { name: "Unlock Cosmic Insight moodlet", tier: 3 },
-              { name: "Free Rocket Ship at Rank 5", tier: 5 },
-            ].map((p) => (
-              <li key={p.name} className="flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1.5">
+            {data.perks.map((p) => (
+              <li key={p.name} className="group flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1.5">
                 <Sparkles className="h-3.5 w-3.5 text-[var(--violet)]" />
                 <span className="flex-1">{p.name}</span>
                 <span className="rounded bg-background px-1.5 py-0.5 font-mono text-[10px]">Tier {p.tier}</span>
+                <span className="opacity-0 transition-opacity group-hover:opacity-100">
+                  <CopyToMenu what={`perk "${p.name}"`} compact />
+                </span>
               </li>
             ))}
           </ul>
         </Card>
+
 
         {advanced && (
           <Card title="XML Output" className="col-span-6">
@@ -420,7 +494,11 @@ function TraitBuilder() {
           </div>
         </Card>
 
-        <Card title="Buffs & Moodlets" className="col-span-5">
+        <Card
+          title="Buffs & Moodlets"
+          className="col-span-5"
+          action={<CopyToMenu what="all buffs" label="Copy buffs to…" disallowBranches />}
+        >
           <ul className="space-y-1.5 text-xs">
             {[
               { name: "Well-Rested Focus", dur: "6h", mood: "Focused +2", c: "blue" },
@@ -478,7 +556,11 @@ function AspirationBuilder() {
           />
         </Card>
 
-        <Card title="Tiers" className="col-span-7">
+        <Card
+          title="Tiers"
+          className="col-span-7"
+          action={<CopyToMenu what="all tiers & rewards" label="Copy tiers to…" disallowBranches />}
+        >
           <ol className="space-y-2">
             {[
               { t: "I", title: "Curious Wanderer", goals: ["Visit 3 lots", "Meet 5 sims"], done: true },
@@ -486,7 +568,7 @@ function AspirationBuilder() {
               { t: "III", title: "Named Explorer", goals: ["Discover secret area", "Level Fitness to 6"], done: false },
               { t: "IV", title: "Legendary Trailblazer", goals: ["Complete 3 expeditions"], done: false },
             ].map((tier) => (
-              <li key={tier.t} className="rounded-md border border-border bg-background/60 p-2.5">
+              <li key={tier.t} className="group rounded-md border border-border bg-background/60 p-2.5">
                 <div className="flex items-center gap-2">
                   <span
                     className={cn(
@@ -496,7 +578,10 @@ function AspirationBuilder() {
                   >
                     {tier.t}
                   </span>
-                  <span className="font-semibold text-xs">{tier.title}</span>
+                  <span className="flex-1 font-semibold text-xs">{tier.title}</span>
+                  <span className="opacity-0 transition-opacity group-hover:opacity-100">
+                    <CopyToMenu what={`tier ${tier.t} reward`} compact disallowBranches />
+                  </span>
                 </div>
                 <ul className="mt-1 ml-8 space-y-0.5 text-[11px] text-muted-foreground">
                   {tier.goals.map((g) => (
