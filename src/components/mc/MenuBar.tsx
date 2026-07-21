@@ -1,6 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { Circle, Minus, Square, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { CreditsContent } from "@/components/mc/CreditsContent";
+
 
 type MenuDef = {
   label: string;
@@ -9,7 +18,9 @@ type MenuDef = {
 
 export function MenuBar() {
   const [open, setOpen] = useState<string | null>(null);
+  const [creditsOpen, setCreditsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -86,10 +97,12 @@ export function MenuBar() {
         { label: "Documentation", onClick: () => fire("Docs opened") },
         { label: "Keyboard Shortcuts", shortcut: "Ctrl+/" },
         { separator: true, label: "" },
-        { label: "About Mod Constructor V6", onClick: () => fire("Mod Constructor V6 · offline build") },
+        { label: "Credits & Acknowledgements", onClick: () => { setOpen(null); setCreditsOpen(true); } },
+        { label: "About Mod Constructor V6", onClick: () => { setOpen(null); setCreditsOpen(true); } },
       ],
     },
   ];
+
 
   return (
     <div
@@ -150,9 +163,21 @@ export function MenuBar() {
           <X className="h-3 w-3" />
         </WinBtn>
       </div>
+      <Dialog open={creditsOpen} onOpenChange={setCreditsOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Credits & Acknowledgements</DialogTitle>
+            <DialogDescription>
+              Factual attribution for external work that inspired or informed Mod Constructor V6.
+            </DialogDescription>
+          </DialogHeader>
+          <CreditsContent />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 function WinBtn({ children, danger }: { children: React.ReactNode; danger?: boolean }) {
   return (

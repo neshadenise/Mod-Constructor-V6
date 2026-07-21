@@ -90,6 +90,7 @@ import { DependencyGraph } from "./views/DependencyGraph";
 import { ActivityTimeline } from "./views/ActivityTimeline";
 import { BuildAnalytics } from "./views/BuildAnalytics";
 import { UpdateCenter } from "./views/UpdateCenter";
+import { CreditsContent } from "./CreditsContent";
 
 /* ---------- Shared shell for builder pages ---------- */
 
@@ -3689,12 +3690,20 @@ function SettingsView() {
           <div className="space-y-1.5 text-xs">
             <Row k="Application" v="Mod Constructor V6" />
             <Row k="Version" v="6.0.0" />
+            <Row k="Author" v="neshadenise" />
             <Row k="Host" v={host.isChatGPT ? "ChatGPT App" : "Standalone Desktop"} />
             <Row k="Platforms" v="Windows · macOS" />
             <Row k="License" v="Personal · Non-commercial" />
             {advanced && <Row k="Framework" v=".NET 8 · Tauri (planned)" />}
           </div>
+          <div className="mt-4 border-t border-border pt-4">
+            <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Credits & Acknowledgements
+            </div>
+            <CreditsContent showInternal={advanced} />
+          </div>
         </Card>
+
       </div>
     </div>
   );
