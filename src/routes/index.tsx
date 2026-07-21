@@ -1,12 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppSidebar } from "@/components/mc/Sidebar";
 import { TopBar } from "@/components/mc/TopBar";
 import { Dashboard } from "@/components/mc/Dashboard";
 import { MenuBar } from "@/components/mc/MenuBar";
 import { StatusBar } from "@/components/mc/StatusBar";
 import { SectionView } from "@/components/mc/Views";
+import { AdvancedModeProvider, useAdvanced } from "@/lib/advanced-mode";
 import type { SectionId } from "@/components/mc/sections";
+
+const ADVANCED_ONLY: SectionId[] = ["tuning", "validation"];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,7 +31,21 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  return (
+    <AdvancedModeProvider>
+      <Shell />
+    </AdvancedModeProvider>
+  );
+}
+
+function Shell() {
   const [active, setActive] = useState<SectionId>("dashboard");
+  const { advanced } = useAdvanced();
+
+  // Auto-return to dashboard if user disables advanced while on an advanced-only page
+  useEffect(() => {
+    if (!advanced && ADVANCED_ONLY.includes(active)) setActive("dashboard");
+  }, [advanced, active]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">

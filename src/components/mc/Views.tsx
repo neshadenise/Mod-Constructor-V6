@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useAdvanced } from "@/lib/advanced-mode";
 import type { SectionId } from "./sections";
 
 /* ---------- Shared shell for builder pages ---------- */
@@ -242,6 +243,7 @@ function ProjectsView() {
 /* ---------- Career Builder ---------- */
 
 function CareerBuilder() {
+  const { advanced } = useAdvanced();
   const [name, setName] = useState("Interstellar Navigator");
   const [track, setTrack] = useState("Astronaut");
   const [salary, setSalary] = useState("4280");
@@ -264,12 +266,20 @@ function CareerBuilder() {
         }
       />
 
+      {!advanced && (
+        <div className="rounded-lg border border-[var(--blue)]/25 bg-[var(--blue)]/5 px-3 py-2 text-[11px] text-muted-foreground">
+          Fill out the name, salary, and rank titles. Everything else is handled for you — enable Advanced mode if you want to edit IDs or raw XML.
+        </div>
+      )}
+
       <div className="grid grid-cols-12 gap-4">
         <Card title="Career Identity" className="col-span-7">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Career Name" value={name} onChange={setName} />
             <Field label="Track" value={track} onChange={setTrack} hint="Astronaut · Business · Culinary…" />
-            <Field label="Internal ID" value="career_interstellar_navigator" hint="Snake_case, must be unique" />
+            {advanced && (
+              <Field label="Internal ID" value="career_interstellar_navigator" hint="Snake_case, must be unique" />
+            )}
             <Field label="Category" value="Technical" />
             <Field label="Base Salary (§)" value={salary} onChange={setSalary} />
             <Field label="Work Hours" value="09:00 → 17:00" />
@@ -312,7 +322,7 @@ function CareerBuilder() {
           </button>
         </Card>
 
-        <Card title="Perks & Rewards" className="col-span-6">
+        <Card title="Perks & Rewards" className={advanced ? "col-span-6" : "col-span-12"}>
           <ul className="space-y-1.5 text-xs">
             {[
               { name: "+2 Logic per work hour", tier: 1 },
@@ -328,8 +338,9 @@ function CareerBuilder() {
           </ul>
         </Card>
 
-        <Card title="XML Output" className="col-span-6">
-          <pre className="max-h-56 overflow-auto rounded-md border border-border bg-[color-mix(in_oklab,var(--foreground)_4%,var(--card))] p-3 font-mono text-[10.5px] leading-relaxed text-foreground/85">
+        {advanced && (
+          <Card title="XML Output" className="col-span-6">
+            <pre className="max-h-56 overflow-auto rounded-md border border-border bg-[color-mix(in_oklab,var(--foreground)_4%,var(--card))] p-3 font-mono text-[10.5px] leading-relaxed text-foreground/85">
 {`<Career id="0xA112E8" name="career_interstellar_navigator">
   <Track>Astronaut</Track>
   <Salary>4280</Salary>
@@ -339,8 +350,9 @@ function CareerBuilder() {
     <Rank level="5" title="Admiral" pay="4280" req="Logic 9, Fitness 7" />
   </Ranks>
 </Career>`}
-          </pre>
-        </Card>
+            </pre>
+          </Card>
+        )}
       </div>
     </div>
   );
@@ -349,6 +361,7 @@ function CareerBuilder() {
 /* ---------- Trait Builder ---------- */
 
 function TraitBuilder() {
+  const { advanced } = useAdvanced();
   return (
     <div className="space-y-4">
       <PageHeader
@@ -369,8 +382,8 @@ function TraitBuilder() {
           <div className="grid grid-cols-2 gap-3">
             <Field label="Trait Name" value="Lucid Dreamer" />
             <Field label="Category" value="Emotional" />
-            <Field label="Internal ID" value="trait_lucid_dreamer" />
-            <Field label="Icon Reference" value="ic_trait_lucid.png" />
+            {advanced && <Field label="Internal ID" value="trait_lucid_dreamer" />}
+            {advanced && <Field label="Icon Reference" value="ic_trait_lucid.png" />}
             <div className="col-span-2">
               <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Description
@@ -732,9 +745,56 @@ function QueueView() {
 /* ---------- Settings ---------- */
 
 function SettingsView() {
+  const { advanced, toggle: toggleAdvanced } = useAdvanced();
   return (
     <div className="space-y-4">
       <PageHeader icon={SettingsIcon} subtitle="Application" title="Settings" accent="violet" />
+
+      <Card
+        title="Interface Mode"
+        action={
+          <span className="text-[11px] text-muted-foreground">
+            Controls what appears in the sidebar and builders.
+          </span>
+        }
+      >
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => advanced && toggleAdvanced()}
+            className={cn(
+              "rounded-lg border p-3 text-left transition-all",
+              !advanced
+                ? "border-[var(--blue)] bg-[var(--blue)]/8 shadow-sm"
+                : "border-border bg-card hover:border-foreground/20",
+            )}
+          >
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--blue)]/15 text-[var(--blue)]">✓</span>
+              Simple
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Recommended. Guided builders, plain-English fields, one-click compile. No code required.
+            </p>
+          </button>
+          <button
+            onClick={() => !advanced && toggleAdvanced()}
+            className={cn(
+              "rounded-lg border p-3 text-left transition-all",
+              advanced
+                ? "border-[var(--orange)] bg-[var(--orange)]/8 shadow-sm"
+                : "border-border bg-card hover:border-foreground/20",
+            )}
+          >
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--orange)]/15 text-[var(--orange)]">⚙</span>
+              Advanced
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Adds the Tuning Editor, Validation panel, XML output, internal IDs, and the build log.
+            </p>
+          </button>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-12 gap-4">
         <Card title="Sims 4 Installation" className="col-span-6">
@@ -768,9 +828,15 @@ function SettingsView() {
         <Card title="Editor" className="col-span-6">
           <div className="space-y-2 text-xs">
             <Toggle label="Autosave every 30s" defaultOn />
-            <Toggle label="Enable node canvas snapping" defaultOn />
-            <Toggle label="Show hex IDs" />
-            <Toggle label="Validate on save" defaultOn />
+            <Toggle label="Confirm before compiling" defaultOn />
+            {advanced && <Toggle label="Enable node canvas snapping" defaultOn />}
+            {advanced && <Toggle label="Show hex IDs" />}
+            {advanced && <Toggle label="Validate on save" defaultOn />}
+            {!advanced && (
+              <p className="rounded-md bg-muted/40 px-2 py-1.5 text-[11px] text-muted-foreground">
+                More editor toggles appear when Advanced mode is on.
+              </p>
+            )}
           </div>
         </Card>
 
@@ -778,9 +844,9 @@ function SettingsView() {
           <div className="space-y-1.5 text-xs">
             <Row k="Application" v="Mod Constructor V6" />
             <Row k="Version" v="6.0.0 (offline build)" />
-            <Row k="Framework" v=".NET 8 · WPF portable" />
             <Row k="Runtime Mode" v="Local · no telemetry" />
             <Row k="License" v="Personal · Non-commercial" />
+            {advanced && <Row k="Framework" v=".NET 8 · WPF portable" />}
           </div>
         </Card>
       </div>
