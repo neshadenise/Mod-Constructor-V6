@@ -67,6 +67,14 @@ import {
 } from "@/lib/app-host";
 import { MCP_TOOL_DEFS } from "@/lib/mcp-tools";
 import { downloadBundle, loadBundle, emptyBundle } from "@/lib/project-store";
+import { useStore, downloadBundle as downloadStoreBundle } from "@/lib/store";
+import {
+  defaultEngineCapabilities,
+  ENGINE_STATE_LABEL,
+  ENGINE_STATE_TOOLTIP,
+  type EngineCapabilities,
+  type EngineState,
+} from "@/lib/engine-capabilities";
 import { ProjectExplorer } from "./views/ProjectExplorer";
 import { AssetManager } from "./views/AssetManager";
 import { ReferenceViewer } from "./views/ReferenceViewer";
