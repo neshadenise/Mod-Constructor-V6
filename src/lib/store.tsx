@@ -61,9 +61,13 @@ export function makeDemoState(): AppState {
   const projectId = uid();
   const project: Project = {
     id: projectId,
-    name: "Untitled Project",
+    name: "Demo Project",
     author: "You",
-    description: "Sample project — feel free to edit or delete.",
+    description: "Built-in demo project — kept as a reference. Duplicate it to make your own.",
+    version: "0.1.0",
+    status: "draft",
+    changelog: [],
+    isDemo: true,
     createdAt: now(),
     updatedAt: now(),
     careerIds: [],
@@ -71,7 +75,7 @@ export function makeDemoState(): AppState {
     aspirationIds: [],
     notificationIds: [],
     assetIds: [],
-    tags: [],
+    tags: ["demo"],
     favorite: false,
   };
   return {
