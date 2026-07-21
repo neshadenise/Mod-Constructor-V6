@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useStore } from "@/lib/store";
 
 type Status = "draft" | "validated" | "building" | "error";
 type Kind = "career" | "trait" | "aspiration" | "notification" | "asset" | "tuning";
@@ -35,48 +36,14 @@ type Node = {
   children?: Node[];
 };
 
-const TREE: Node[] = [
-  {
-    id: "p1",
-    name: "Epic Careers Overhaul",
-    updated: "2m ago",
-    children: [
-      { id: "p1-c1", name: "Marine Biologist", kind: "career", status: "building", updated: "2m ago", favorite: true },
-      { id: "p1-c2", name: "Deep-Sea Engineer", kind: "career", status: "draft", updated: "1h ago" },
-      { id: "p1-c3", name: "Reef Guardian", kind: "career", status: "validated", updated: "3h ago" },
-      { id: "p1-n1", name: "Promotion Popup", kind: "notification", status: "validated", updated: "yesterday" },
-    ],
-  },
-  {
-    id: "p2",
-    name: "Lucid Dreamer Traits",
-    updated: "1h ago",
-    children: [
-      { id: "p2-t1", name: "Lucid Dreamer", kind: "trait", status: "validated", updated: "1h ago", favorite: true },
-      { id: "p2-t2", name: "Sleepwalker", kind: "trait", status: "draft", updated: "1h ago" },
-      { id: "p2-t3", name: "Dreamweaver", kind: "trait", status: "error", updated: "2h ago" },
-      { id: "p2-a1", name: "Iconic Portrait", kind: "asset", updated: "2h ago" },
-    ],
-  },
-  {
-    id: "p3",
-    name: "Trailblazer Aspirations",
-    updated: "yesterday",
-    children: [
-      { id: "p3-as1", name: "Peak Climber", kind: "aspiration", status: "validated", updated: "yesterday" },
-      { id: "p3-as2", name: "Desert Wanderer", kind: "aspiration", status: "draft", updated: "yesterday" },
-    ],
-  },
-  {
-    id: "p4",
-    name: "Weathercore Tuning",
-    updated: "1w ago",
-    children: [
-      { id: "p4-tu1", name: "climate_hot.xml", kind: "tuning", status: "validated", updated: "1w ago" },
-      { id: "p4-tu2", name: "climate_cold.xml", kind: "tuning", status: "draft", updated: "1w ago" },
-    ],
-  },
-];
+function fmtAgo(t: number): string {
+  const diff = Date.now() - t;
+  if (diff < 60_000) return "just now";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return `${Math.floor(diff / 86_400_000)}d ago`;
+}
+
 
 const KIND_META: Record<Kind, { icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; color: string; label: string }> = {
   career: { icon: Briefcase, color: "var(--blue)", label: "Career" },
@@ -201,9 +168,9 @@ function TreeRow({
   );
 }
 
-function findNode(id: string | null): Node | null {
+function findNode(tree: Node[], id: string | null): Node | null {
   if (!id) return null;
-  const stack = [...TREE];
+  const stack = [...tree];
   while (stack.length) {
     const n = stack.pop()!;
     if (n.id === id) return n;
@@ -213,22 +180,48 @@ function findNode(id: string | null): Node | null {
 }
 
 export function ProjectExplorer() {
+  const store = useStore();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
-  const [selected, setSelected] = useState<string | null>("p1-c1");
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({
-    p1: true,
-    p2: true,
-    p3: false,
-    p4: false,
-  });
+  const [selected, setSelected] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  const tree: Node[] = useMemo(() => {
+    const s = store.state;
+    return s.projects.map((p) => {
+      const children: Node[] = [
+        ...s.careers.filter((c) => c.projectId === p.id).map<Node>((c) => ({
+          id: c.id, name: c.name, kind: "career", status: "draft", updated: fmtAgo(p.updatedAt),
+        })),
+        ...s.traits.filter((t) => t.projectId === p.id).map<Node>((t) => ({
+          id: t.id, name: t.name, kind: "trait", status: "draft", updated: fmtAgo(p.updatedAt),
+        })),
+        ...s.aspirations.filter((a) => a.projectId === p.id).map<Node>((a) => ({
+          id: a.id, name: a.name, kind: "aspiration", status: "draft", updated: fmtAgo(p.updatedAt),
+        })),
+        ...s.notifications.filter((n) => n.projectId === p.id).map<Node>((n) => ({
+          id: n.id, name: n.name, kind: "notification", status: "draft", updated: fmtAgo(p.updatedAt),
+        })),
+        ...s.assets.filter((a) => a.projectId === p.id).map<Node>((a) => ({
+          id: a.id, name: a.name, kind: "asset", updated: fmtAgo(p.updatedAt),
+        })),
+      ];
+      return {
+        id: p.id,
+        name: p.name,
+        updated: fmtAgo(p.updatedAt),
+        favorite: p.favorite,
+        children,
+      };
+    });
+  }, [store.state]);
 
   const filtered = useMemo(
-    () => TREE.filter((p) => matches(p, query, filter)),
-    [query, filter],
+    () => tree.filter((p) => matches(p, query, filter)),
+    [tree, query, filter],
   );
 
-  const active = findNode(selected);
+  const active = findNode(tree, selected);
   const activeKind = active?.kind ? KIND_META[active.kind] : null;
   const activeStatus = active?.status ? STATUS_META[active.status] : null;
 
@@ -248,7 +241,12 @@ export function ProjectExplorer() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => toast.success("New project scaffold created")}
+            onClick={() => {
+              const p = store.createProject();
+              setSelected(p.id);
+              setExpanded((s) => ({ ...s, [p.id]: true }));
+              toast.success(`Created "${p.name}"`);
+            }}
             className="inline-flex items-center gap-1.5 rounded-md bg-[var(--blue)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90"
           >
             <Plus className="h-3.5 w-3.5" /> New Project
