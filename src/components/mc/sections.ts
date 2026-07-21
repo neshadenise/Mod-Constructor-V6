@@ -4,6 +4,7 @@ export type SectionId =
   | "career"
   | "trait"
   | "aspiration"
+  | "notifications"
   | "tuning"
   | "assets"
   | "validation"
@@ -16,6 +17,7 @@ export const SECTION_LABEL: Record<SectionId, string> = {
   career: "Career Builder",
   trait: "Trait Builder",
   aspiration: "Aspiration Builder",
+  notifications: "Notification Library",
   tuning: "Tuning Editor",
   assets: "Assets",
   validation: "Validation",
