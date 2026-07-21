@@ -254,8 +254,9 @@ function CurrentProject() {
             );
           })}
           <div className="ml-auto text-[11px] text-muted-foreground">
-            Last edit · {new Date(project.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            Last edit · {new Date(project.updatedAt).toISOString().slice(11, 16)} UTC
           </div>
+
         </div>
       </div>
     </section>
