@@ -466,7 +466,41 @@ function CareerBuilder() {
 
 function TraitBuilder() {
   const { advanced } = useAdvanced();
-  return (
+  const [name, setName] = useState("Lucid Dreamer");
+  const [category, setCategory] = useState("Emotional");
+  const [description, setDescription] = useState(
+    "This Sim experiences vivid dreams that grant temporary skill boosts on waking.",
+  );
+  const [buffs, setBuffs] = useState([
+    { name: "Well-Rested Focus", dur: "6h", mood: "Focused", strength: 2, color: "blue", icon: "🎯" },
+    { name: "Dream Recall", dur: "3h", mood: "Inspired", strength: 1, color: "violet", icon: "💭" },
+    { name: "Foggy Morning", dur: "2h", mood: "Tense", strength: 1, color: "orange", icon: "🌫️" },
+  ]);
+
+  const previewData: TraitPreviewData = {
+    name,
+    description,
+    category,
+    emoji: "✨",
+    color: "violet",
+    buffs: buffs.map((b) => ({
+      name: b.name,
+      mood: `${b.mood} +${b.strength}`,
+      duration: b.dur,
+      color: b.color,
+      icon: b.icon,
+      description: `Triggered by ${name}. Adds ${b.mood} for ${b.dur}.`,
+    })),
+    effects: [
+      "Boosts skill gain when waking up rested",
+      "Occasional Inspired moodlet after long naps",
+      "Small chance to talk about dreams autonomously",
+    ],
+    autonomy:
+      "Sims with this trait will occasionally nap during the day and share dream stories with friends.",
+  };
+
+  const editor = (
     <div className="space-y-4">
       <PageHeader
         icon={Sparkles}
@@ -481,73 +515,88 @@ function TraitBuilder() {
           </>
         }
       />
-      <div className="grid grid-cols-12 gap-4">
-        <Card title="Trait Definition" className="col-span-7">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Trait Name" value="Lucid Dreamer" />
-            <Field label="Category" value="Emotional" />
-            {advanced && <Field label="Internal ID" value="trait_lucid_dreamer" />}
-            {advanced && <Field label="Icon Reference" value="ic_trait_lucid.png" />}
-            <div className="col-span-2">
-              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Description
-              </label>
-              <Textarea
-                defaultValue="This Sim experiences vivid dreams that grant temporary skill boosts on waking."
-                className="h-16 resize-none text-xs"
-              />
-            </div>
-          </div>
 
-          <div className="mt-4">
-            <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Conflicts With
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {["Insomniac", "Hot-Headed", "Gloomy"].map((t) => (
-                <span
-                  key={t}
-                  className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10px] font-medium"
-                >
-                  ⊘ {t}
-                </span>
-              ))}
-              <button className="rounded-full border border-dashed border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-accent">
-                + Add
-              </button>
-            </div>
+      <Card title="Trait Definition">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Trait Name" value={name} onChange={setName} />
+          <Field label="Category" value={category} onChange={setCategory} />
+          {advanced && <Field label="Internal ID" value="trait_lucid_dreamer" />}
+          {advanced && <Field label="Icon Reference" value="ic_trait_lucid.png" />}
+          <div className="col-span-2">
+            <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Description
+            </label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="h-16 resize-none text-xs"
+            />
           </div>
-        </Card>
+        </div>
 
-        <Card
-          title="Buffs & Moodlets"
-          className="col-span-5"
-          action={<CopyToMenu what="all buffs" label="Copy buffs to…" disallowBranches />}
-        >
-          <ul className="space-y-1.5 text-xs">
-            {[
-              { name: "Well-Rested Focus", dur: "6h", mood: "Focused +2", c: "blue" },
-              { name: "Dream Recall", dur: "3h", mood: "Inspired +1", c: "violet" },
-              { name: "Foggy Morning", dur: "2h", mood: "Tense +1", c: "orange" },
-            ].map((b) => (
-              <li key={b.name} className="rounded-md border border-border bg-background/60 p-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">{b.name}</span>
-                  <span className="font-mono text-[10px] text-muted-foreground">{b.dur}</span>
-                </div>
-                <div className="mt-0.5 text-[10.5px]" style={{ color: `var(--${b.c})` }}>
-                  {b.mood}
-                </div>
-              </li>
+        <div className="mt-4">
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Conflicts With
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {["Insomniac", "Hot-Headed", "Gloomy"].map((t) => (
+              <span key={t} className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10px] font-medium">
+                ⊘ {t}
+              </span>
             ))}
-          </ul>
-          <button className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent">
-            <Plus className="h-3 w-3" /> Add Buff
-          </button>
-        </Card>
-      </div>
+            <button className="rounded-full border border-dashed border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-accent">
+              + Add
+            </button>
+          </div>
+        </div>
+      </Card>
+
+      <Card
+        title="Buffs & Moodlets"
+        action={<CopyToMenu what="all buffs" label="Copy buffs to…" disallowBranches />}
+      >
+        <ul className="space-y-1.5 text-xs">
+          {buffs.map((b, i) => (
+            <li key={b.name + i} className="rounded-md border border-border bg-background/60 p-2">
+              <div className="grid grid-cols-[1fr_5rem_5rem] gap-2">
+                <Input
+                  value={b.name}
+                  onChange={(e) =>
+                    setBuffs((prev) => prev.map((x, xi) => (xi === i ? { ...x, name: e.target.value } : x)))
+                  }
+                  className="h-7 text-xs"
+                />
+                <Input
+                  value={b.mood}
+                  onChange={(e) =>
+                    setBuffs((prev) => prev.map((x, xi) => (xi === i ? { ...x, mood: e.target.value } : x)))
+                  }
+                  className="h-7 text-xs"
+                />
+                <Input
+                  value={b.dur}
+                  onChange={(e) =>
+                    setBuffs((prev) => prev.map((x, xi) => (xi === i ? { ...x, dur: e.target.value } : x)))
+                  }
+                  className="h-7 text-xs"
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+        <button
+          onClick={() =>
+            setBuffs((prev) => [...prev, { name: "New Buff", dur: "2h", mood: "Happy", strength: 1, color: "green", icon: "🙂" }])
+          }
+          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent"
+        >
+          <Plus className="h-3 w-3" /> Add Buff
+        </button>
+      </Card>
     </div>
   );
+
+  return <PreviewSplit editor={editor} preview={<TraitPreview data={previewData} />} />;
 }
 
 /* ---------- Aspiration Builder ---------- */
