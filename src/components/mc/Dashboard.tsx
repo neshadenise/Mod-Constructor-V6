@@ -174,7 +174,7 @@ function CurrentProject() {
     );
   }
 
-  const meta = STATUS_META[project.status];
+  const meta = STATUS_META[project.status] ?? STATUS_META["draft"];
   const careers = store.state.careers.filter((c) => c.projectId === project.id).length;
   const traits = store.state.traits.filter((t) => t.projectId === project.id).length;
   const aspirations = store.state.aspirations.filter((a) => a.projectId === project.id).length;
@@ -254,8 +254,9 @@ function CurrentProject() {
             );
           })}
           <div className="ml-auto text-[11px] text-muted-foreground">
-            Last edit · {new Date(project.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            Last edit · {new Date(project.updatedAt).toISOString().slice(11, 16)} UTC
           </div>
+
         </div>
       </div>
     </section>
