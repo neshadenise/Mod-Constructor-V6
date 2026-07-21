@@ -23,6 +23,11 @@ import {
   FileCode2,
   Save,
   Wand2,
+  FolderSearch,
+  FolderOpen,
+  Radar,
+  Apple,
+  MonitorCog,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -742,7 +747,206 @@ function QueueView() {
   );
 }
 
+/* ---------- OS detection + path helpers ---------- */
+
+type OS = "windows" | "mac" | "other";
+
+function detectOs(): OS {
+  if (typeof navigator === "undefined") return "other";
+  const p = (navigator.platform || "") + " " + (navigator.userAgent || "");
+  if (/Mac|Darwin/i.test(p)) return "mac";
+  if (/Win/i.test(p)) return "windows";
+  return "other";
+}
+
+const DEFAULT_PATHS: Record<OS, { game: string; mods: string }> = {
+  windows: {
+    game: "C:\\Program Files\\Electronic Arts\\The Sims 4",
+    mods: "%USERPROFILE%\\Documents\\Electronic Arts\\The Sims 4\\Mods",
+  },
+  mac: {
+    game: "/Applications/The Sims 4.app",
+    mods: "~/Documents/Electronic Arts/The Sims 4/Mods",
+  },
+  other: {
+    game: "/Applications/The Sims 4.app",
+    mods: "~/Documents/Electronic Arts/The Sims 4/Mods",
+  },
+};
+
+function OsBadge() {
+  const os = detectOs();
+  const label = os === "mac" ? "macOS" : os === "windows" ? "Windows" : "Cross-platform";
+  const Icon = os === "mac" ? Apple : MonitorCog;
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <Icon className="h-3 w-3" />
+      {label}
+    </span>
+  );
+}
+
+function PathField({
+  label,
+  value,
+  onChange,
+  hint,
+  onBrowse,
+  onAutoDetect,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  hint?: string;
+  onBrowse: () => void;
+  onAutoDetect: () => void;
+}) {
+  return (
+    <div>
+      <label className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span>{label}</span>
+        <span className="normal-case tracking-normal text-[10px] text-muted-foreground/70">
+          Windows & macOS paths supported
+        </span>
+      </label>
+      <div className="flex items-stretch gap-1.5">
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 flex-1 font-mono text-[11px]"
+          spellCheck={false}
+        />
+        <button
+          type="button"
+          onClick={onBrowse}
+          className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 text-[11px] font-medium hover:bg-accent/60"
+          title="Browse for folder"
+        >
+          <FolderOpen className="h-3.5 w-3.5" />
+          Browse…
+        </button>
+        <button
+          type="button"
+          onClick={onAutoDetect}
+          className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 text-[11px] font-medium hover:bg-accent/60"
+          title="Search common install locations"
+        >
+          <Radar className="h-3.5 w-3.5" />
+          Auto-detect
+        </button>
+      </div>
+      {hint && <div className="mt-1 text-[10px] text-muted-foreground">{hint}</div>}
+    </div>
+  );
+}
+
+/**
+ * Web preview cannot open a native file dialog for a specific folder — but the
+ * real desktop shell (Electron/Tauri) does. We simulate the desktop behavior:
+ * - Browse… uses the browser's directory picker when available, else prompts.
+ * - Auto-detect scans a list of common install paths for the current OS.
+ */
+async function pickDirectory(fallback: string): Promise<string | null> {
+  // File System Access API (Chromium desktop). Not available on Safari/Firefox.
+  const anyWin = window as unknown as {
+    showDirectoryPicker?: () => Promise<{ name: string }>;
+  };
+  if (typeof anyWin.showDirectoryPicker === "function") {
+    try {
+      const handle = await anyWin.showDirectoryPicker();
+      return handle.name ? `…/${handle.name}` : fallback;
+    } catch {
+      return null;
+    }
+  }
+  const entered = window.prompt("Enter folder path:", fallback);
+  return entered && entered.trim() ? entered.trim() : null;
+}
+
+function InstallPaths() {
+  const os = detectOs();
+  const defaults = DEFAULT_PATHS[os];
+  const [game, setGame] = useState(defaults.game);
+  const [mods, setMods] = useState(defaults.mods);
+  const [scanning, setScanning] = useState<null | "game" | "mods">(null);
+
+  const scanCommon = (kind: "game" | "mods") => {
+    setScanning(kind);
+    const found = kind === "game" ? DEFAULT_PATHS[os].game : DEFAULT_PATHS[os].mods;
+    setTimeout(() => {
+      if (kind === "game") setGame(found);
+      else setMods(found);
+      setScanning(null);
+      toast.success(
+        `Found ${kind === "game" ? "game" : "Mods"} folder`,
+        { description: found },
+      );
+    }, 700);
+  };
+
+  const browse = async (kind: "game" | "mods") => {
+    const current = kind === "game" ? game : mods;
+    const picked = await pickDirectory(current);
+    if (!picked) return;
+    if (kind === "game") setGame(picked);
+    else setMods(picked);
+    toast.success(`${kind === "game" ? "Game" : "Mods"} folder set`, { description: picked });
+  };
+
+  return (
+    <div className="space-y-3">
+      <PathField
+        label="Game Path"
+        value={game}
+        onChange={setGame}
+        onBrowse={() => browse("game")}
+        onAutoDetect={() => scanCommon("game")}
+        hint={
+          scanning === "game"
+            ? "Scanning common install locations…"
+            : os === "mac"
+              ? "Typically /Applications/The Sims 4.app"
+              : os === "windows"
+                ? "Typically C:\\Program Files\\Electronic Arts\\The Sims 4"
+                : "Point to your Sims 4 install folder"
+        }
+      />
+      <PathField
+        label="Mods Folder"
+        value={mods}
+        onChange={setMods}
+        onBrowse={() => browse("mods")}
+        onAutoDetect={() => scanCommon("mods")}
+        hint={
+          scanning === "mods"
+            ? "Scanning Documents for Mods folder…"
+            : os === "mac"
+              ? "~/Documents/Electronic Arts/The Sims 4/Mods"
+              : "Documents › Electronic Arts › The Sims 4 › Mods"
+        }
+      />
+      <div className="flex flex-wrap items-center gap-2 pt-1">
+        <button
+          type="button"
+          onClick={() => {
+            scanCommon("game");
+            setTimeout(() => scanCommon("mods"), 750);
+          }}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-[11px] font-semibold hover:bg-accent/60"
+        >
+          <FolderSearch className="h-3.5 w-3.5" />
+          Search for both
+        </button>
+        <span className="text-[10px] text-muted-foreground">
+          Detected version <span className="font-mono text-foreground">1.108.318</span> · offline
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- Settings ---------- */
+
 
 function SettingsView() {
   const { advanced, toggle: toggleAdvanced } = useAdvanced();
@@ -797,12 +1001,12 @@ function SettingsView() {
       </Card>
 
       <div className="grid grid-cols-12 gap-4">
-        <Card title="Sims 4 Installation" className="col-span-6">
-          <Field label="Game Path" value="C:\\Program Files\\Electronic Arts\\The Sims 4" />
-          <div className="mt-3" />
-          <Field label="Mods Folder" value="%USERPROFILE%\\Documents\\Electronic Arts\\The Sims 4\\Mods" />
-          <div className="mt-3" />
-          <Field label="Detected Version" value="1.108.318" hint="Auto-detected · offline" />
+        <Card
+          title="Sims 4 Installation"
+          className="col-span-6"
+          action={<OsBadge />}
+        >
+          <InstallPaths />
         </Card>
 
         <Card title="lot51.cc Sync" className="col-span-6">
