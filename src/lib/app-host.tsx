@@ -81,11 +81,11 @@ export function AppHostProvider({ children }: { children: React.ReactNode }) {
     const detected = detectMode();
     setMode(detected);
     const stored = localStorage.getItem("mc.imageProvider") as ImageProvider | null;
-    if (stored) {
+    // ChatGPT is no longer selectable — coerce legacy values to "local".
+    if (stored && stored !== "chatgpt") {
       setImageProviderState(stored);
     } else {
-      // Sensible default per host
-      setImageProviderState(detected === "chatgpt" ? "chatgpt" : "local");
+      setImageProviderState("local");
     }
   }, []);
 
