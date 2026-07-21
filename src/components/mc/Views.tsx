@@ -793,34 +793,22 @@ function CareerBuilder() {
 
           <Card title="Icon & Image">
             <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: "Icon", value: icon, set: setIcon, hint: "Small (32×32) — sidebar / phone" },
-                { label: "Image", value: image, set: setImage, hint: "Large — join-career splash" },
-              ].map((f) => (
-                <div key={f.label}>
-                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {f.label}
-                  </label>
-                  <div className="flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/30 p-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-card">
-                      <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 text-[11px] text-muted-foreground">
-                      {f.value || "No file selected"}
-                      <div className="text-[10px]">{f.hint}</div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        f.set(`${f.label.toLowerCase()}_${Date.now()}.png`);
-                        toast.success(`${f.label} picked`);
-                      }}
-                      className="rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium hover:bg-accent"
-                    >
-                      Browse…
-                    </button>
-                  </div>
-                </div>
-              ))}
+              <ImageField
+                label="Icon"
+                value={icon}
+                onChange={setIcon}
+                slot="icon"
+                hint="Small (32×32) — sidebar / phone"
+                context={{ subject: `${name || "career"} icon`, style: "flat, game UI" }}
+              />
+              <ImageField
+                label="Image"
+                value={image}
+                onChange={setImage}
+                slot="image"
+                hint="Large — join-career splash"
+                context={{ subject: `${name || "career"} splash`, style: "cinematic" }}
+              />
             </div>
           </Card>
 
