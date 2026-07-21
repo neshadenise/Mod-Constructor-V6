@@ -1,13 +1,32 @@
-import { Bell, HelpCircle, Search, Moon, Sun, Save, ChevronRight } from "lucide-react";
+import { Bell, HelpCircle, Search, Moon, Sun, Save, ChevronRight, Wifi, WifiOff, RefreshCw, Cloud } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { useTheme } from "@/lib/theme";
 import { Input } from "@/components/ui/input";
+import { SECTION_LABEL, type SectionId } from "./sections";
 
-export function TopBar() {
+export function TopBar({ active }: { active: SectionId }) {
   const { theme, toggle } = useTheme();
+  const [online, setOnline] = useState(false);
+  const [checking, setChecking] = useState(false);
+
+  const checkUpdates = () => {
+    if (checking) return;
+    setChecking(true);
+    setOnline(true);
+    toast.message("Contacting lot51.cc…", { description: "Checking for framework updates." });
+    setTimeout(() => {
+      setChecking(false);
+      toast.success("Up to date", {
+        description: "Lot51 Core Library v1.108.318 · no updates available.",
+      });
+    }, 1600);
+  };
+
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-background/80 px-6 backdrop-blur-md">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-background/85 px-6 backdrop-blur-md">
       <div className="flex items-center gap-2 text-sm">
-        <span className="text-muted-foreground">Projects</span>
+        <span className="text-muted-foreground">{SECTION_LABEL[active]}</span>
         <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="font-semibold">Epic Careers Overhaul</span>
         <span className="ml-2 inline-flex items-center gap-1.5 rounded-full border border-[var(--green)]/30 bg-[var(--green)]/10 px-2 py-0.5 text-[11px] font-medium text-[var(--green)]">
@@ -22,10 +41,28 @@ export function TopBar() {
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search mods, traits, careers…  ⌘K"
-            className="h-9 w-72 pl-8 text-xs"
+            placeholder="Search mods, traits, careers…  Ctrl+K"
+            className="h-9 w-64 pl-8 text-xs"
           />
         </div>
+
+        <button
+          onClick={checkUpdates}
+          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-xs font-medium hover:bg-accent"
+          title="Check lot51.cc for framework updates"
+        >
+          {online ? (
+            <Wifi className="h-3.5 w-3.5 text-[var(--green)]" />
+          ) : (
+            <WifiOff className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
+          <span className="hidden md:inline">{online ? "Online" : "Offline"}</span>
+          <span className="mx-1 h-3.5 w-px bg-border" />
+          <Cloud className="h-3.5 w-3.5 text-[var(--blue)]" />
+          <span className="hidden md:inline">lot51</span>
+          <RefreshCw className={"h-3 w-3 text-muted-foreground " + (checking ? "animate-spin" : "")} />
+        </button>
+
         <IconBtn>
           <Bell className="h-4 w-4" />
           <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--orange)]" />
