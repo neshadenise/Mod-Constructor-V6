@@ -3295,10 +3295,179 @@ function SettingsView() {
             {advanced && <Row k="Framework" v=".NET 8 · WPF portable" />}
           </div>
         </Card>
+        <Card title="About" className="col-span-6">
+          <div className="space-y-1.5 text-xs">
+            <Row k="Application" v="Mod Constructor V6" />
+            <Row k="Version" v="6.0.0" />
+            <Row k="Host" v={host.isChatGPT ? "ChatGPT App" : "Standalone Desktop"} />
+            <Row k="Platforms" v="Windows · macOS" />
+            <Row k="License" v="Personal · Non-commercial" />
+            {advanced && <Row k="Framework" v=".NET 8 · Tauri (planned)" />}
+          </div>
+        </Card>
       </div>
     </div>
   );
 }
+
+/* ---------- Host / provider / MCP cards ---------- */
+
+function HostModeCard() {
+  const host = useAppHost();
+  return (
+    <Card
+      title="Runtime Host"
+      action={
+        <span
+          className={cn(
+            "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+            host.isChatGPT
+              ? "bg-[var(--green)]/15 text-[var(--green)]"
+              : "bg-[var(--blue)]/15 text-[var(--blue)]",
+          )}
+        >
+          {host.isChatGPT ? "ChatGPT App" : "Desktop"}
+        </span>
+      }
+    >
+      <div className="grid grid-cols-2 gap-3 text-xs">
+        <div
+          className={cn(
+            "rounded-lg border p-3",
+            host.isChatGPT ? "border-[var(--green)]/50 bg-[var(--green)]/5" : "border-border bg-card",
+          )}
+        >
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <Sparkles className="h-4 w-4 text-[var(--green)]" />
+            ChatGPT App mode
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Runs embedded inside ChatGPT via the OpenAI Apps SDK. Native ChatGPT
+            assistance and image generation are available. No OpenAI API key is
+            requested or stored.
+          </p>
+        </div>
+        <div
+          className={cn(
+            "rounded-lg border p-3",
+            host.isDesktop ? "border-[var(--blue)]/50 bg-[var(--blue)]/5" : "border-border bg-card",
+          )}
+        >
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <MonitorCog className="h-4 w-4 text-[var(--blue)]" />
+            Desktop mode
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Standalone Windows/macOS build. Local tools, manual uploads, and
+            separately configured generation providers. A ChatGPT subscription
+            cannot be consumed from the desktop app.
+          </p>
+        </div>
+      </div>
+      <p className="mt-3 rounded-md bg-muted/40 px-2.5 py-2 text-[11px] text-muted-foreground">
+        Projects created in either host use the same Portable Bundle
+        (<span className="font-mono">.mcbundle.json</span>) format — export from
+        ChatGPT and open in Desktop, or vice versa.
+      </p>
+    </Card>
+  );
+}
+
+function ImageProviderCard() {
+  const host = useAppHost();
+  return (
+    <Card
+      title="Image Generation Provider"
+      action={
+        <span className="text-[11px] text-muted-foreground">
+          Powers "Generate with ChatGPT" and related image actions.
+        </span>
+      }
+    >
+      <div className="grid grid-cols-2 gap-2">
+        {host.availableImageProviders.map((p) => {
+          const active = host.imageProvider === p;
+          const disabled = p === "chatgpt" && !host.isChatGPT;
+          return (
+            <button
+              key={p}
+              disabled={disabled}
+              onClick={() => {
+                host.setImageProvider(p);
+                toast.success(`Provider · ${PROVIDER_LABEL[p]}`);
+              }}
+              className={cn(
+                "rounded-lg border p-3 text-left transition-all",
+                active
+                  ? "border-[var(--blue)] bg-[var(--blue)]/8 shadow-sm"
+                  : "border-border bg-card hover:border-foreground/20",
+                disabled && "cursor-not-allowed opacity-50",
+              )}
+            >
+              <div className="flex items-center justify-between text-sm font-semibold">
+                <span>{PROVIDER_LABEL[p]}</span>
+                {p === "chatgpt" && (
+                  <span className="rounded-full bg-[var(--green)]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--green)]">
+                    No API key
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">{PROVIDER_DESCRIPTION[p]}</p>
+              {disabled && (
+                <p className="mt-1 text-[10px] italic text-muted-foreground">
+                  Only available while running in the ChatGPT App.
+                </p>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function McpToolsCard() {
+  const groups = MCP_TOOL_DEFS.reduce<Record<string, typeof MCP_TOOL_DEFS>>((acc, t) => {
+    (acc[t.category] ||= [] as typeof MCP_TOOL_DEFS)[
+      (acc[t.category] ||= [] as typeof MCP_TOOL_DEFS).length as number
+    ] = t;
+    return acc;
+  }, {});
+  return (
+    <Card
+      title="MCP Tools exposed to ChatGPT"
+      action={
+        <span className="rounded-full bg-[var(--green)]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--green)]">
+          {MCP_TOOL_DEFS.length} tools
+        </span>
+      }
+    >
+      <p className="mb-3 text-xs text-muted-foreground">
+        When running as a ChatGPT App, Mod Constructor publishes these tools so
+        ChatGPT can help you author projects. Authentication is inherited from
+        the ChatGPT session — this app never sees passwords or tokens.
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        {Object.entries(groups).map(([cat, tools]) => (
+          <div key={cat} className="rounded-md border border-border bg-muted/30 p-2">
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {cat}
+            </div>
+            <ul className="space-y-1 text-[11px]">
+              {tools.map((t) => (
+                <li key={t.name}>
+                  <span className="font-mono text-[10.5px] font-semibold text-foreground">{t.name}</span>
+                  <span className="ml-1 text-muted-foreground">— {t.description}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 
 function SettingToggle({ label, defaultOn }: { label: string; defaultOn?: boolean }) {
   const [on, setOn] = useState(!!defaultOn);
