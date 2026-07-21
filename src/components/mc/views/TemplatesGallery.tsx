@@ -1,5 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
-import { LayoutTemplate, Search, Star, Download, Sparkles, Briefcase, Target, Bell, Plus, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  LayoutTemplate,
+  Search,
+  Sparkles,
+  Briefcase,
+  Target,
+  Bell,
+  Plus,
+  Trash2,
+  ShieldCheck,
+  Package,
+  CheckCircle2,
+  CircleDashed,
+  Lock,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -14,31 +28,23 @@ import {
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useStore } from "@/lib/store";
+import {
+  BUILT_IN_TEMPLATES,
+  BUILT_IN_UPDATED_AT,
+  type CareerPayload,
+  type TraitPayload,
+  type AspirationPayload,
+  type NotificationPayload,
+} from "@/lib/builtin-templates";
+import type {
+  Template,
+  TemplateKind,
+  TemplateSource,
+  TemplateDifficulty,
+} from "@/lib/types";
 
-type Kind = "Career" | "Trait" | "Aspiration" | "Notification";
-
-type Template = {
-  id: string;
-  name: string;
-  kind: Kind;
-  author: string;
-  installs: number;
-  rating: number;
-  updated: string;
-  official?: boolean;
-  custom?: boolean;
-  summary: string;
-};
-
-const BUILTINS: Template[] = [
-  { id: "t1", name: "Freelance Studio Pack", kind: "Career", author: "Lot 51", installs: 4210, rating: 4.9, updated: "3d ago", official: true, summary: "Gig-based freelancer with three tone-selectable clients." },
-  { id: "t2", name: "Military Command Track", kind: "Career", author: "Zerbu", installs: 3184, rating: 4.7, updated: "1w ago", summary: "10-rank hierarchical career with uniforms and PTO." },
-  { id: "t3", name: "Aquatic Rescue", kind: "Career", author: "Community", installs: 1108, rating: 4.4, updated: "2w ago", summary: "Marine specialist career with lifeguard sub-branch." },
-  { id: "t4", name: "Introvert Deluxe", kind: "Trait", author: "Lot 51", installs: 6720, rating: 4.8, updated: "5d ago", official: true, summary: "Personality trait with 6 buffs and social autonomy tuning." },
-  { id: "t5", name: "Night Owl", kind: "Trait", author: "Community", installs: 2401, rating: 4.6, updated: "1w ago", summary: "Circadian trait with energy decay overrides." },
-  { id: "t6", name: "Peak Climber Aspiration", kind: "Aspiration", author: "Zerbu", installs: 1592, rating: 4.5, updated: "2w ago", summary: "5-milestone aspiration ending in a fitness reward trait." },
-  { id: "t7", name: "Promotion Toast Kit", kind: "Notification", author: "Lot 51", installs: 8930, rating: 4.9, updated: "1d ago", official: true, summary: "Set of 6 notification templates for career events." },
-];
+type Kind = TemplateKind;
 
 const META: Record<Kind, { icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; color: string }> = {
   Career: { icon: Briefcase, color: "var(--blue)" },
@@ -49,65 +55,139 @@ const META: Record<Kind, { icon: React.ComponentType<React.SVGProps<SVGSVGElemen
 
 const FILTERS: ("All" | Kind)[] = ["All", "Career", "Trait", "Aspiration", "Notification"];
 const KINDS: Kind[] = ["Career", "Trait", "Aspiration", "Notification"];
-const STORAGE_KEY = "mc.customTemplates.v1";
+
+const SOURCE_LABEL: Record<TemplateSource, string> = {
+  "built-in-original": "Built-in original",
+  "user-created": "User-created",
+  imported: "Imported",
+  "community-submission": "Community submission",
+  "licensed-third-party": "Licensed third-party",
+};
+
+type GalleryTemplate = Template & { updatedLabel: string };
+
+function toGallery(t: Template): GalleryTemplate {
+  return {
+    ...t,
+    updatedLabel:
+      t.builtIn
+        ? BUILT_IN_UPDATED_AT
+        : new Date(t.updatedAt).toISOString().slice(0, 10),
+  };
+}
+
+const now = () => Date.now();
 
 export function TemplatesGallery() {
+  const store = useStore();
+  const { state } = store;
+  const activeProjectId = state.activeProjectId;
+
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"All" | Kind>("All");
-  const [custom, setCustom] = useState<Template[]>([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", kind: "Career" as Kind, author: "You", summary: "" });
+  const [form, setForm] = useState({
+    name: "",
+    kind: "Career" as Kind,
+    summary: "",
+    difficulty: "beginner" as TemplateDifficulty,
+  });
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setCustom(JSON.parse(raw));
-    } catch {}
-  }, []);
+  const builtIns: Template[] = useMemo(
+    () =>
+      BUILT_IN_TEMPLATES.map((t) => ({
+        ...t,
+        createdAt: 0,
+        updatedAt: 0,
+      })),
+    [],
+  );
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(custom));
-    } catch {}
-  }, [custom]);
-
-  const all = useMemo(() => [...custom, ...BUILTINS], [custom]);
+  const all: GalleryTemplate[] = useMemo(() => {
+    return [...state.templates, ...builtIns].map(toGallery);
+  }, [state.templates, builtIns]);
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     return all.filter((t) => {
       if (filter !== "All" && t.kind !== filter) return false;
       if (!q) return true;
-      return t.name.toLowerCase().includes(q) || t.summary.toLowerCase().includes(q) || t.author.toLowerCase().includes(q);
+      return (
+        t.name.toLowerCase().includes(q) ||
+        t.summary.toLowerCase().includes(q) ||
+        (t.includes ?? []).some((i) => i.toLowerCase().includes(q))
+      );
     });
   }, [all, query, filter]);
 
-  function save() {
+  function saveUserTemplate() {
     const name = form.name.trim();
     if (!name) {
       toast.error("Template name is required");
       return;
     }
-    const t: Template = {
-      id: `custom-${Date.now()}`,
+    store.saveTemplate({
       name,
       kind: form.kind,
-      author: form.author.trim() || "You",
-      summary: form.summary.trim() || "Custom saved template.",
-      installs: 0,
-      rating: 0,
-      updated: "just now",
-      custom: true,
-    };
-    setCustom((prev) => [t, ...prev]);
-    setForm({ name: "", kind: "Career", author: "You", summary: "" });
+      summary: form.summary.trim() || "User-saved starter template.",
+      source: "user-created",
+      difficulty: form.difficulty,
+      requiredPacks: [],
+      includes: [],
+      targetGameVersion: "1.108+",
+      tested: "untested",
+      payload: null,
+    });
+    setForm({ name: "", kind: "Career", summary: "", difficulty: "beginner" });
     setOpen(false);
     toast.success(`Saved template "${name}"`);
   }
 
-  function remove(id: string) {
-    setCustom((prev) => prev.filter((t) => t.id !== id));
+  function removeUserTemplate(id: string) {
+    store.deleteTemplate(id);
     toast.success("Template removed");
+  }
+
+  function useTemplate(t: GalleryTemplate) {
+    if (!activeProjectId) {
+      toast.error("Select or create a project first");
+      return;
+    }
+    if (!t.payload) {
+      toast.error("This template has no starter contents to scaffold");
+      return;
+    }
+    try {
+      switch (t.kind) {
+        case "Career": {
+          const p = t.payload as CareerPayload;
+          const rec = store.createCareer({ ...p, projectId: activeProjectId, name: p.name });
+          toast.success(`Added career "${rec.name}" to project`);
+          break;
+        }
+        case "Trait": {
+          const p = t.payload as TraitPayload;
+          const rec = store.createTrait({ ...p, projectId: activeProjectId, name: p.name });
+          toast.success(`Added trait "${rec.name}" to project`);
+          break;
+        }
+        case "Aspiration": {
+          const p = t.payload as AspirationPayload;
+          const rec = store.createAspiration({ ...p, projectId: activeProjectId, name: p.name });
+          toast.success(`Added aspiration "${rec.name}" to project`);
+          break;
+        }
+        case "Notification": {
+          const p = t.payload as NotificationPayload;
+          const rec = store.createNotificationTemplate({ ...p, projectId: activeProjectId, name: p.name });
+          toast.success(`Added notification "${rec.name}" to project`);
+          break;
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not scaffold from this template");
+    }
   }
 
   return (
@@ -137,9 +217,10 @@ export function TemplatesGallery() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Save a new template</DialogTitle>
+                <DialogTitle>Save a new user template</DialogTitle>
                 <DialogDescription>
-                  Templates are saved locally and available across all builders.
+                  User-created templates are stored locally alongside the built-in
+                  originals. Built-in templates are read-only.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-3">
@@ -172,12 +253,23 @@ export function TemplatesGallery() {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Author</Label>
-                    <Input
-                      value={form.author}
-                      onChange={(e) => setForm({ ...form, author: e.target.value })}
-                      placeholder="You"
-                    />
+                    <Label className="text-xs">Difficulty</Label>
+                    <div className="flex flex-wrap gap-1">
+                      {(["beginner", "intermediate", "advanced"] as TemplateDifficulty[]).map((d) => (
+                        <button
+                          key={d}
+                          onClick={() => setForm({ ...form, difficulty: d })}
+                          className={cn(
+                            "rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize transition-colors",
+                            form.difficulty === d
+                              ? "border-[var(--violet)] bg-[var(--violet)]/10 text-[var(--violet)]"
+                              : "border-border bg-background text-muted-foreground hover:bg-accent",
+                          )}
+                        >
+                          {d}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -198,7 +290,7 @@ export function TemplatesGallery() {
                   Cancel
                 </button>
                 <button
-                  onClick={save}
+                  onClick={saveUserTemplate}
                   className="rounded-md bg-[var(--violet)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90"
                 >
                   Save Template
@@ -237,14 +329,22 @@ export function TemplatesGallery() {
         </div>
       </div>
 
+      <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
+        Built-in templates are original starter structures included with Mod
+        Constructor. They are read-only and carry no outside attribution. Use
+        Template creates a real, editable copy inside your active project.
+      </div>
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {shown.map((t) => {
           const meta = META[t.kind];
           const Icon = meta.icon;
+          const isBuiltIn = !!t.builtIn;
+          const isUser = t.source === "user-created";
           return (
             <article
               key={t.id}
-              className="rounded-xl border border-border bg-card p-4 card-elevated transition-shadow hover:shadow-md"
+              className="flex flex-col rounded-xl border border-border bg-card p-4 card-elevated transition-shadow hover:shadow-md"
             >
               <header className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -261,53 +361,132 @@ export function TemplatesGallery() {
                     <h3 className="text-sm font-bold leading-tight">{t.name}</h3>
                   </div>
                 </div>
-                {t.official && (
-                  <span className="rounded-full border border-[var(--teal)]/40 bg-[var(--teal)]/10 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-[var(--teal)]">
-                    Official
-                  </span>
-                )}
-                {t.custom && (
-                  <span className="rounded-full border border-[var(--violet)]/40 bg-[var(--violet)]/10 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-[var(--violet)]">
-                    Yours
-                  </span>
-                )}
+                <div className="flex flex-wrap justify-end gap-1">
+                  {isBuiltIn && (
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full border border-[var(--teal)]/40 bg-[var(--teal)]/10 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-[var(--teal)]"
+                      title="Built-in original — included with Mod Constructor"
+                    >
+                      <Lock className="h-2.5 w-2.5" />
+                      Built-in
+                    </span>
+                  )}
+                  {isUser && (
+                    <span className="rounded-full border border-[var(--violet)]/40 bg-[var(--violet)]/10 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-[var(--violet)]">
+                      Yours
+                    </span>
+                  )}
+                </div>
               </header>
 
               <p className="mt-2 text-xs text-muted-foreground">{t.summary}</p>
 
+              {isBuiltIn && (
+                <div className="mt-2 text-[10.5px] font-semibold uppercase tracking-wider text-[var(--teal)]">
+                  Original starter template · Included with Mod Constructor
+                </div>
+              )}
+
+              <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+                <dt className="text-muted-foreground">Type</dt>
+                <dd className="text-right font-medium">{t.kind}</dd>
+                <dt className="text-muted-foreground">Difficulty</dt>
+                <dd className="text-right font-medium capitalize">{t.difficulty}</dd>
+                <dt className="text-muted-foreground">Target game</dt>
+                <dd className="text-right font-medium tabular-nums">{t.targetGameVersion}</dd>
+                <dt className="text-muted-foreground">Tested</dt>
+                <dd className="text-right font-medium capitalize inline-flex items-center justify-end gap-1">
+                  {t.tested === "untested" ? (
+                    <CircleDashed className="h-3 w-3 text-muted-foreground" />
+                  ) : (
+                    <CheckCircle2 className="h-3 w-3 text-[var(--teal)]" />
+                  )}
+                  {t.tested}
+                </dd>
+                <dt className="text-muted-foreground">Updated</dt>
+                <dd className="text-right font-medium tabular-nums">{t.updatedLabel}</dd>
+              </dl>
+
+              {t.requiredPacks.length > 0 && (
+                <div className="mt-3">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Required packs
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {t.requiredPacks.map((p) => (
+                      <span
+                        key={p}
+                        className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                      >
+                        <Package className="h-2.5 w-2.5" />
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {t.includes.length > 0 && (
+                <div className="mt-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Includes
+                  </div>
+                  <ul className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
+                    {t.includes.map((inc, i) => (
+                      <li key={i} className="flex items-center gap-1">
+                        <span className="h-1 w-1 rounded-full bg-muted-foreground/60" />
+                        {inc}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>by {t.author}</span>
-                <span className="tabular-nums">{t.updated}</span>
+                <span className="inline-flex items-center gap-1">
+                  <ShieldCheck className="h-3 w-3" />
+                  {SOURCE_LABEL[t.source]}
+                </span>
               </div>
 
-              <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-                <div className="flex items-center gap-3 text-[11px]">
-                  <span className="inline-flex items-center gap-1 tabular-nums">
-                    <Star className="h-3 w-3 fill-[var(--orange)] text-[var(--orange)]" />
-                    {t.rating || "—"}
-                  </span>
-                  <span className="inline-flex items-center gap-1 tabular-nums text-muted-foreground">
-                    <Download className="h-3 w-3" />
-                    {t.installs.toLocaleString()}
-                  </span>
+              {t.license && (
+                <div className="mt-2 rounded-md border border-border bg-muted/40 p-2 text-[10.5px] leading-snug">
+                  <div className="font-semibold">Attribution</div>
+                  <div className="text-muted-foreground">
+                    {t.license.creator} · {t.license.license}
+                    {t.license.sourceUrl ? ` · ${t.license.sourceUrl}` : ""}
+                  </div>
+                  <div className="mt-0.5 text-muted-foreground">
+                    Redistribution: {t.license.redistributionAllowed ? "allowed" : "not allowed"} ·
+                    Modification: {t.license.modificationAllowed ? "allowed" : "not allowed"}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  {t.custom && (
-                    <button
-                      onClick={() => remove(t.id)}
-                      title="Delete template"
-                      className="inline-flex items-center justify-center rounded-md border border-border bg-background p-1.5 text-muted-foreground hover:bg-accent hover:text-[var(--red)]"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  )}
+              )}
+
+              <div className="mt-auto flex items-center justify-end gap-1 border-t border-border pt-3">
+                {isUser && (
                   <button
-                    onClick={() => toast.success(`Scaffolded "${t.name}"`)}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-[var(--blue)] px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm hover:opacity-90"
+                    onClick={() => removeUserTemplate(t.id)}
+                    title="Delete template"
+                    className="inline-flex items-center justify-center rounded-md border border-border bg-background p-1.5 text-muted-foreground hover:bg-accent hover:text-[var(--red)]"
                   >
-                    Use Template
+                    <Trash2 className="h-3 w-3" />
                   </button>
-                </div>
+                )}
+                <button
+                  onClick={() => useTemplate(t)}
+                  disabled={!t.payload || !activeProjectId}
+                  title={
+                    !activeProjectId
+                      ? "Select a project first"
+                      : !t.payload
+                        ? "Template has no starter contents"
+                        : "Scaffold a copy in the active project"
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-md bg-[var(--blue)] px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Use Template
+                </button>
               </div>
             </article>
           );
