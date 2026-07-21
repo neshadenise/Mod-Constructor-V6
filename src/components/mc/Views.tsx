@@ -2913,30 +2913,75 @@ function AssetsView() {
 
 type ExportItem = {
   id: string;
-  kind: "Career" | "Trait" | "Aspiration" | "Tuning";
+  kind: "Career" | "Trait" | "Aspiration" | "Notification";
   name: string;
   version: string;
   c: string;
 };
 
-const EXPORT_ITEMS: ExportItem[] = [
-  { id: "e1", kind: "Career", name: "Astronaut Overhaul", version: "2.4.1", c: "blue" },
-  { id: "e2", kind: "Career", name: "Marine Biologist", version: "0.4.0", c: "green" },
-  { id: "e3", kind: "Trait", name: "Lucid Dreamer", version: "1.2.0", c: "violet" },
-  { id: "e4", kind: "Trait", name: "Storm Chaser", version: "0.9.0", c: "orange" },
-  { id: "e5", kind: "Aspiration", name: "Trailblazer", version: "1.0.0", c: "teal" },
-  { id: "e6", kind: "Aspiration", name: "Deep Sea Legend", version: "0.5.0", c: "blue" },
-  { id: "e7", kind: "Tuning", name: "Weathercore Patch", version: "0.9.2", c: "orange" },
-];
-
 function ExporterView() {
-  const [packageName, setPackageName] = useState("my_mod_bundle");
-  const [creator, setCreator] = useState("YourName");
-  const [version, setVersion] = useState("1.0.0");
-  const [selected, setSelected] = useState<Set<string>>(new Set(["e1", "e3", "e5"]));
+  const store = useStore();
+  const project = store.state.projects.find((p) => p.id === store.state.activeProjectId) ?? store.state.projects[0];
+
+  // Build export items from the active project's contents.
+  const items: ExportItem[] = useMemo(() => {
+    if (!project) return [];
+    const pid = project.id;
+    const pv = project.version || "0.1.0";
+    const careers = store.state.careers
+      .filter((c) => c.projectId === pid)
+      .map<ExportItem>((c) => ({ id: `career:${c.id}`, kind: "Career", name: c.name, version: pv, c: "blue" }));
+    const traits = store.state.traits
+      .filter((t) => t.projectId === pid)
+      .map<ExportItem>((t) => ({ id: `trait:${t.id}`, kind: "Trait", name: t.name, version: pv, c: "violet" }));
+    const aspirations = store.state.aspirations
+      .filter((a) => a.projectId === pid)
+      .map<ExportItem>((a) => ({ id: `aspiration:${a.id}`, kind: "Aspiration", name: a.name, version: pv, c: "teal" }));
+    const notifications = store.state.notifications
+      .filter((n) => n.projectId === pid)
+      .map<ExportItem>((n) => ({ id: `notification:${n.id}`, kind: "Notification", name: n.name, version: pv, c: "orange" }));
+    return [...careers, ...traits, ...aspirations, ...notifications];
+  }, [project, store.state.careers, store.state.traits, store.state.aspirations, store.state.notifications]);
+
+  const slug = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "bundle";
+  const [packageName, setPackageName] = useState(() => (project ? slug(project.name) : "my_mod_bundle"));
+  const [creator, setCreator] = useState(() => project?.author || "YourName");
+  const [version, setVersion] = useState(() => project?.version || "1.0.0");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bundleMode, setBundleMode] = useState<"single" | "split">("single");
   const [includeAssets, setIncludeAssets] = useState(true);
   const [compressing, setCompressing] = useState(false);
+
+  // When the active project changes, sync fields and default-select everything in it.
+  const lastProjectId = useRef<ID | undefined>(undefined);
+  useEffect(() => {
+    if (!project) {
+      lastProjectId.current = undefined;
+      setSelected(new Set());
+      return;
+    }
+    if (lastProjectId.current !== project.id) {
+      lastProjectId.current = project.id;
+      setPackageName(slug(project.name));
+      setCreator(project.author || "YourName");
+      setVersion(project.version || "1.0.0");
+      setSelected(new Set(items.map((i) => i.id)));
+    }
+  }, [project, items]);
+
+  // Prune selections if items disappear.
+  useEffect(() => {
+    setSelected((prev) => {
+      const valid = new Set(items.map((i) => i.id));
+      let changed = false;
+      const next = new Set<string>();
+      prev.forEach((id) => {
+        if (valid.has(id)) next.add(id);
+        else changed = true;
+      });
+      return changed ? next : prev;
+    });
+  }, [items]);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -2947,17 +2992,22 @@ function ExporterView() {
     });
   }
 
-  const groups: ExportItem["kind"][] = ["Career", "Trait", "Aspiration", "Tuning"];
+  const groups: ExportItem["kind"][] = ["Career", "Trait", "Aspiration", "Notification"];
   const counts = groups.reduce(
     (acc, k) => {
-      acc[k] = EXPORT_ITEMS.filter((i) => i.kind === k && selected.has(i.id)).length;
+      acc[k] = items.filter((i) => i.kind === k && selected.has(i.id)).length;
       return acc;
     },
     {} as Record<ExportItem["kind"], number>,
   );
   const totalSelected = selected.size;
+  const projectAssetCount = project ? store.state.assets.filter((a) => a.projectId === project.id).length : 0;
 
   function build() {
+    if (!project) {
+      toast.error("Select a project first");
+      return;
+    }
     if (totalSelected === 0) {
       toast.error("Select at least one item to export");
       return;
@@ -2991,6 +3041,24 @@ function ExporterView() {
         }
       />
 
+      {project ? (
+        <div className="flex items-center gap-2 rounded-md border border-border bg-background/60 px-3 py-2 text-[11px]">
+          <span className="text-muted-foreground">Exporting from project</span>
+          <span className="font-semibold">{project.name}</span>
+          <span className="font-mono text-muted-foreground">v{project.version}</span>
+          {project.isDemo && (
+            <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide">Demo</span>
+          )}
+          <span className="ml-auto text-muted-foreground">
+            {items.length} items · {projectAssetCount} assets
+          </span>
+        </div>
+      ) : (
+        <div className="rounded-md border border-border bg-background/60 px-3 py-2 text-[11px] text-muted-foreground">
+          No project selected. Open Projects to create or activate one.
+        </div>
+      )}
+
       <div className="grid grid-cols-[1fr_320px] gap-4">
         <div className="space-y-4">
           <Card
@@ -2999,7 +3067,7 @@ function ExporterView() {
               <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                 <span>{totalSelected} selected</span>
                 <button
-                  onClick={() => setSelected(new Set(EXPORT_ITEMS.map((i) => i.id)))}
+                  onClick={() => setSelected(new Set(items.map((i) => i.id)))}
                   className="rounded px-1.5 py-0.5 hover:bg-accent"
                 >
                   Select all
@@ -3014,66 +3082,72 @@ function ExporterView() {
             }
           >
             <p className="mb-3 text-[11px] text-muted-foreground">
-              Combine multiple careers, traits, aspirations, or tuning items into a single{" "}
-              <span className="font-mono">.package</span>. Uncheck anything you don't want in the
-              build.
+              Combine careers, traits, aspirations, or notifications from{" "}
+              <span className="font-semibold">{project?.name ?? "the active project"}</span> into a single{" "}
+              <span className="font-mono">.package</span>. Uncheck anything you don't want in the build.
             </p>
-            <div className="space-y-4">
-              {groups.map((k) => {
-                const items = EXPORT_ITEMS.filter((i) => i.kind === k);
-                if (items.length === 0) return null;
-                return (
-                  <div key={k}>
-                    <div className="mb-1.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      <span>{k}s</span>
-                      <span className="rounded-full bg-accent px-1.5 py-0.5 tabular-nums">
-                        {counts[k]}/{items.length}
-                      </span>
-                    </div>
-                    <ul className="space-y-1">
-                      {items.map((it) => {
-                        const on = selected.has(it.id);
-                        return (
-                          <li
-                            key={it.id}
-                            className={cn(
-                              "flex items-center gap-2 rounded-md border px-2.5 py-2 text-xs transition-colors",
-                              on
-                                ? "border-[var(--blue)]/50 bg-[var(--blue)]/5"
-                                : "border-border bg-background/60 hover:bg-accent/40",
-                            )}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={on}
-                              onChange={() => toggle(it.id)}
-                              className="h-3.5 w-3.5 accent-[var(--blue)]"
-                            />
-                            <div
-                              className="h-5 w-1 rounded"
-                              style={{ backgroundColor: `var(--${it.c})` }}
-                            />
-                            <span className="flex-1 font-semibold">{it.name}</span>
-                            <span className="font-mono text-[10px] text-muted-foreground">
-                              v{it.version}
-                            </span>
-                            <span
-                              className="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase"
-                              style={{
-                                color: `var(--${it.c})`,
-                                backgroundColor: `color-mix(in oklab, var(--${it.c}) 12%, transparent)`,
-                              }}
+            {items.length === 0 ? (
+              <div className="rounded-md border border-dashed border-border p-6 text-center text-[11px] text-muted-foreground">
+                This project has no careers, traits, aspirations, or notifications yet.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {groups.map((k) => {
+                  const groupItems = items.filter((i) => i.kind === k);
+                  if (groupItems.length === 0) return null;
+                  return (
+                    <div key={k}>
+                      <div className="mb-1.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        <span>{k}s</span>
+                        <span className="rounded-full bg-accent px-1.5 py-0.5 tabular-nums">
+                          {counts[k]}/{groupItems.length}
+                        </span>
+                      </div>
+                      <ul className="space-y-1">
+                        {groupItems.map((it) => {
+                          const on = selected.has(it.id);
+                          return (
+                            <li
+                              key={it.id}
+                              className={cn(
+                                "flex items-center gap-2 rounded-md border px-2.5 py-2 text-xs transition-colors",
+                                on
+                                  ? "border-[var(--blue)]/50 bg-[var(--blue)]/5"
+                                  : "border-border bg-background/60 hover:bg-accent/40",
+                              )}
                             >
-                              {it.kind}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                );
-              })}
-            </div>
+                              <input
+                                type="checkbox"
+                                checked={on}
+                                onChange={() => toggle(it.id)}
+                                className="h-3.5 w-3.5 accent-[var(--blue)]"
+                              />
+                              <div
+                                className="h-5 w-1 rounded"
+                                style={{ backgroundColor: `var(--${it.c})` }}
+                              />
+                              <span className="flex-1 font-semibold">{it.name}</span>
+                              <span className="font-mono text-[10px] text-muted-foreground">
+                                v{it.version}
+                              </span>
+                              <span
+                                className="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase"
+                                style={{
+                                  color: `var(--${it.c})`,
+                                  backgroundColor: `color-mix(in oklab, var(--${it.c}) 12%, transparent)`,
+                                }}
+                              >
+                                {it.kind}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </Card>
         </div>
 
@@ -3142,6 +3216,11 @@ function ExporterView() {
                 className="accent-[var(--blue)]"
               />
               Include linked assets & strings
+              {project && (
+                <span className="ml-auto text-[10px] text-muted-foreground">
+                  {projectAssetCount} in project
+                </span>
+              )}
             </label>
           </Card>
 
@@ -3156,11 +3235,11 @@ function ExporterView() {
                 </div>
               ) : (
                 <div className="space-y-0.5">
-                  {EXPORT_ITEMS.filter((i) => selected.has(i.id)).map((i) => (
+                  {items.filter((i) => selected.has(i.id)).map((i) => (
                     <div key={i.id}>
                       📦{" "}
                       <span className="font-semibold">
-                        {creator.toLowerCase()}_{i.name.toLowerCase().replace(/\s+/g, "_")}.package
+                        {slug(creator)}_{slug(i.name)}.package
                       </span>
                     </div>
                   ))}
@@ -3176,6 +3255,7 @@ function ExporterView() {
     </div>
   );
 }
+
 
 
 /* ---------- Validation ---------- */
