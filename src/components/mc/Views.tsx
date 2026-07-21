@@ -90,6 +90,7 @@ import { DependencyGraph } from "./views/DependencyGraph";
 import { ActivityTimeline } from "./views/ActivityTimeline";
 import { BuildAnalytics } from "./views/BuildAnalytics";
 import { UpdateCenter } from "./views/UpdateCenter";
+import { CreditsContent } from "./CreditsContent";
 
 /* ---------- Shared shell for builder pages ---------- */
 
