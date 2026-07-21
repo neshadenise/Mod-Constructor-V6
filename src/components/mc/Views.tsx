@@ -802,12 +802,12 @@ function SettingsView() {
       </Card>
 
       <div className="grid grid-cols-12 gap-4">
-        <Card title="Sims 4 Installation" className="col-span-6">
-          <Field label="Game Path" value="C:\\Program Files\\Electronic Arts\\The Sims 4" />
-          <div className="mt-3" />
-          <Field label="Mods Folder" value="%USERPROFILE%\\Documents\\Electronic Arts\\The Sims 4\\Mods" />
-          <div className="mt-3" />
-          <Field label="Detected Version" value="1.108.318" hint="Auto-detected · offline" />
+        <Card
+          title="Sims 4 Installation"
+          className="col-span-6"
+          action={<OsBadge />}
+        >
+          <InstallPaths />
         </Card>
 
         <Card title="lot51.cc Sync" className="col-span-6">
