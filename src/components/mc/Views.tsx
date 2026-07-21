@@ -3427,12 +3427,10 @@ function ImageProviderCard() {
 }
 
 function McpToolsCard() {
-  const groups = MCP_TOOL_DEFS.reduce<Record<string, typeof MCP_TOOL_DEFS>>((acc, t) => {
-    (acc[t.category] ||= [] as typeof MCP_TOOL_DEFS)[
-      (acc[t.category] ||= [] as typeof MCP_TOOL_DEFS).length as number
-    ] = t;
-    return acc;
-  }, {});
+  const groups: Record<string, typeof MCP_TOOL_DEFS[number][]> = {};
+  for (const t of MCP_TOOL_DEFS) {
+    (groups[t.category] ||= []).push(t);
+  }
   return (
     <Card
       title="MCP Tools exposed to ChatGPT"
