@@ -3184,9 +3184,17 @@ function InstallPaths() {
 
 function SettingsView() {
   const { advanced, toggle: toggleAdvanced } = useAdvanced();
+  const host = useAppHost();
   return (
     <div className="space-y-4">
       <PageHeader icon={SettingsIcon} subtitle="Application" title="Settings" accent="violet" />
+
+      <HostModeCard />
+
+      <ImageProviderCard />
+
+      {host.isChatGPT && <McpToolsCard />}
+
 
       <Card
         title="Interface Mode"
