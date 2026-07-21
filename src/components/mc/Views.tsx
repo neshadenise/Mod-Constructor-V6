@@ -36,6 +36,11 @@ import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
 import { CopyToMenu } from "./CopyToMenu";
 import type { SectionId } from "./sections";
+import { PreviewSplit } from "./preview/PreviewShell";
+import { CareerPreview, type CareerPreviewData } from "./preview/CareerPreview";
+import { TraitPreview, type TraitPreviewData } from "./preview/TraitPreview";
+import { AspirationPreview, type AspirationPreviewData } from "./preview/AspirationPreview";
+import { NotificationLibrary } from "./preview/NotificationLibrary";
 
 /* ---------- Shared shell for builder pages ---------- */
 
