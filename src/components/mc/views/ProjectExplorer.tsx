@@ -168,9 +168,9 @@ function TreeRow({
   );
 }
 
-function findNode(id: string | null): Node | null {
+function findNode(tree: Node[], id: string | null): Node | null {
   if (!id) return null;
-  const stack = [...TREE];
+  const stack = [...tree];
   while (stack.length) {
     const n = stack.pop()!;
     if (n.id === id) return n;
@@ -180,22 +180,48 @@ function findNode(id: string | null): Node | null {
 }
 
 export function ProjectExplorer() {
+  const store = useStore();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
-  const [selected, setSelected] = useState<string | null>("p1-c1");
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({
-    p1: true,
-    p2: true,
-    p3: false,
-    p4: false,
-  });
+  const [selected, setSelected] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  const tree: Node[] = useMemo(() => {
+    const s = store.state;
+    return s.projects.map((p) => {
+      const children: Node[] = [
+        ...s.careers.filter((c) => c.projectId === p.id).map<Node>((c) => ({
+          id: c.id, name: c.name, kind: "career", status: "draft", updated: fmtAgo(p.updatedAt),
+        })),
+        ...s.traits.filter((t) => t.projectId === p.id).map<Node>((t) => ({
+          id: t.id, name: t.name, kind: "trait", status: "draft", updated: fmtAgo(p.updatedAt),
+        })),
+        ...s.aspirations.filter((a) => a.projectId === p.id).map<Node>((a) => ({
+          id: a.id, name: a.name, kind: "aspiration", status: "draft", updated: fmtAgo(p.updatedAt),
+        })),
+        ...s.notifications.filter((n) => n.projectId === p.id).map<Node>((n) => ({
+          id: n.id, name: n.name, kind: "notification", status: "draft", updated: fmtAgo(p.updatedAt),
+        })),
+        ...s.assets.filter((a) => a.projectId === p.id).map<Node>((a) => ({
+          id: a.id, name: a.name, kind: "asset", updated: fmtAgo(p.updatedAt),
+        })),
+      ];
+      return {
+        id: p.id,
+        name: p.name,
+        updated: fmtAgo(p.updatedAt),
+        favorite: p.favorite,
+        children,
+      };
+    });
+  }, [store.state]);
 
   const filtered = useMemo(
-    () => TREE.filter((p) => matches(p, query, filter)),
-    [query, filter],
+    () => tree.filter((p) => matches(p, query, filter)),
+    [tree, query, filter],
   );
 
-  const active = findNode(selected);
+  const active = findNode(tree, selected);
   const activeKind = active?.kind ? KIND_META[active.kind] : null;
   const activeStatus = active?.status ? STATUS_META[active.status] : null;
 
