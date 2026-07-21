@@ -114,6 +114,13 @@ export interface StoreAPI {
   deleteProject: (id: ID) => void;
   duplicateProject: (id: ID) => Project | null;
   setActiveProject: (id: ID | undefined) => void;
+  /** Change lifecycle status; auto-appends a changelog entry on milestones. */
+  setProjectStatus: (id: ID, status: import("./types").ProjectStatus, notes?: string) => void;
+  /** Change the version string (user-editable). Optionally attach notes. */
+  setProjectVersion: (id: ID, version: string, notes?: string) => void;
+  /** Append an arbitrary changelog entry to a project. */
+  addChangelogEntry: (id: ID, entry: { version?: string; status?: import("./types").ProjectStatus; notes: string }) => void;
+
 
   // Careers
   createCareer: (init: Partial<Career> & { projectId: ID; name: string }) => Career;
