@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
 
 export function Dashboard() {
+  const { advanced } = useAdvanced();
   return (
     <div className="mx-auto max-w-[1600px] space-y-5 p-6">
       <div className="flex items-end justify-between">
@@ -65,20 +66,25 @@ export function Dashboard() {
         <div className="col-span-8 space-y-4">
           <SectionCard
             title="Constructor Canvas"
-            subtitle="Drag nodes, connect flows. Selected: Tuning XML"
+            subtitle={advanced ? "Drag nodes, connect flows. Selected: Tuning XML" : "How the parts of your mod fit together"}
             icon={Layers3}
             accent="blue"
-            action="Fit to view"
+            action={advanced ? "Fit to view" : undefined}
           >
             <Canvas />
           </SectionCard>
 
-          <div className="grid grid-cols-2 gap-4">
+          {advanced ? (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <ValidationResults />
+                <DependencyChecker />
+              </div>
+              <BuildLog />
+            </>
+          ) : (
             <ValidationResults />
-            <DependencyChecker />
-          </div>
-
-          <BuildLog />
+          )}
         </div>
 
         <div className="col-span-4 space-y-4">
@@ -90,7 +96,7 @@ export function Dashboard() {
       </div>
 
       <footer className="pt-2 text-center text-[11px] text-muted-foreground">
-        Mod Constructor V6 · UI Prototype · Portable to WPF/.NET Framework
+        Mod Constructor V6 · Desktop Edition · {advanced ? "Advanced mode" : "Simple mode"}
       </footer>
     </div>
   );
