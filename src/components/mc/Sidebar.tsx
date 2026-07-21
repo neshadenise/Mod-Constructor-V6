@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   FolderKanban,
+  FolderTree,
   Briefcase,
   Sparkles,
   Target,
@@ -13,6 +14,7 @@ import {
   Wrench,
   Bell,
   Package,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
@@ -30,6 +32,9 @@ type Item = {
 export const SIDEBAR_ITEMS: Item[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, group: "workspace" },
   { id: "projects", label: "Projects", icon: FolderKanban, badge: "12", group: "workspace" },
+  { id: "explorer", label: "Project Explorer", icon: FolderTree, group: "workspace" },
+  { id: "reference", label: "Reference", icon: BookOpen, group: "workspace" },
+
   { id: "career", label: "Career Builder", icon: Briefcase, group: "builders" },
   { id: "trait", label: "Trait Builder", icon: Sparkles, group: "builders" },
   { id: "aspiration", label: "Aspiration Builder", icon: Target, group: "builders" },
@@ -41,7 +46,7 @@ export const SIDEBAR_ITEMS: Item[] = [
 
   // Advanced-only
   { id: "tuning", label: "Tuning Editor", icon: Sliders, group: "advanced", advanced: true },
-  { id: "validation", label: "Validation", icon: ShieldCheck, badge: "3", group: "advanced", advanced: true },
+  { id: "validation", label: "Validation Center", icon: ShieldCheck, badge: "3", group: "advanced", advanced: true },
 ];
 
 
