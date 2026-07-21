@@ -24,6 +24,7 @@ import { Canvas } from "./Canvas";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useAdvanced } from "@/lib/advanced-mode";
 
 export function Dashboard() {
   return (
