@@ -361,6 +361,7 @@ function CareerBuilder() {
 /* ---------- Trait Builder ---------- */
 
 function TraitBuilder() {
+  const { advanced } = useAdvanced();
   return (
     <div className="space-y-4">
       <PageHeader
@@ -381,8 +382,8 @@ function TraitBuilder() {
           <div className="grid grid-cols-2 gap-3">
             <Field label="Trait Name" value="Lucid Dreamer" />
             <Field label="Category" value="Emotional" />
-            <Field label="Internal ID" value="trait_lucid_dreamer" />
-            <Field label="Icon Reference" value="ic_trait_lucid.png" />
+            {advanced && <Field label="Internal ID" value="trait_lucid_dreamer" />}
+            {advanced && <Field label="Icon Reference" value="ic_trait_lucid.png" />}
             <div className="col-span-2">
               <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Description
