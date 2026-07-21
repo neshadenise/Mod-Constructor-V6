@@ -73,6 +73,9 @@
   --green: oklch(0.72 0.15 155);
   --orange: oklch(0.72 0.17 55);
   --violet: oklch(0.62 0.19 300);
+  --red: oklch(0.62 0.22 27);
+  --pink: oklch(0.72 0.17 350);
+  --yellow: oklch(0.82 0.14 90);
 
   --sidebar: oklch(0.985 0.004 240);
   --sidebar-foreground: oklch(0.22 0.03 250);
