@@ -11,6 +11,7 @@ import {
   Settings,
   Hammer,
   Wrench,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
