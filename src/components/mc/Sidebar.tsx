@@ -11,6 +11,7 @@ import {
   Settings,
   Hammer,
   Wrench,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
@@ -31,6 +32,7 @@ export const SIDEBAR_ITEMS: Item[] = [
   { id: "career", label: "Career Builder", icon: Briefcase, group: "builders" },
   { id: "trait", label: "Trait Builder", icon: Sparkles, group: "builders" },
   { id: "aspiration", label: "Aspiration Builder", icon: Target, group: "builders" },
+  { id: "notifications", label: "Notification Library", icon: Bell, group: "builders" },
   { id: "assets", label: "Assets", icon: Boxes, badge: "48", group: "builders" },
   { id: "queue", label: "Build Queue", icon: ListChecks, badge: "2", group: "builders" },
   { id: "settings", label: "Settings", icon: Settings, group: "builders" },

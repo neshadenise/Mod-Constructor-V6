@@ -36,6 +36,11 @@ import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
 import { CopyToMenu } from "./CopyToMenu";
 import type { SectionId } from "./sections";
+import { PreviewSplit } from "./preview/PreviewShell";
+import { CareerPreview, type CareerPreviewData } from "./preview/CareerPreview";
+import { TraitPreview, type TraitPreviewData } from "./preview/TraitPreview";
+import { AspirationPreview, type AspirationPreviewData } from "./preview/AspirationPreview";
+import { NotificationLibrary } from "./preview/NotificationLibrary";
 
 /* ---------- Shared shell for builder pages ---------- */
 
@@ -290,10 +295,41 @@ function CareerBuilder() {
   const [name, setName] = useState("Interstellar Navigator");
   const [track, setTrack] = useState("Astronaut");
   const [salary, setSalary] = useState("4280");
+  const [description, setDescription] = useState(
+    "Chart deep-space routes and command the fleet. Requires strong Logic and Fitness.",
+  );
+  const [hours, setHours] = useState("09:00 → 17:00");
+  const [days, setDays] = useState("Mon – Fri");
   const [branch, setBranch] = useState<keyof typeof CAREER_BRANCHES>("Astronaut");
   const data = CAREER_BRANCHES[branch];
 
-  return (
+  const previewData: CareerPreviewData = {
+    name,
+    description,
+    track,
+    salary,
+    hours,
+    days,
+    emoji: "🚀",
+    color: "blue",
+    activeBranch: branch as string,
+    branches: (Object.keys(CAREER_BRANCHES) as (keyof typeof CAREER_BRANCHES)[]).map((b) => ({
+      key: b as string,
+      name: b as string,
+      description: b === branch ? description : `${b} branch of ${name}.`,
+      color: b === "Astronaut" ? "blue" : "violet",
+      emoji: b === "Astronaut" ? "🚀" : "🛰️",
+      ranks: CAREER_BRANCHES[b].ranks.map((r) => ({
+        lvl: r.lvl,
+        title: r.title,
+        req: r.req,
+        pay: r.pay.replace(/[§,]/g, ""),
+      })),
+      perks: CAREER_BRANCHES[b].perks,
+    })),
+  };
+
+  const editor = (
     <div className="space-y-4">
       <PageHeader
         icon={Briefcase}
@@ -313,11 +349,10 @@ function CareerBuilder() {
 
       {!advanced && (
         <div className="rounded-lg border border-[var(--blue)]/25 bg-[var(--blue)]/5 px-3 py-2 text-[11px] text-muted-foreground">
-          Fill out the name, salary, and rank titles. Everything else is handled for you — enable Advanced mode if you want to edit IDs or raw XML.
+          Fill out the name, salary, and rank titles. The Live Preview on the right updates as you type.
         </div>
       )}
 
-      {/* Branch tab strip */}
       <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 p-1">
         {(Object.keys(CAREER_BRANCHES) as (keyof typeof CAREER_BRANCHES)[]).map((b) => (
           <button
@@ -341,107 +376,131 @@ function CareerBuilder() {
         </button>
       </div>
 
-      <div className="grid grid-cols-12 gap-4">
-        <Card title="Career Identity" className="col-span-7">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Career Name" value={name} onChange={setName} />
-            <Field label="Track" value={track} onChange={setTrack} hint="Astronaut · Business · Culinary…" />
-            {advanced && (
-              <Field label="Internal ID" value="career_interstellar_navigator" hint="Snake_case, must be unique" />
-            )}
-            <Field label="Category" value="Technical" />
-            <div>
-              <Field label="Base Salary (§)" value={salary} onChange={setSalary} />
-              <div className="mt-1 flex justify-end">
-                <CopyToMenu what="salary & hours" label="Copy salary & hours to…" />
-              </div>
-            </div>
-            <Field label="Work Hours" value="09:00 → 17:00" />
-            <div className="col-span-2">
-              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Description
-              </label>
-              <Textarea
-                defaultValue="Chart deep-space routes and command the fleet. Requires strong Logic and Fitness."
-                className="h-20 resize-none text-xs"
-              />
+      <Card title="Career Identity">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Career Name" value={name} onChange={setName} />
+          <Field label="Track" value={track} onChange={setTrack} hint="Astronaut · Business · Culinary…" />
+          {advanced && <Field label="Internal ID" value="career_interstellar_navigator" hint="Snake_case, must be unique" />}
+          <Field label="Category" value="Technical" />
+          <div>
+            <Field label="Base Salary (§)" value={salary} onChange={setSalary} />
+            <div className="mt-1 flex justify-end">
+              <CopyToMenu what="salary & hours" label="Copy salary & hours to…" />
             </div>
           </div>
-        </Card>
+          <Field label="Work Hours" value={hours} onChange={setHours} />
+          <Field label="Work Days" value={days} onChange={setDays} />
+          <div className="col-span-2">
+            <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Description
+            </label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="h-20 resize-none text-xs"
+            />
+          </div>
+        </div>
+      </Card>
 
-        <Card
-          title={`Promotion Track · ${branch}`}
-          className="col-span-5"
-          action={<CopyToMenu what={`${branch} branch`} label="Copy branch to…" />}
-        >
-          <ol className="space-y-1.5 text-xs">
-            {data.ranks.map((r) => (
-              <li
-                key={r.lvl}
-                className="group flex items-center gap-2 rounded-md border border-border bg-background/60 px-2.5 py-1.5"
-              >
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--blue)]/15 text-[10px] font-bold text-[var(--blue)]">
-                  {r.lvl}
-                </span>
-                <span className="flex-1 font-medium">{r.title}</span>
-                <span className="font-mono text-[11px] text-muted-foreground">{r.req}</span>
-                <span className="font-mono font-semibold">{r.pay}</span>
-                <span className="opacity-0 transition-opacity group-hover:opacity-100">
-                  <CopyToMenu what={`rank "${r.title}"`} compact />
-                </span>
-              </li>
-            ))}
-          </ol>
-          <button className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent">
-            <Plus className="h-3 w-3" /> Add Rank
-          </button>
-        </Card>
+      <Card
+        title={`Promotion Track · ${branch}`}
+        action={<CopyToMenu what={`${branch} branch`} label="Copy branch to…" />}
+      >
+        <ol className="space-y-1.5 text-xs">
+          {data.ranks.map((r) => (
+            <li
+              key={r.lvl}
+              className="group flex items-center gap-2 rounded-md border border-border bg-background/60 px-2.5 py-1.5"
+            >
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--blue)]/15 text-[10px] font-bold text-[var(--blue)]">
+                {r.lvl}
+              </span>
+              <span className="flex-1 font-medium">{r.title}</span>
+              <span className="font-mono text-[11px] text-muted-foreground">{r.req}</span>
+              <span className="font-mono font-semibold">{r.pay}</span>
+              <span className="opacity-0 transition-opacity group-hover:opacity-100">
+                <CopyToMenu what={`rank "${r.title}"`} compact />
+              </span>
+            </li>
+          ))}
+        </ol>
+        <button className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent">
+          <Plus className="h-3 w-3" /> Add Rank
+        </button>
+      </Card>
 
-        <Card
-          title="Perks & Rewards"
-          className={advanced ? "col-span-6" : "col-span-12"}
-          action={<CopyToMenu what="all perks" label="Copy all perks to…" />}
-        >
-          <ul className="space-y-1.5 text-xs">
-            {data.perks.map((p) => (
-              <li key={p.name} className="group flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-[var(--violet)]" />
-                <span className="flex-1">{p.name}</span>
-                <span className="rounded bg-background px-1.5 py-0.5 font-mono text-[10px]">Tier {p.tier}</span>
-                <span className="opacity-0 transition-opacity group-hover:opacity-100">
-                  <CopyToMenu what={`perk "${p.name}"`} compact />
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
+      <Card title="Perks & Rewards" action={<CopyToMenu what="all perks" label="Copy all perks to…" />}>
+        <ul className="space-y-1.5 text-xs">
+          {data.perks.map((p) => (
+            <li key={p.name} className="group flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-[var(--violet)]" />
+              <span className="flex-1">{p.name}</span>
+              <span className="rounded bg-background px-1.5 py-0.5 font-mono text-[10px]">Tier {p.tier}</span>
+              <span className="opacity-0 transition-opacity group-hover:opacity-100">
+                <CopyToMenu what={`perk "${p.name}"`} compact />
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Card>
 
-
-        {advanced && (
-          <Card title="XML Output" className="col-span-6">
-            <pre className="max-h-56 overflow-auto rounded-md border border-border bg-[color-mix(in_oklab,var(--foreground)_4%,var(--card))] p-3 font-mono text-[10.5px] leading-relaxed text-foreground/85">
+      {advanced && (
+        <Card title="XML Output">
+          <pre className="max-h-56 overflow-auto rounded-md border border-border bg-[color-mix(in_oklab,var(--foreground)_4%,var(--card))] p-3 font-mono text-[10.5px] leading-relaxed text-foreground/85">
 {`<Career id="0xA112E8" name="career_interstellar_navigator">
-  <Track>Astronaut</Track>
-  <Salary>4280</Salary>
+  <Track>${track}</Track>
+  <Salary>${salary}</Salary>
   <Hours start="09:00" end="17:00" />
-  <Ranks count="5">
-    <Rank level="1" title="Junior Cadet" pay="420" />
-    <Rank level="5" title="Admiral" pay="4280" req="Logic 9, Fitness 7" />
-  </Ranks>
 </Career>`}
-            </pre>
-          </Card>
-        )}
-      </div>
+          </pre>
+        </Card>
+      )}
     </div>
   );
+
+  return <PreviewSplit editor={editor} preview={<CareerPreview data={previewData} />} />;
 }
 
 /* ---------- Trait Builder ---------- */
 
 function TraitBuilder() {
   const { advanced } = useAdvanced();
-  return (
+  const [name, setName] = useState("Lucid Dreamer");
+  const [category, setCategory] = useState("Emotional");
+  const [description, setDescription] = useState(
+    "This Sim experiences vivid dreams that grant temporary skill boosts on waking.",
+  );
+  const [buffs, setBuffs] = useState([
+    { name: "Well-Rested Focus", dur: "6h", mood: "Focused", strength: 2, color: "blue", icon: "🎯" },
+    { name: "Dream Recall", dur: "3h", mood: "Inspired", strength: 1, color: "violet", icon: "💭" },
+    { name: "Foggy Morning", dur: "2h", mood: "Tense", strength: 1, color: "orange", icon: "🌫️" },
+  ]);
+
+  const previewData: TraitPreviewData = {
+    name,
+    description,
+    category,
+    emoji: "✨",
+    color: "violet",
+    buffs: buffs.map((b) => ({
+      name: b.name,
+      mood: `${b.mood} +${b.strength}`,
+      duration: b.dur,
+      color: b.color,
+      icon: b.icon,
+      description: `Triggered by ${name}. Adds ${b.mood} for ${b.dur}.`,
+    })),
+    effects: [
+      "Boosts skill gain when waking up rested",
+      "Occasional Inspired moodlet after long naps",
+      "Small chance to talk about dreams autonomously",
+    ],
+    autonomy:
+      "Sims with this trait will occasionally nap during the day and share dream stories with friends.",
+  };
+
+  const editor = (
     <div className="space-y-4">
       <PageHeader
         icon={Sparkles}
@@ -456,79 +515,122 @@ function TraitBuilder() {
           </>
         }
       />
-      <div className="grid grid-cols-12 gap-4">
-        <Card title="Trait Definition" className="col-span-7">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Trait Name" value="Lucid Dreamer" />
-            <Field label="Category" value="Emotional" />
-            {advanced && <Field label="Internal ID" value="trait_lucid_dreamer" />}
-            {advanced && <Field label="Icon Reference" value="ic_trait_lucid.png" />}
-            <div className="col-span-2">
-              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Description
-              </label>
-              <Textarea
-                defaultValue="This Sim experiences vivid dreams that grant temporary skill boosts on waking."
-                className="h-16 resize-none text-xs"
-              />
-            </div>
-          </div>
 
-          <div className="mt-4">
-            <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Conflicts With
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {["Insomniac", "Hot-Headed", "Gloomy"].map((t) => (
-                <span
-                  key={t}
-                  className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10px] font-medium"
-                >
-                  ⊘ {t}
-                </span>
-              ))}
-              <button className="rounded-full border border-dashed border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-accent">
-                + Add
-              </button>
-            </div>
+      <Card title="Trait Definition">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Trait Name" value={name} onChange={setName} />
+          <Field label="Category" value={category} onChange={setCategory} />
+          {advanced && <Field label="Internal ID" value="trait_lucid_dreamer" />}
+          {advanced && <Field label="Icon Reference" value="ic_trait_lucid.png" />}
+          <div className="col-span-2">
+            <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Description
+            </label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="h-16 resize-none text-xs"
+            />
           </div>
-        </Card>
+        </div>
 
-        <Card
-          title="Buffs & Moodlets"
-          className="col-span-5"
-          action={<CopyToMenu what="all buffs" label="Copy buffs to…" disallowBranches />}
-        >
-          <ul className="space-y-1.5 text-xs">
-            {[
-              { name: "Well-Rested Focus", dur: "6h", mood: "Focused +2", c: "blue" },
-              { name: "Dream Recall", dur: "3h", mood: "Inspired +1", c: "violet" },
-              { name: "Foggy Morning", dur: "2h", mood: "Tense +1", c: "orange" },
-            ].map((b) => (
-              <li key={b.name} className="rounded-md border border-border bg-background/60 p-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">{b.name}</span>
-                  <span className="font-mono text-[10px] text-muted-foreground">{b.dur}</span>
-                </div>
-                <div className="mt-0.5 text-[10.5px]" style={{ color: `var(--${b.c})` }}>
-                  {b.mood}
-                </div>
-              </li>
+        <div className="mt-4">
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Conflicts With
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {["Insomniac", "Hot-Headed", "Gloomy"].map((t) => (
+              <span key={t} className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10px] font-medium">
+                ⊘ {t}
+              </span>
             ))}
-          </ul>
-          <button className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent">
-            <Plus className="h-3 w-3" /> Add Buff
-          </button>
-        </Card>
-      </div>
+            <button className="rounded-full border border-dashed border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-accent">
+              + Add
+            </button>
+          </div>
+        </div>
+      </Card>
+
+      <Card
+        title="Buffs & Moodlets"
+        action={<CopyToMenu what="all buffs" label="Copy buffs to…" disallowBranches />}
+      >
+        <ul className="space-y-1.5 text-xs">
+          {buffs.map((b, i) => (
+            <li key={b.name + i} className="rounded-md border border-border bg-background/60 p-2">
+              <div className="grid grid-cols-[1fr_5rem_5rem] gap-2">
+                <Input
+                  value={b.name}
+                  onChange={(e) =>
+                    setBuffs((prev) => prev.map((x, xi) => (xi === i ? { ...x, name: e.target.value } : x)))
+                  }
+                  className="h-7 text-xs"
+                />
+                <Input
+                  value={b.mood}
+                  onChange={(e) =>
+                    setBuffs((prev) => prev.map((x, xi) => (xi === i ? { ...x, mood: e.target.value } : x)))
+                  }
+                  className="h-7 text-xs"
+                />
+                <Input
+                  value={b.dur}
+                  onChange={(e) =>
+                    setBuffs((prev) => prev.map((x, xi) => (xi === i ? { ...x, dur: e.target.value } : x)))
+                  }
+                  className="h-7 text-xs"
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+        <button
+          onClick={() =>
+            setBuffs((prev) => [...prev, { name: "New Buff", dur: "2h", mood: "Happy", strength: 1, color: "green", icon: "🙂" }])
+          }
+          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent"
+        >
+          <Plus className="h-3 w-3" /> Add Buff
+        </button>
+      </Card>
     </div>
   );
+
+  return <PreviewSplit editor={editor} preview={<TraitPreview data={previewData} />} />;
 }
 
 /* ---------- Aspiration Builder ---------- */
 
 function AspirationBuilder() {
-  return (
+  const [name, setName] = useState("Trailblazer");
+  const [category, setCategory] = useState("Adventure");
+  const [rewardTrait, setRewardTrait] = useState("Explorer's Instinct");
+  const [description, setDescription] = useState(
+    "Chart the unknown and become a legend across the map.",
+  );
+  const [tiers, setTiers] = useState([
+    { t: "I", title: "Curious Wanderer", goals: ["Visit 3 lots", "Meet 5 sims"], done: true },
+    { t: "II", title: "Field Journalist", goals: ["Collect 10 artifacts", "Write 2 field notes"], done: true },
+    { t: "III", title: "Named Explorer", goals: ["Discover secret area", "Level Fitness to 6"], done: false },
+    { t: "IV", title: "Legendary Trailblazer", goals: ["Complete 3 expeditions"], done: false },
+  ]);
+
+  const previewData: AspirationPreviewData = {
+    name,
+    category,
+    emoji: "🎯",
+    color: "teal",
+    rewardTrait,
+    description,
+    tiers: tiers.map((tier, i) => ({
+      tier: tier.t,
+      title: tier.title,
+      objectives: tier.goals.map((g, gi) => ({ label: g, done: tier.done || (i === 2 && gi === 0) })),
+      progress: tier.done ? 1 : i === 2 ? 0.4 : 0,
+    })),
+  };
+
+  const editor = (
     <div className="space-y-4">
       <PageHeader
         icon={Target}
@@ -542,59 +644,57 @@ function AspirationBuilder() {
           </>
         }
       />
-      <div className="grid grid-cols-12 gap-4">
-        <Card title="Aspiration" className="col-span-5">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Name" value="Trailblazer" />
-            <Field label="Category" value="Adventure" />
-            <Field label="Bonus Trait" value="Explorer's Instinct" />
-            <Field label="Icon" value="ic_asp_trailblazer.png" />
-          </div>
-          <Textarea
-            defaultValue="Chart the unknown and become a legend across the map."
-            className="mt-3 h-16 resize-none text-xs"
-          />
-        </Card>
+      <Card title="Aspiration">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Name" value={name} onChange={setName} />
+          <Field label="Category" value={category} onChange={setCategory} />
+          <Field label="Bonus Trait" value={rewardTrait} onChange={setRewardTrait} />
+          <Field label="Icon" value="ic_asp_trailblazer.png" />
+        </div>
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="mt-3 h-16 resize-none text-xs"
+        />
+      </Card>
 
-        <Card
-          title="Tiers"
-          className="col-span-7"
-          action={<CopyToMenu what="all tiers & rewards" label="Copy tiers to…" disallowBranches />}
-        >
-          <ol className="space-y-2">
-            {[
-              { t: "I", title: "Curious Wanderer", goals: ["Visit 3 lots", "Meet 5 sims"], done: true },
-              { t: "II", title: "Field Journalist", goals: ["Collect 10 artifacts", "Write 2 field notes"], done: true },
-              { t: "III", title: "Named Explorer", goals: ["Discover secret area", "Level Fitness to 6"], done: false },
-              { t: "IV", title: "Legendary Trailblazer", goals: ["Complete 3 expeditions"], done: false },
-            ].map((tier) => (
-              <li key={tier.t} className="group rounded-md border border-border bg-background/60 p-2.5">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold",
-                      tier.done ? "bg-[var(--green)] text-white" : "border border-border text-muted-foreground",
-                    )}
-                  >
-                    {tier.t}
-                  </span>
-                  <span className="flex-1 font-semibold text-xs">{tier.title}</span>
-                  <span className="opacity-0 transition-opacity group-hover:opacity-100">
-                    <CopyToMenu what={`tier ${tier.t} reward`} compact disallowBranches />
-                  </span>
-                </div>
-                <ul className="mt-1 ml-8 space-y-0.5 text-[11px] text-muted-foreground">
-                  {tier.goals.map((g) => (
-                    <li key={g}>• {g}</li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ol>
-        </Card>
-      </div>
+      <Card title="Tiers" action={<CopyToMenu what="all tiers & rewards" label="Copy tiers to…" disallowBranches />}>
+        <ol className="space-y-2">
+          {tiers.map((tier, i) => (
+            <li key={tier.t} className="group rounded-md border border-border bg-background/60 p-2.5">
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold",
+                    tier.done ? "bg-[var(--green)] text-white" : "border border-border text-muted-foreground",
+                  )}
+                >
+                  {tier.t}
+                </span>
+                <Input
+                  value={tier.title}
+                  onChange={(e) =>
+                    setTiers((prev) => prev.map((x, xi) => (xi === i ? { ...x, title: e.target.value } : x)))
+                  }
+                  className="h-7 flex-1 text-xs font-semibold"
+                />
+                <span className="opacity-0 transition-opacity group-hover:opacity-100">
+                  <CopyToMenu what={`tier ${tier.t} reward`} compact disallowBranches />
+                </span>
+              </div>
+              <ul className="mt-1 ml-8 space-y-0.5 text-[11px] text-muted-foreground">
+                {tier.goals.map((g) => (
+                  <li key={g}>• {g}</li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ol>
+      </Card>
     </div>
   );
+
+  return <PreviewSplit editor={editor} preview={<AspirationPreview data={previewData} />} />;
 }
 
 /* ---------- Tuning Editor ---------- */
@@ -1189,6 +1289,7 @@ export function SectionView({
   if (active === "career") return <div className="mx-auto max-w-[1600px] p-6"><CareerBuilder /></div>;
   if (active === "trait") return <div className="mx-auto max-w-[1600px] p-6"><TraitBuilder /></div>;
   if (active === "aspiration") return <div className="mx-auto max-w-[1600px] p-6"><AspirationBuilder /></div>;
+  if (active === "notifications") return <div className="mx-auto max-w-[1600px] p-6"><NotificationLibrary /></div>;
   if (active === "tuning") return <div className="mx-auto max-w-[1600px] p-6"><TuningEditor /></div>;
   if (active === "assets") return <div className="mx-auto max-w-[1600px] p-6"><AssetsView /></div>;
   if (active === "validation") return <div className="mx-auto max-w-[1600px] p-6"><ValidationView /></div>;
