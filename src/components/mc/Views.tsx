@@ -23,6 +23,11 @@ import {
   FileCode2,
   Save,
   Wand2,
+  FolderSearch,
+  FolderOpen,
+  Radar,
+  Apple,
+  MonitorCog,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
