@@ -773,7 +773,17 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       remap.set(r.id, id);
       return { ...r, id, projectId: r.projectId ? newProjectId : undefined };
     };
-    const importedProject: Project = { ...bundle.project, id: newProjectId, name: `${bundle.project.name} (imported)`, createdAt: now(), updatedAt: now() };
+    const importedProject: Project = {
+      version: "0.1.0",
+      status: "draft",
+      changelog: [],
+      ...bundle.project,
+      id: newProjectId,
+      name: `${bundle.project.name} (imported)`,
+      isDemo: false,
+      createdAt: now(),
+      updatedAt: now(),
+    };
     const importedCareers = bundle.careers.map(cloneRow);
     const importedTraits = bundle.traits.map(cloneRow);
     const importedAspirations = bundle.aspirations.map(cloneRow);
