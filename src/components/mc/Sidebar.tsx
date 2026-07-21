@@ -12,6 +12,7 @@ import {
   Hammer,
   Wrench,
   Bell,
+  Package,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
@@ -34,6 +35,7 @@ export const SIDEBAR_ITEMS: Item[] = [
   { id: "aspiration", label: "Aspiration Builder", icon: Target, group: "builders" },
   { id: "notifications", label: "Notification Library", icon: Bell, group: "builders" },
   { id: "assets", label: "Assets", icon: Boxes, badge: "48", group: "builders" },
+  { id: "exporter", label: "Package Exporter", icon: Package, group: "builders" },
   { id: "queue", label: "Build Queue", icon: ListChecks, badge: "2", group: "builders" },
   { id: "settings", label: "Settings", icon: Settings, group: "builders" },
 
@@ -41,6 +43,7 @@ export const SIDEBAR_ITEMS: Item[] = [
   { id: "tuning", label: "Tuning Editor", icon: Sliders, group: "advanced", advanced: true },
   { id: "validation", label: "Validation", icon: ShieldCheck, badge: "3", group: "advanced", advanced: true },
 ];
+
 
 const groups: { key: Item["group"]; label: string; advanced?: boolean }[] = [
   { key: "workspace", label: "Workspace" },

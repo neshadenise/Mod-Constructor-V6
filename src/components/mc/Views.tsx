@@ -25,6 +25,10 @@ import {
   Wand2,
   FolderSearch,
   FolderOpen,
+  FolderPlus,
+  Pencil,
+  Trash2,
+  Package,
   Radar,
   Apple,
   MonitorCog,
@@ -769,17 +773,73 @@ function TuningEditor() {
   );
 }
 
-/* ---------- Assets ---------- */
+/* ---------- Assets (with renameable folders) ---------- */
+
+type AssetFile = { name: string; size: string; kind: string };
+type AssetFolder = { id: string; name: string; files: AssetFile[] };
+
+const INITIAL_FOLDERS: AssetFolder[] = [
+  {
+    id: "f_icons",
+    name: "Icons",
+    files: [
+      { name: "ic_trait_lucid.png", size: "12 KB", kind: "Icon" },
+      { name: "ic_asp_trailblazer.png", size: "16 KB", kind: "Icon" },
+      { name: "moodlet_dream.png", size: "9 KB", kind: "Icon" },
+    ],
+  },
+  {
+    id: "f_textures",
+    name: "Textures",
+    files: [
+      { name: "career_astro_bg.dds", size: "1.4 MB", kind: "Texture" },
+      { name: "loading_astro.dds", size: "2.1 MB", kind: "Texture" },
+    ],
+  },
+  {
+    id: "f_strings",
+    name: "Strings",
+    files: [{ name: "en_US.stbl", size: "8 KB", kind: "Strings" }],
+  },
+];
 
 function AssetsView() {
-  const files = [
-    { name: "ic_trait_lucid.png", size: "12 KB", kind: "Icon" },
-    { name: "ic_asp_trailblazer.png", size: "16 KB", kind: "Icon" },
-    { name: "career_astro_bg.dds", size: "1.4 MB", kind: "Texture" },
-    { name: "en_US.stbl", size: "8 KB", kind: "Strings" },
-    { name: "moodlet_dream.png", size: "9 KB", kind: "Icon" },
-    { name: "loading_astro.dds", size: "2.1 MB", kind: "Texture" },
-  ];
+  const [folders, setFolders] = useState<AssetFolder[]>(INITIAL_FOLDERS);
+  const [activeId, setActiveId] = useState<string>(INITIAL_FOLDERS[0].id);
+  const [renameId, setRenameId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+
+  const active = folders.find((f) => f.id === activeId) ?? folders[0];
+
+  function addFolder() {
+    const id = `f_${Date.now()}`;
+    const name = `New Folder ${folders.length + 1}`;
+    setFolders((prev) => [...prev, { id, name, files: [] }]);
+    setActiveId(id);
+    setRenameId(id);
+    setDraft(name);
+    toast.success("Folder created");
+  }
+
+  function commitRename() {
+    if (!renameId) return;
+    setFolders((prev) =>
+      prev.map((f) => (f.id === renameId ? { ...f, name: draft.trim() || f.name } : f)),
+    );
+    setRenameId(null);
+    toast.success("Folder renamed");
+  }
+
+  function deleteFolder(id: string) {
+    if (folders.length === 1) {
+      toast.error("Keep at least one folder");
+      return;
+    }
+    setFolders((prev) => prev.filter((f) => f.id !== id));
+    if (activeId === id) setActiveId(folders[0].id);
+    toast.success("Folder removed");
+  }
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -789,31 +849,419 @@ function AssetsView() {
         accent="orange"
         actions={
           <>
+            <GhostBtn icon={FolderPlus} onClick={addFolder}>New Folder</GhostBtn>
             <GhostBtn icon={Download}>Export</GhostBtn>
-            <PrimaryBtn icon={Upload} onClick={() => toast.success("2 files imported")}>Import</PrimaryBtn>
+            <PrimaryBtn icon={Upload} onClick={() => toast.success(`2 files imported into ${active.name}`)}>
+              Import
+            </PrimaryBtn>
           </>
         }
       />
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-        {files.map((f) => (
-          <div
-            key={f.name}
-            className="rounded-lg border border-border bg-card p-3 card-elevated hover:border-foreground/20"
+
+      <div className="grid grid-cols-[220px_1fr] gap-4">
+        {/* Folder tree */}
+        <Card title="Folders" className="p-2">
+          <ul className="space-y-0.5">
+            {folders.map((f) => (
+              <li key={f.id} className="group">
+                {renameId === f.id ? (
+                  <div className="flex items-center gap-1 px-1">
+                    <FolderOpen className="h-3.5 w-3.5 text-[var(--orange)]" />
+                    <Input
+                      autoFocus
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      onBlur={commitRename}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitRename();
+                        if (e.key === "Escape") setRenameId(null);
+                      }}
+                      className="h-7 text-xs"
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setActiveId(f.id)}
+                    onDoubleClick={() => {
+                      setRenameId(f.id);
+                      setDraft(f.name);
+                    }}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs",
+                      activeId === f.id
+                        ? "bg-accent font-semibold"
+                        : "hover:bg-accent/60",
+                    )}
+                  >
+                    <FolderOpen
+                      className={cn(
+                        "h-3.5 w-3.5 shrink-0",
+                        activeId === f.id ? "text-[var(--orange)]" : "text-muted-foreground",
+                      )}
+                    />
+                    <span className="flex-1 truncate">{f.name}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                      {f.files.length}
+                    </span>
+                    <span className="hidden gap-0.5 group-hover:flex">
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Rename folder"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRenameId(f.id);
+                          setDraft(f.name);
+                        }}
+                        className="rounded p-0.5 hover:bg-background"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </span>
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Delete folder"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteFolder(f.id);
+                        }}
+                        className="rounded p-0.5 hover:bg-background"
+                      >
+                        <Trash2 className="h-3 w-3 text-[var(--red)]" />
+                      </span>
+                    </span>
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+          <button
+            onClick={addFolder}
+            className="mt-2 flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent/40"
           >
-            <div className="mb-2 flex h-24 items-center justify-center rounded-md bg-gradient-to-br from-[var(--blue)]/10 to-[var(--violet)]/10">
-              <Boxes className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <div className="truncate text-xs font-semibold">{f.name}</div>
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-              <span>{f.kind}</span>
-              <span className="font-mono">{f.size}</span>
-            </div>
+            <FolderPlus className="h-3 w-3" /> Add folder
+          </button>
+          <div className="mt-2 border-t border-border/60 pt-2 text-[10px] text-muted-foreground">
+            Double-click a folder to rename.
           </div>
-        ))}
+        </Card>
+
+        {/* Files in active folder */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-xs">
+            <div className="flex items-center gap-2">
+              <FolderOpen className="h-4 w-4 text-[var(--orange)]" />
+              <span className="font-semibold">{active.name}</span>
+              <span className="text-muted-foreground">· {active.files.length} files</span>
+            </div>
+            <GhostBtn
+              icon={Pencil}
+              onClick={() => {
+                setRenameId(active.id);
+                setDraft(active.name);
+              }}
+            >
+              Rename
+            </GhostBtn>
+          </div>
+
+          {active.files.length === 0 ? (
+            <Card className="p-10 text-center text-xs text-muted-foreground">
+              This folder is empty. Drop files or use Import.
+            </Card>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+              {active.files.map((f) => (
+                <div
+                  key={f.name}
+                  className="rounded-lg border border-border bg-card p-3 card-elevated hover:border-foreground/20"
+                >
+                  <div className="mb-2 flex h-24 items-center justify-center rounded-md bg-gradient-to-br from-[var(--blue)]/10 to-[var(--violet)]/10">
+                    <Boxes className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <div className="truncate text-xs font-semibold">{f.name}</div>
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                    <span>{f.kind}</span>
+                    <span className="font-mono">{f.size}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
+
+/* ---------- Package Exporter (bundle multiple items) ---------- */
+
+type ExportItem = {
+  id: string;
+  kind: "Career" | "Trait" | "Aspiration" | "Tuning";
+  name: string;
+  version: string;
+  c: string;
+};
+
+const EXPORT_ITEMS: ExportItem[] = [
+  { id: "e1", kind: "Career", name: "Astronaut Overhaul", version: "2.4.1", c: "blue" },
+  { id: "e2", kind: "Career", name: "Marine Biologist", version: "0.4.0", c: "green" },
+  { id: "e3", kind: "Trait", name: "Lucid Dreamer", version: "1.2.0", c: "violet" },
+  { id: "e4", kind: "Trait", name: "Storm Chaser", version: "0.9.0", c: "orange" },
+  { id: "e5", kind: "Aspiration", name: "Trailblazer", version: "1.0.0", c: "teal" },
+  { id: "e6", kind: "Aspiration", name: "Deep Sea Legend", version: "0.5.0", c: "blue" },
+  { id: "e7", kind: "Tuning", name: "Weathercore Patch", version: "0.9.2", c: "orange" },
+];
+
+function ExporterView() {
+  const [packageName, setPackageName] = useState("my_mod_bundle");
+  const [creator, setCreator] = useState("YourName");
+  const [version, setVersion] = useState("1.0.0");
+  const [selected, setSelected] = useState<Set<string>>(new Set(["e1", "e3", "e5"]));
+  const [bundleMode, setBundleMode] = useState<"single" | "split">("single");
+  const [includeAssets, setIncludeAssets] = useState(true);
+  const [compressing, setCompressing] = useState(false);
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const groups: ExportItem["kind"][] = ["Career", "Trait", "Aspiration", "Tuning"];
+  const counts = groups.reduce(
+    (acc, k) => {
+      acc[k] = EXPORT_ITEMS.filter((i) => i.kind === k && selected.has(i.id)).length;
+      return acc;
+    },
+    {} as Record<ExportItem["kind"], number>,
+  );
+  const totalSelected = selected.size;
+
+  function build() {
+    if (totalSelected === 0) {
+      toast.error("Select at least one item to export");
+      return;
+    }
+    setCompressing(true);
+    const label =
+      bundleMode === "single"
+        ? `${packageName}.package (${totalSelected} items)`
+        : `${totalSelected} .package files`;
+    toast(`Building ${label}…`);
+    setTimeout(() => {
+      setCompressing(false);
+      toast.success(`Built ${label}`);
+    }, 1600);
+  }
+
+  return (
+    <div className="space-y-4">
+      <PageHeader
+        icon={Package}
+        subtitle="Pipeline"
+        title="Package Exporter"
+        accent="violet"
+        actions={
+          <>
+            <GhostBtn icon={FileCode2}>Preview Manifest</GhostBtn>
+            <PrimaryBtn icon={Download} onClick={build}>
+              {compressing ? "Building…" : "Build Package"}
+            </PrimaryBtn>
+          </>
+        }
+      />
+
+      <div className="grid grid-cols-[1fr_320px] gap-4">
+        <div className="space-y-4">
+          <Card
+            title="Contents"
+            action={
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                <span>{totalSelected} selected</span>
+                <button
+                  onClick={() => setSelected(new Set(EXPORT_ITEMS.map((i) => i.id)))}
+                  className="rounded px-1.5 py-0.5 hover:bg-accent"
+                >
+                  Select all
+                </button>
+                <button
+                  onClick={() => setSelected(new Set())}
+                  className="rounded px-1.5 py-0.5 hover:bg-accent"
+                >
+                  Clear
+                </button>
+              </div>
+            }
+          >
+            <p className="mb-3 text-[11px] text-muted-foreground">
+              Combine multiple careers, traits, aspirations, or tuning items into a single{" "}
+              <span className="font-mono">.package</span>. Uncheck anything you don't want in the
+              build.
+            </p>
+            <div className="space-y-4">
+              {groups.map((k) => {
+                const items = EXPORT_ITEMS.filter((i) => i.kind === k);
+                if (items.length === 0) return null;
+                return (
+                  <div key={k}>
+                    <div className="mb-1.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      <span>{k}s</span>
+                      <span className="rounded-full bg-accent px-1.5 py-0.5 tabular-nums">
+                        {counts[k]}/{items.length}
+                      </span>
+                    </div>
+                    <ul className="space-y-1">
+                      {items.map((it) => {
+                        const on = selected.has(it.id);
+                        return (
+                          <li
+                            key={it.id}
+                            className={cn(
+                              "flex items-center gap-2 rounded-md border px-2.5 py-2 text-xs transition-colors",
+                              on
+                                ? "border-[var(--blue)]/50 bg-[var(--blue)]/5"
+                                : "border-border bg-background/60 hover:bg-accent/40",
+                            )}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={on}
+                              onChange={() => toggle(it.id)}
+                              className="h-3.5 w-3.5 accent-[var(--blue)]"
+                            />
+                            <div
+                              className="h-5 w-1 rounded"
+                              style={{ backgroundColor: `var(--${it.c})` }}
+                            />
+                            <span className="flex-1 font-semibold">{it.name}</span>
+                            <span className="font-mono text-[10px] text-muted-foreground">
+                              v{it.version}
+                            </span>
+                            <span
+                              className="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase"
+                              style={{
+                                color: `var(--${it.c})`,
+                                backgroundColor: `color-mix(in oklab, var(--${it.c}) 12%, transparent)`,
+                              }}
+                            >
+                              {it.kind}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        </div>
+
+        <div className="space-y-4">
+          <Card title="Package Info">
+            <div className="space-y-3">
+              <Field label="Package Name" value={packageName} onChange={setPackageName} />
+              <Field label="Creator" value={creator} onChange={setCreator} />
+              <Field label="Version" value={version} onChange={setVersion} />
+            </div>
+          </Card>
+
+          <Card title="Bundle Mode">
+            <div className="space-y-2 text-xs">
+              <label
+                className={cn(
+                  "flex cursor-pointer items-start gap-2 rounded-md border p-2.5",
+                  bundleMode === "single"
+                    ? "border-[var(--blue)]/60 bg-[var(--blue)]/5"
+                    : "border-border hover:bg-accent/40",
+                )}
+              >
+                <input
+                  type="radio"
+                  checked={bundleMode === "single"}
+                  onChange={() => setBundleMode("single")}
+                  className="mt-0.5 accent-[var(--blue)]"
+                />
+                <div>
+                  <div className="font-semibold">Single .package</div>
+                  <div className="text-[10.5px] text-muted-foreground">
+                    Combine everything into one file — easiest for players.
+                  </div>
+                </div>
+              </label>
+              <label
+                className={cn(
+                  "flex cursor-pointer items-start gap-2 rounded-md border p-2.5",
+                  bundleMode === "split"
+                    ? "border-[var(--blue)]/60 bg-[var(--blue)]/5"
+                    : "border-border hover:bg-accent/40",
+                )}
+              >
+                <input
+                  type="radio"
+                  checked={bundleMode === "split"}
+                  onChange={() => setBundleMode("split")}
+                  className="mt-0.5 accent-[var(--blue)]"
+                />
+                <div>
+                  <div className="font-semibold">One per item</div>
+                  <div className="text-[10.5px] text-muted-foreground">
+                    Separate .package files — players can pick and choose.
+                  </div>
+                </div>
+              </label>
+            </div>
+          </Card>
+
+          <Card title="Options">
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={includeAssets}
+                onChange={(e) => setIncludeAssets(e.target.checked)}
+                className="accent-[var(--blue)]"
+              />
+              Include linked assets & strings
+            </label>
+          </Card>
+
+          <Card title="Output">
+            <div className="rounded-md bg-background/60 p-2.5 font-mono text-[10.5px]">
+              {bundleMode === "single" ? (
+                <div>
+                  📦 <span className="font-semibold">{packageName || "bundle"}.package</span>
+                  <div className="mt-0.5 pl-4 text-muted-foreground">
+                    {totalSelected} items · v{version || "1.0.0"}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-0.5">
+                  {EXPORT_ITEMS.filter((i) => selected.has(i.id)).map((i) => (
+                    <div key={i.id}>
+                      📦{" "}
+                      <span className="font-semibold">
+                        {creator.toLowerCase()}_{i.name.toLowerCase().replace(/\s+/g, "_")}.package
+                      </span>
+                    </div>
+                  ))}
+                  {totalSelected === 0 && (
+                    <div className="text-muted-foreground">Nothing selected.</div>
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 /* ---------- Validation ---------- */
 
@@ -1292,6 +1740,7 @@ export function SectionView({
   if (active === "notifications") return <div className="mx-auto max-w-[1600px] p-6"><NotificationLibrary /></div>;
   if (active === "tuning") return <div className="mx-auto max-w-[1600px] p-6"><TuningEditor /></div>;
   if (active === "assets") return <div className="mx-auto max-w-[1600px] p-6"><AssetsView /></div>;
+  if (active === "exporter") return <div className="mx-auto max-w-[1600px] p-6"><ExporterView /></div>;
   if (active === "validation") return <div className="mx-auto max-w-[1600px] p-6"><ValidationView /></div>;
   if (active === "queue") return <div className="mx-auto max-w-[1600px] p-6"><QueueView /></div>;
   if (active === "settings") return <div className="mx-auto max-w-[1600px] p-6"><SettingsView /></div>;
