@@ -34,6 +34,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
+import { CopyToMenu } from "./CopyToMenu";
 import type { SectionId } from "./sections";
 
 /* ---------- Shared shell for builder pages ---------- */
