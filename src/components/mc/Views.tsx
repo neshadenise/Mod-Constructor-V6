@@ -32,6 +32,19 @@ import {
   Radar,
   Apple,
   MonitorCog,
+  Clock,
+  Calendar,
+  Users,
+  Bell,
+  MapPin,
+  MessageSquare,
+  Shield,
+  Image as ImageIcon,
+  Zap,
+  ChevronRight,
+  ChevronDown,
+  Copy,
+  GripVertical,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -255,89 +268,402 @@ function ProjectsView() {
   );
 }
 
-/* ---------- Career Builder ---------- */
+/* ---------- Career Builder (V5-aligned) ---------- */
 
-const CAREER_BRANCHES: Record<
-  string,
-  {
-    ranks: { lvl: number; title: string; pay: string; req: string }[];
-    perks: { name: string; tier: number }[];
-  }
-> = {
-  Astronaut: {
-    ranks: [
-      { lvl: 1, title: "Junior Cadet", pay: "§420", req: "—" },
-      { lvl: 2, title: "Navigator", pay: "§820", req: "Logic 3" },
-      { lvl: 3, title: "Space Ranger", pay: "§1,640", req: "Logic 5 · Fitness 3" },
-      { lvl: 4, title: "Commander", pay: "§2,880", req: "Logic 7 · Fitness 5" },
-      { lvl: 5, title: "Admiral", pay: "§4,280", req: "Logic 9 · Fitness 7" },
-    ],
-    perks: [
-      { name: "+2 Logic per work hour", tier: 1 },
-      { name: "Unlock Cosmic Insight moodlet", tier: 3 },
-      { name: "Free Rocket Ship at Rank 5", tier: 5 },
-    ],
-  },
-  "Interstellar Smuggler": {
-    ranks: [
-      { lvl: 1, title: "Dock Runner", pay: "§380", req: "—" },
-      { lvl: 2, title: "Cargo Hauler", pay: "§780", req: "Mischief 2" },
-      { lvl: 3, title: "Fixer", pay: "§1,540", req: "Mischief 5" },
-      { lvl: 4, title: "Kingpin", pay: "§2,900", req: "Mischief 7 · Charisma 4" },
-      { lvl: 5, title: "Ghost Captain", pay: "§4,600", req: "Mischief 9 · Charisma 6" },
-    ],
-    perks: [
-      { name: "+1 Mischief per shift", tier: 1 },
-      { name: "Contraband cache moodlet", tier: 3 },
-      { name: "Cloaked cargo ship at Rank 5", tier: 5 },
-    ],
-  },
+const CAREER_TYPES = [
+  { id: "FullTime", label: "Full Time", desc: "Standard career with daily shifts" },
+  { id: "PartTime", label: "Part Time", desc: "Reduced hours, teen-friendly" },
+  { id: "Volunteer", label: "Volunteer / Afterschool", desc: "Unpaid or activity-based" },
+];
+
+const AGES = ["Child", "Teen", "YoungAdult", "Adult", "Elder"] as const;
+type Age = (typeof AGES)[number];
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+
+// V5 message overrides (subset of ~35, gated behind Advanced)
+const MESSAGE_KEYS = [
+  "EndGreat", "EndGood", "EndOK", "EndBad", "EndBoss",
+  "Promoted", "Demoted", "Fired", "Quit",
+  "WorkFromHome", "TakeVacationDay", "PaidTimeOffDepleted",
+  "JoinCareer", "RetireInvitation", "PerformanceLow",
+  "ChanceCardTitle", "ChanceCardText", "ChanceCardGood", "ChanceCardBad",
+] as const;
+
+type Emotion = "Angry" | "Bored" | "Dazed" | "Embarrassed" | "Sad" | "Tense" | "Uncomfortable";
+const EMOTIONS: Emotion[] = ["Angry", "Bored", "Dazed", "Embarrassed", "Sad", "Tense", "Uncomfortable"];
+
+type Rank = {
+  lvl: number;
+  title: string;
+  description: string;
+  simoleonsPerHour: number;
+  beginHour: number;
+  beginMinute: number;
+  durationHours: number;
+  days: boolean[]; // 7
+  uniform: string;
+  performanceForPromotion: number;
+  objectiveSet: string;
+  promotionReward: string;
+  invertedEmotions: Record<Emotion, boolean>;
 };
+
+type Assignment = {
+  id: string;
+  name: string;
+  levelMin: number;
+  levelMax: number;
+  weight: number;
+  isFirst: boolean;
+  conditions: string;
+};
+
+type CareerEventItem = {
+  id: string;
+  name: string;
+  situation: string;
+  zoneDirector: string;
+  venue: string;
+  noMedalText: string;
+  bronzeText: string;
+  silverText: string;
+  goldText: string;
+  showEndOfDayReport: boolean;
+  endOfDayTitle: string;
+  endOfDayText: string;
+  lootOnStart: string;
+  lootOnEnd: string;
+};
+
+type Branch = {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: "blue" | "violet" | "teal" | "green" | "orange";
+  emoji: string;
+  ranks: Rank[];
+  assignments: Assignment[];
+  events: CareerEventItem[];
+  children: Branch[];
+};
+
+const mkRank = (lvl: number, title: string, pay: number, req = "—"): Rank => ({
+  lvl,
+  title,
+  description: req,
+  simoleonsPerHour: pay,
+  beginHour: 9,
+  beginMinute: 0,
+  durationHours: 8,
+  days: [false, true, true, true, true, true, false],
+  uniform: "",
+  performanceForPromotion: 100,
+  objectiveSet: "",
+  promotionReward: "",
+  invertedEmotions: {
+    Angry: false, Bored: false, Dazed: false, Embarrassed: false, Sad: false, Tense: false, Uncomfortable: false,
+  },
+});
+
+const INITIAL_BRANCHES: Branch[] = [
+  {
+    id: "b_astro",
+    name: "Astronaut",
+    description: "Chart deep-space routes and command the fleet.",
+    icon: "",
+    color: "blue",
+    emoji: "🚀",
+    ranks: [
+      mkRank(1, "Junior Cadet", 52, "—"),
+      mkRank(2, "Navigator", 102, "Logic 3"),
+      mkRank(3, "Space Ranger", 205, "Logic 5 · Fitness 3"),
+      mkRank(4, "Commander", 360, "Logic 7 · Fitness 5"),
+      mkRank(5, "Admiral", 535, "Logic 9 · Fitness 7"),
+    ],
+    assignments: [
+      { id: "a1", name: "Analyze star charts", levelMin: 1, levelMax: 3, weight: 1, isFirst: true, conditions: "Has telescope" },
+      { id: "a2", name: "Simulate re-entry", levelMin: 3, levelMax: 5, weight: 2, isFirst: false, conditions: "Fitness ≥ 4" },
+    ],
+    events: [
+      {
+        id: "e1", name: "First Launch",
+        situation: "career_astro_launch",
+        zoneDirector: "zd_launchpad",
+        venue: "Science Facility",
+        noMedalText: "The launch was a disaster!",
+        bronzeText: "Barely made orbit.",
+        silverText: "A clean launch.",
+        goldText: "Historic flight!",
+        showEndOfDayReport: true,
+        endOfDayTitle: "Launch Report",
+        endOfDayText: "Your first mission returned {medal} results.",
+        lootOnStart: "loot_confidence_up",
+        lootOnEnd: "loot_reward_medal",
+      },
+    ],
+    children: [],
+  },
+  {
+    id: "b_smuggler",
+    name: "Interstellar Smuggler",
+    description: "Move contraband through hostile sectors.",
+    icon: "",
+    color: "violet",
+    emoji: "🛰️",
+    ranks: [
+      mkRank(1, "Dock Runner", 47, "—"),
+      mkRank(2, "Cargo Hauler", 97, "Mischief 2"),
+      mkRank(3, "Fixer", 192, "Mischief 5"),
+      mkRank(4, "Kingpin", 362, "Mischief 7 · Charisma 4"),
+      mkRank(5, "Ghost Captain", 575, "Mischief 9 · Charisma 6"),
+    ],
+    assignments: [],
+    events: [],
+    children: [],
+  },
+];
+
+/* --- small helpers used by builder --- */
+
+function NumField({
+  label,
+  value,
+  onChange,
+  min,
+  max,
+  suffix,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+  suffix?: string;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </label>
+      <div className="flex items-center gap-1">
+        <Input
+          type="number"
+          value={value}
+          min={min}
+          max={max}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="h-8 text-xs"
+        />
+        {suffix && <span className="text-[10px] text-muted-foreground">{suffix}</span>}
+      </div>
+    </div>
+  );
+}
+
+function Toggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors",
+        checked
+          ? "border-[var(--blue)]/40 bg-[var(--blue)]/10 text-foreground"
+          : "border-border bg-card text-muted-foreground hover:bg-accent/40",
+      )}
+    >
+      <span
+        className={cn(
+          "flex h-3 w-3 items-center justify-center rounded-sm border",
+          checked ? "border-[var(--blue)] bg-[var(--blue)] text-white" : "border-muted-foreground/40",
+        )}
+      >
+        {checked && <CheckCircle2 className="h-2.5 w-2.5" strokeWidth={3} />}
+      </span>
+      {label}
+    </button>
+  );
+}
+
+function Section({
+  title,
+  icon: Icon,
+  defaultOpen = true,
+  children,
+  badge,
+}: {
+  title: string;
+  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+  badge?: string;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="rounded-xl border border-border bg-card card-elevated">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left"
+      >
+        {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+        {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
+        <span className="text-sm font-semibold">{title}</span>
+        {badge && (
+          <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+            {badge}
+          </span>
+        )}
+      </button>
+      {open && <div className="border-t border-border p-4">{children}</div>}
+    </section>
+  );
+}
 
 function CareerBuilder() {
   const { advanced } = useAdvanced();
+
+  // Career-level state
   const [name, setName] = useState("Interstellar Navigator");
-  const [track, setTrack] = useState("Astronaut");
-  const [salary, setSalary] = useState("4280");
   const [description, setDescription] = useState(
     "Chart deep-space routes and command the fleet. Requires strong Logic and Fitness.",
   );
-  const [hours, setHours] = useState("09:00 → 17:00");
-  const [days, setDays] = useState("Mon – Fri");
-  const [branch, setBranch] = useState<keyof typeof CAREER_BRANCHES>("Astronaut");
-  const data = CAREER_BRANCHES[branch];
+  const [category, setCategory] = useState("Technical");
+  const [careerType, setCareerType] = useState("FullTime");
+  const [icon, setIcon] = useState("");
+  const [image, setImage] = useState("");
+  const [ages, setAges] = useState<Record<Age, boolean>>({
+    Child: false, Teen: false, YoungAdult: true, Adult: true, Elder: true,
+  });
+
+  // Company names
+  const [companyNames, setCompanyNames] = useState<string[]>([
+    "The {label} Company", "Galactic {label} Corp",
+  ]);
+
+  // PTO
+  const [ptoEnabled, setPtoEnabled] = useState(true);
+  const [ptoInitial, setPtoInitial] = useState(3);
+  const [ptoLabel, setPtoLabel] = useState("Take Vacation Day ({label})");
+
+  // Availability conditions
+  const [availabilityConditions, setAvailabilityConditions] = useState<string[]>([
+    "Sim is not Elder — Optional",
+  ]);
+
+  // Message overrides
+  const [messages, setMessages] = useState<Record<string, { enabled: boolean; text: string }>>(
+    () =>
+      Object.fromEntries(
+        MESSAGE_KEYS.map((k) => [k, { enabled: false, text: "" }]),
+      ) as Record<string, { enabled: boolean; text: string }>,
+  );
+
+  // Branches (tracks)
+  const [branches, setBranches] = useState<Branch[]>(INITIAL_BRANCHES);
+  const [branchId, setBranchId] = useState(branches[0].id);
+  const branch = branches.find((b) => b.id === branchId) ?? branches[0];
+
+  // Sub-tab
+  const [tab, setTab] = useState<
+    "identity" | "levels" | "assignments" | "events" | "messages" | "advanced"
+  >("identity");
+
+  const updateBranch = (id: string, patch: Partial<Branch>) =>
+    setBranches((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+
+  const updateRank = (rankLvl: number, patch: Partial<Rank>) =>
+    updateBranch(branch.id, {
+      ranks: branch.ranks.map((r) => (r.lvl === rankLvl ? { ...r, ...patch } : r)),
+    });
+
+  const addRank = () => {
+    const nextLvl = branch.ranks.length ? Math.max(...branch.ranks.map((r) => r.lvl)) + 1 : 1;
+    updateBranch(branch.id, {
+      ranks: [...branch.ranks, mkRank(nextLvl, `Rank ${nextLvl}`, 100)],
+    });
+    toast.success(`Added rank ${nextLvl}`);
+  };
+
+  const removeRank = (lvl: number) => {
+    updateBranch(branch.id, { ranks: branch.ranks.filter((r) => r.lvl !== lvl) });
+  };
+
+  const addBranch = () => {
+    const id = `b_${Date.now()}`;
+    setBranches((prev) => [
+      ...prev,
+      {
+        id,
+        name: `New Branch ${prev.length + 1}`,
+        description: "",
+        icon: "",
+        color: "teal",
+        emoji: "✨",
+        ranks: [mkRank(1, "Rank 1", 50)],
+        assignments: [],
+        events: [],
+        children: [],
+      },
+    ]);
+    setBranchId(id);
+    toast.success("New branch scaffolded");
+  };
 
   const previewData: CareerPreviewData = {
     name,
     description,
-    track,
-    salary,
-    hours,
-    days,
-    emoji: "🚀",
-    color: "blue",
-    activeBranch: branch as string,
-    branches: (Object.keys(CAREER_BRANCHES) as (keyof typeof CAREER_BRANCHES)[]).map((b) => ({
-      key: b as string,
-      name: b as string,
-      description: b === branch ? description : `${b} branch of ${name}.`,
-      color: b === "Astronaut" ? "blue" : "violet",
-      emoji: b === "Astronaut" ? "🚀" : "🛰️",
-      ranks: CAREER_BRANCHES[b].ranks.map((r) => ({
+    track: branch.name,
+    salary: String(branch.ranks[branch.ranks.length - 1]?.simoleonsPerHour ?? 0),
+    hours: branch.ranks[0]
+      ? `${String(branch.ranks[0].beginHour).padStart(2, "0")}:00 → ${String(
+          (branch.ranks[0].beginHour + branch.ranks[0].durationHours) % 24,
+        ).padStart(2, "0")}:00`
+      : "—",
+    days: branch.ranks[0] ? branch.ranks[0].days.map((d, i) => (d ? DAYS[i] : "")).filter(Boolean).join(" · ") : "—",
+    emoji: branch.emoji,
+    color: branch.color,
+    activeBranch: branch.name,
+    branches: branches.map((b) => ({
+      key: b.id,
+      name: b.name,
+      description: b.description,
+      color: b.color,
+      emoji: b.emoji,
+      ranks: b.ranks.map((r) => ({
         lvl: r.lvl,
         title: r.title,
-        req: r.req,
-        pay: r.pay.replace(/[§,]/g, ""),
+        req: r.description || "—",
+        pay: String(r.simoleonsPerHour * r.durationHours),
       })),
-      perks: CAREER_BRANCHES[b].perks,
+      perks: b.ranks
+        .filter((r) => r.promotionReward)
+        .map((r) => ({ name: r.promotionReward, tier: r.lvl })),
     })),
   };
+
+  const tabs: { id: typeof tab; label: string; icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; advanced?: boolean }[] = [
+    { id: "identity", label: "Identity", icon: Briefcase },
+    { id: "levels", label: "Levels", icon: ListChecks },
+    { id: "assignments", label: "Work From Home", icon: Boxes, advanced: true },
+    { id: "events", label: "Career Events", icon: Calendar, advanced: true },
+    { id: "messages", label: "Messages", icon: MessageSquare, advanced: true },
+    { id: "advanced", label: "Advanced", icon: Sliders, advanced: true },
+  ];
 
   const editor = (
     <div className="space-y-4">
       <PageHeader
         icon={Briefcase}
-        subtitle="Builder"
+        subtitle="Builder · V5 aligned"
         title="Career Builder"
         accent="blue"
         actions={
@@ -353,117 +679,768 @@ function CareerBuilder() {
 
       {!advanced && (
         <div className="rounded-lg border border-[var(--blue)]/25 bg-[var(--blue)]/5 px-3 py-2 text-[11px] text-muted-foreground">
-          Fill out the name, salary, and rank titles. The Live Preview on the right updates as you type.
+          Simple mode — Identity and Levels are shown. Turn on Advanced in the top bar for messages, events, and work-from-home assignments.
         </div>
       )}
 
+      {/* Branch tab strip */}
       <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 p-1">
-        {(Object.keys(CAREER_BRANCHES) as (keyof typeof CAREER_BRANCHES)[]).map((b) => (
+        {branches.map((b) => (
           <button
-            key={b}
-            onClick={() => setBranch(b)}
+            key={b.id}
+            onClick={() => setBranchId(b.id)}
             className={cn(
-              "rounded-md px-2.5 py-1 text-[11.5px] font-semibold transition-all",
-              b === branch
+              "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11.5px] font-semibold transition-all",
+              b.id === branch.id
                 ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {b}
+            <span>{b.emoji}</span>
+            {b.name}
           </button>
         ))}
         <button
-          onClick={() => toast("New branch scaffolded")}
+          onClick={addBranch}
           className="ml-auto inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent/60"
         >
           <Plus className="h-3 w-3" /> New branch
         </button>
       </div>
 
-      <Card title="Career Identity">
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Career Name" value={name} onChange={setName} />
-          <Field label="Track" value={track} onChange={setTrack} hint="Astronaut · Business · Culinary…" />
-          {advanced && <Field label="Internal ID" value="career_interstellar_navigator" hint="Snake_case, must be unique" />}
-          <Field label="Category" value="Technical" />
-          <div>
-            <Field label="Base Salary (§)" value={salary} onChange={setSalary} />
-            <div className="mt-1 flex justify-end">
-              <CopyToMenu what="salary & hours" label="Copy salary & hours to…" />
+      {/* Sub-tab bar */}
+      <div className="flex flex-wrap items-center gap-1 border-b border-border">
+        {tabs
+          .filter((t) => !t.advanced || advanced)
+          .map((t) => {
+            const Ic = t.icon;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 border-b-2 px-3 py-1.5 text-[11.5px] font-semibold transition-colors",
+                  tab === t.id
+                    ? "border-[var(--blue)] text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Ic className="h-3.5 w-3.5" />
+                {t.label}
+                {t.advanced && (
+                  <span className="rounded bg-muted px-1 py-0.5 text-[9px] font-bold text-muted-foreground">
+                    ADV
+                  </span>
+                )}
+              </button>
+            );
+          })}
+      </div>
+
+      {/* --- IDENTITY --- */}
+      {tab === "identity" && (
+        <div className="space-y-3">
+          <Card title="Career Identity">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Career Name" value={name} onChange={setName} />
+              <Field label="Category" value={category} onChange={setCategory} hint="Technical · Culinary · Athletic…" />
+              {advanced && (
+                <Field label="Internal ID" value="career_interstellar_navigator" hint="Snake_case, must be unique" />
+              )}
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Career Type
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {CAREER_TYPES.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => setCareerType(c.id)}
+                      className={cn(
+                        "rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                        careerType === c.id
+                          ? "border-[var(--blue)] bg-[var(--blue)]/10 text-foreground"
+                          : "border-border bg-card text-muted-foreground hover:bg-accent/40",
+                      )}
+                      title={c.desc}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="col-span-2">
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Description
+                </label>
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="h-20 resize-none text-xs"
+                />
+              </div>
             </div>
-          </div>
-          <Field label="Work Hours" value={hours} onChange={setHours} />
-          <Field label="Work Days" value={days} onChange={setDays} />
-          <div className="col-span-2">
-            <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Description
-            </label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="h-20 resize-none text-xs"
-            />
-          </div>
+          </Card>
+
+          <Card title="Icon & Image">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: "Icon", value: icon, set: setIcon, hint: "Small (32×32) — sidebar / phone" },
+                { label: "Image", value: image, set: setImage, hint: "Large — join-career splash" },
+              ].map((f) => (
+                <div key={f.label}>
+                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {f.label}
+                  </label>
+                  <div className="flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/30 p-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-card">
+                      <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 text-[11px] text-muted-foreground">
+                      {f.value || "No file selected"}
+                      <div className="text-[10px]">{f.hint}</div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        f.set(`${f.label.toLowerCase()}_${Date.now()}.png`);
+                        toast.success(`${f.label} picked`);
+                      }}
+                      className="rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium hover:bg-accent"
+                    >
+                      Browse…
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card title="Age Availability" action={
+            <CopyToMenu what="age availability" label="Copy to…" />
+          }>
+            <div className="flex flex-wrap gap-1.5">
+              {AGES.map((a) => (
+                <Toggle
+                  key={a}
+                  checked={ages[a]}
+                  onChange={(v) => setAges({ ...ages, [a]: v })}
+                  label={a === "YoungAdult" ? "Young Adult" : a}
+                />
+              ))}
+            </div>
+            <div className="mt-2 text-[10px] text-muted-foreground">
+              Life stages allowed to take this career.
+            </div>
+          </Card>
+
+          <Card title="Paid Time Off">
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Enabled
+                </label>
+                <Toggle checked={ptoEnabled} onChange={setPtoEnabled} label={ptoEnabled ? "PTO on" : "PTO off"} />
+              </div>
+              {ptoEnabled && (
+                <>
+                  <NumField label="Initial PTO Days" value={ptoInitial} onChange={setPtoInitial} min={0} max={30} />
+                  <Field label="Interaction Name" value={ptoLabel} onChange={setPtoLabel} hint="{label} = career name" />
+                </>
+              )}
+            </div>
+          </Card>
+
+          <Card
+            title="Company Names"
+            action={
+              <button
+                onClick={() => setCompanyNames([...companyNames, "New {label} Co"])}
+                className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
+              >
+                <Plus className="h-3 w-3" /> Add
+              </button>
+            }
+          >
+            <ul className="space-y-1.5">
+              {companyNames.map((c, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <GripVertical className="h-3 w-3 text-muted-foreground" />
+                  <Input
+                    value={c}
+                    onChange={(e) => {
+                      const cp = [...companyNames];
+                      cp[i] = e.target.value;
+                      setCompanyNames(cp);
+                    }}
+                    className="h-7 text-xs"
+                  />
+                  <button
+                    onClick={() => setCompanyNames(companyNames.filter((_, j) => j !== i))}
+                    className="rounded p-1 hover:bg-accent"
+                  >
+                    <Trash2 className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </Card>
+
+          <Card
+            title={`Branch Details · ${branch.name}`}
+            action={<CopyToMenu what={`${branch.name} branch`} label="Copy branch to…" />}
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Branch Name" value={branch.name} onChange={(v) => updateBranch(branch.id, { name: v })} />
+              <Field label="Emoji" value={branch.emoji} onChange={(v) => updateBranch(branch.id, { emoji: v })} />
+              <div className="col-span-2">
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Branch Description
+                </label>
+                <Textarea
+                  value={branch.description}
+                  onChange={(e) => updateBranch(branch.id, { description: e.target.value })}
+                  className="h-16 resize-none text-xs"
+                />
+              </div>
+            </div>
+          </Card>
         </div>
-      </Card>
+      )}
 
-      <Card
-        title={`Promotion Track · ${branch}`}
-        action={<CopyToMenu what={`${branch} branch`} label="Copy branch to…" />}
-      >
-        <ol className="space-y-1.5 text-xs">
-          {data.ranks.map((r) => (
-            <li
-              key={r.lvl}
-              className="group flex items-center gap-2 rounded-md border border-border bg-background/60 px-2.5 py-1.5"
+      {/* --- LEVELS --- */}
+      {tab === "levels" && (
+        <div className="space-y-3">
+          <Card
+            title={`Promotion Track · ${branch.name}`}
+            action={
+              <div className="flex items-center gap-1.5">
+                <CopyToMenu what={`${branch.name} ranks`} label="Copy ranks to…" />
+                <button
+                  onClick={addRank}
+                  className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
+                >
+                  <Plus className="h-3 w-3" /> Add Rank
+                </button>
+              </div>
+            }
+          >
+            <div className="space-y-2">
+              {branch.ranks.map((r) => (
+                <RankRow
+                  key={r.lvl}
+                  rank={r}
+                  advanced={advanced}
+                  onChange={(patch) => updateRank(r.lvl, patch)}
+                  onRemove={() => removeRank(r.lvl)}
+                />
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* --- ASSIGNMENTS (WFH) --- */}
+      {tab === "assignments" && advanced && (
+        <div className="space-y-3">
+          <Card
+            title="Work From Home Assignments"
+            action={
+              <button
+                onClick={() =>
+                  updateBranch(branch.id, {
+                    assignments: [
+                      ...branch.assignments,
+                      {
+                        id: `a_${Date.now()}`,
+                        name: "New assignment",
+                        levelMin: 1,
+                        levelMax: branch.ranks.length,
+                        weight: 1,
+                        isFirst: false,
+                        conditions: "",
+                      },
+                    ],
+                  })
+                }
+                className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
+              >
+                <Plus className="h-3 w-3" /> Add Assignment
+              </button>
+            }
+          >
+            {branch.assignments.length === 0 ? (
+              <div className="text-[11px] text-muted-foreground">
+                No assignments — Sims won't have WFH tasks in this branch.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {branch.assignments.map((a) => (
+                  <div key={a.id} className="grid grid-cols-12 gap-2 rounded-md border border-border bg-background/60 p-2.5">
+                    <div className="col-span-4">
+                      <Field
+                        label="Name"
+                        value={a.name}
+                        onChange={(v) =>
+                          updateBranch(branch.id, {
+                            assignments: branch.assignments.map((x) => (x.id === a.id ? { ...x, name: v } : x)),
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <NumField
+                        label="Min Lvl"
+                        value={a.levelMin}
+                        onChange={(v) =>
+                          updateBranch(branch.id, {
+                            assignments: branch.assignments.map((x) => (x.id === a.id ? { ...x, levelMin: v } : x)),
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <NumField
+                        label="Max Lvl"
+                        value={a.levelMax}
+                        onChange={(v) =>
+                          updateBranch(branch.id, {
+                            assignments: branch.assignments.map((x) => (x.id === a.id ? { ...x, levelMax: v } : x)),
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="col-span-1">
+                      <NumField
+                        label="Weight"
+                        value={a.weight}
+                        onChange={(v) =>
+                          updateBranch(branch.id, {
+                            assignments: branch.assignments.map((x) => (x.id === a.id ? { ...x, weight: v } : x)),
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="col-span-2 flex flex-col justify-end gap-1">
+                      <Toggle
+                        checked={a.isFirst}
+                        onChange={(v) =>
+                          updateBranch(branch.id, {
+                            assignments: branch.assignments.map((x) => (x.id === a.id ? { ...x, isFirst: v } : x)),
+                          })
+                        }
+                        label="First"
+                      />
+                    </div>
+                    <div className="col-span-1 flex items-end justify-end">
+                      <button
+                        onClick={() =>
+                          updateBranch(branch.id, {
+                            assignments: branch.assignments.filter((x) => x.id !== a.id),
+                          })
+                        }
+                        className="rounded p-1 hover:bg-accent"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    </div>
+                    <div className="col-span-12">
+                      <Field
+                        label="Conditions"
+                        value={a.conditions}
+                        onChange={(v) =>
+                          updateBranch(branch.id, {
+                            assignments: branch.assignments.map((x) => (x.id === a.id ? { ...x, conditions: v } : x)),
+                          })
+                        }
+                        hint="Comma-separated test conditions"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* --- EVENTS --- */}
+      {tab === "events" && advanced && (
+        <div className="space-y-3">
+          <Card
+            title="Career Events"
+            action={
+              <button
+                onClick={() =>
+                  updateBranch(branch.id, {
+                    events: [
+                      ...branch.events,
+                      {
+                        id: `e_${Date.now()}`,
+                        name: "New Event",
+                        situation: "",
+                        zoneDirector: "",
+                        venue: "",
+                        noMedalText: "That was bad!",
+                        bronzeText: "OK.",
+                        silverText: "Good!",
+                        goldText: "Great!",
+                        showEndOfDayReport: false,
+                        endOfDayTitle: "",
+                        endOfDayText: "",
+                        lootOnStart: "",
+                        lootOnEnd: "",
+                      },
+                    ],
+                  })
+                }
+                className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
+              >
+                <Plus className="h-3 w-3" /> Add Event
+              </button>
+            }
+          >
+            {branch.events.length === 0 ? (
+              <div className="text-[11px] text-muted-foreground">
+                No custom career events. Sims will use base-game events.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {branch.events.map((ev) => (
+                  <EventEditor
+                    key={ev.id}
+                    event={ev}
+                    onChange={(patch) =>
+                      updateBranch(branch.id, {
+                        events: branch.events.map((x) => (x.id === ev.id ? { ...x, ...patch } : x)),
+                      })
+                    }
+                    onRemove={() =>
+                      updateBranch(branch.id, { events: branch.events.filter((x) => x.id !== ev.id) })
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* --- MESSAGES --- */}
+      {tab === "messages" && advanced && (
+        <div className="space-y-3">
+          <Card title="Message Overrides">
+            <div className="mb-2 text-[11px] text-muted-foreground">
+              Toggle a message to override its default game text. Disabled messages fall back to the base text for the selected career type.
+            </div>
+            <div className="grid grid-cols-1 gap-1.5">
+              {MESSAGE_KEYS.map((k) => {
+                const m = messages[k];
+                return (
+                  <div key={k} className="grid grid-cols-12 gap-2 rounded-md border border-border bg-background/60 px-2.5 py-2">
+                    <div className="col-span-3 flex items-center gap-2">
+                      <Toggle
+                        checked={m.enabled}
+                        onChange={(v) => setMessages({ ...messages, [k]: { ...m, enabled: v } })}
+                        label={m.enabled ? "On" : "Off"}
+                      />
+                      <span className="font-mono text-[11px]">{k}</span>
+                    </div>
+                    <div className="col-span-9">
+                      <Input
+                        disabled={!m.enabled}
+                        value={m.text}
+                        onChange={(e) => setMessages({ ...messages, [k]: { ...m, text: e.target.value } })}
+                        placeholder={`Default: ${k} message text…`}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* --- ADVANCED --- */}
+      {tab === "advanced" && advanced && (
+        <div className="space-y-3">
+          <Card title="Availability Conditions" action={
+            <button
+              onClick={() => setAvailabilityConditions([...availabilityConditions, "New condition"])}
+              className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
             >
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--blue)]/15 text-[10px] font-bold text-[var(--blue)]">
-                {r.lvl}
-              </span>
-              <span className="flex-1 font-medium">{r.title}</span>
-              <span className="font-mono text-[11px] text-muted-foreground">{r.req}</span>
-              <span className="font-mono font-semibold">{r.pay}</span>
-              <span className="opacity-0 transition-opacity group-hover:opacity-100">
-                <CopyToMenu what={`rank "${r.title}"`} compact />
-              </span>
-            </li>
-          ))}
-        </ol>
-        <button className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent">
-          <Plus className="h-3 w-3" /> Add Rank
-        </button>
-      </Card>
+              <Plus className="h-3 w-3" /> Add
+            </button>
+          }>
+            <ul className="space-y-1.5">
+              {availabilityConditions.map((c, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <ShieldCheck className="h-3 w-3 text-[var(--teal)]" />
+                  <Input
+                    value={c}
+                    onChange={(e) => {
+                      const cp = [...availabilityConditions];
+                      cp[i] = e.target.value;
+                      setAvailabilityConditions(cp);
+                    }}
+                    className="h-7 text-xs"
+                  />
+                  <button
+                    onClick={() => setAvailabilityConditions(availabilityConditions.filter((_, j) => j !== i))}
+                    className="rounded p-1 hover:bg-accent"
+                  >
+                    <Trash2 className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </Card>
 
-      <Card title="Perks & Rewards" action={<CopyToMenu what="all perks" label="Copy all perks to…" />}>
-        <ul className="space-y-1.5 text-xs">
-          {data.perks.map((p) => (
-            <li key={p.name} className="group flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-[var(--violet)]" />
-              <span className="flex-1">{p.name}</span>
-              <span className="rounded bg-background px-1.5 py-0.5 font-mono text-[10px]">Tier {p.tier}</span>
-              <span className="opacity-0 transition-opacity group-hover:opacity-100">
-                <CopyToMenu what={`perk "${p.name}"`} compact />
-              </span>
-            </li>
-          ))}
-        </ul>
-      </Card>
+          <Card title="Performance Statistic">
+            <div className="grid grid-cols-3 gap-3">
+              <Field label="Statistic Name" value="job_performance" />
+              <NumField label="Min" value={-100} onChange={() => {}} />
+              <NumField label="Max" value={100} onChange={() => {}} />
+            </div>
+            <div className="mt-2 text-[10px] text-muted-foreground">
+              Auto-created backing statistic for job performance (V5 default).
+            </div>
+          </Card>
 
-      {advanced && (
-        <Card title="XML Output">
-          <pre className="max-h-56 overflow-auto rounded-md border border-border bg-[color-mix(in_oklab,var(--foreground)_4%,var(--card))] p-3 font-mono text-[10.5px] leading-relaxed text-foreground/85">
-{`<Career id="0xA112E8" name="career_interstellar_navigator">
-  <Track>${track}</Track>
-  <Salary>${salary}</Salary>
-  <Hours start="09:00" end="17:00" />
+          <Card title="XML Output">
+            <pre className="max-h-64 overflow-auto rounded-md border border-border bg-[color-mix(in_oklab,var(--foreground)_4%,var(--card))] p-3 font-mono text-[10.5px] leading-relaxed text-foreground/85">
+{`<Career id="0xA112E8" name="career_interstellar_navigator" type="${careerType}">
+  <Ages>${AGES.filter((a) => ages[a]).join(",")}</Ages>
+  <PTO enabled="${ptoEnabled}" initial="${ptoInitial}" />
+  <Track name="${branch.name}">
+${branch.ranks
+  .map(
+    (r) =>
+      `    <Level lvl="${r.lvl}" title="${r.title}" pay="${r.simoleonsPerHour}" begin="${String(
+        r.beginHour,
+      ).padStart(2, "0")}:${String(r.beginMinute).padStart(2, "0")}" duration="${r.durationHours}" />`,
+  )
+  .join("\n")}
+  </Track>
 </Career>`}
-          </pre>
-        </Card>
+            </pre>
+          </Card>
+        </div>
       )}
     </div>
   );
 
   return <PreviewSplit editor={editor} preview={<CareerPreview data={previewData} />} />;
+}
+
+/* --- Rank editor row --- */
+
+function RankRow({
+  rank,
+  advanced,
+  onChange,
+  onRemove,
+}: {
+  rank: Rank;
+  advanced: boolean;
+  onChange: (patch: Partial<Rank>) => void;
+  onRemove: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="rounded-md border border-border bg-background/60">
+      <div className="flex items-center gap-2 px-2.5 py-1.5">
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--blue)]/15 text-[10px] font-bold text-[var(--blue)]">
+          {rank.lvl}
+        </span>
+        <Input
+          value={rank.title}
+          onChange={(e) => onChange({ title: e.target.value })}
+          className="h-7 flex-1 text-xs font-medium"
+        />
+        <div className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
+          §
+          <Input
+            type="number"
+            value={rank.simoleonsPerHour}
+            onChange={(e) => onChange({ simoleonsPerHour: Number(e.target.value) })}
+            className="h-7 w-16 text-xs"
+          />
+          /hr
+        </div>
+        <div className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          <Input
+            type="number"
+            value={rank.beginHour}
+            onChange={(e) => onChange({ beginHour: Number(e.target.value) })}
+            className="h-7 w-12 text-xs"
+          />
+          +
+          <Input
+            type="number"
+            value={rank.durationHours}
+            onChange={(e) => onChange({ durationHours: Number(e.target.value) })}
+            className="h-7 w-12 text-xs"
+          />
+          h
+        </div>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="inline-flex items-center rounded p-1 hover:bg-accent"
+          title="More"
+        >
+          {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+        </button>
+        <CopyToMenu what={`rank "${rank.title}"`} compact />
+        <button onClick={onRemove} className="rounded p-1 hover:bg-accent" title="Remove">
+          <Trash2 className="h-3 w-3 text-muted-foreground" />
+        </button>
+      </div>
+      {expanded && (
+        <div className="space-y-3 border-t border-border p-3">
+          <div>
+            <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Requirements / Description
+            </label>
+            <Input
+              value={rank.description}
+              onChange={(e) => onChange({ description: e.target.value })}
+              className="h-7 text-xs"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Work Days
+            </label>
+            <div className="flex flex-wrap gap-1">
+              {DAYS.map((d, i) => (
+                <Toggle
+                  key={d}
+                  checked={rank.days[i]}
+                  onChange={(v) => {
+                    const days = [...rank.days];
+                    days[i] = v;
+                    onChange({ days });
+                  }}
+                  label={d}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <NumField
+              label="Begin Minute"
+              value={rank.beginMinute}
+              onChange={(v) => onChange({ beginMinute: v })}
+              min={0}
+              max={59}
+            />
+            <NumField
+              label="Perf. for Promotion"
+              value={rank.performanceForPromotion}
+              onChange={(v) => onChange({ performanceForPromotion: v })}
+              min={-100}
+              max={100}
+            />
+            <Field
+              label="Uniform"
+              value={rank.uniform}
+              onChange={(v) => onChange({ uniform: v })}
+              hint="Outfit reference"
+            />
+            <Field
+              label="Promotion Reward"
+              value={rank.promotionReward}
+              onChange={(v) => onChange({ promotionReward: v })}
+              hint="Buff, moodlet, or object"
+            />
+            <Field
+              label="Objective / Aspiration"
+              value={rank.objectiveSet}
+              onChange={(v) => onChange({ objectiveSet: v })}
+              hint="Attached objective set"
+            />
+          </div>
+          {advanced && (
+            <div>
+              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Inverted Emotions
+              </label>
+              <div className="flex flex-wrap gap-1">
+                {EMOTIONS.map((em) => (
+                  <Toggle
+                    key={em}
+                    checked={rank.invertedEmotions[em]}
+                    onChange={(v) =>
+                      onChange({ invertedEmotions: { ...rank.invertedEmotions, [em]: v } })
+                    }
+                    label={em}
+                  />
+                ))}
+              </div>
+              <div className="mt-1 text-[10px] text-muted-foreground">
+                Invert how these emotions affect performance at this level.
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* --- Event editor --- */
+
+function EventEditor({
+  event,
+  onChange,
+  onRemove,
+}: {
+  event: CareerEventItem;
+  onChange: (patch: Partial<CareerEventItem>) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-background/60 p-3">
+      <div className="mb-2 flex items-center gap-2">
+        <Calendar className="h-4 w-4 text-[var(--violet)]" />
+        <Input
+          value={event.name}
+          onChange={(e) => onChange({ name: e.target.value })}
+          className="h-7 flex-1 text-xs font-semibold"
+        />
+        <button onClick={onRemove} className="rounded p-1 hover:bg-accent">
+          <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <Field label="Situation" value={event.situation} onChange={(v) => onChange({ situation: v })} />
+        <Field label="Zone Director" value={event.zoneDirector} onChange={(v) => onChange({ zoneDirector: v })} />
+        <Field label="Venue" value={event.venue} onChange={(v) => onChange({ venue: v })} />
+        <Field label="No Medal" value={event.noMedalText} onChange={(v) => onChange({ noMedalText: v })} />
+        <Field label="Bronze" value={event.bronzeText} onChange={(v) => onChange({ bronzeText: v })} />
+        <Field label="Silver" value={event.silverText} onChange={(v) => onChange({ silverText: v })} />
+        <Field label="Gold" value={event.goldText} onChange={(v) => onChange({ goldText: v })} />
+        <Field label="Loot on Start" value={event.lootOnStart} onChange={(v) => onChange({ lootOnStart: v })} />
+        <Field label="Loot on End" value={event.lootOnEnd} onChange={(v) => onChange({ lootOnEnd: v })} />
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <Toggle
+          checked={event.showEndOfDayReport}
+          onChange={(v) => onChange({ showEndOfDayReport: v })}
+          label="End-of-Day Report"
+        />
+      </div>
+      {event.showEndOfDayReport && (
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <Field label="Report Title" value={event.endOfDayTitle} onChange={(v) => onChange({ endOfDayTitle: v })} />
+          <Field label="Report Text" value={event.endOfDayText} onChange={(v) => onChange({ endOfDayText: v })} />
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ---------- Trait Builder ---------- */
@@ -1649,10 +2626,10 @@ function SettingsView() {
             updates. No project data leaves your machine.
           </p>
           <div className="mt-3 space-y-2 text-xs">
-            <Toggle label="Check for updates at launch" defaultOn />
-            <Toggle label="Notify me about new templates" defaultOn />
-            <Toggle label="Auto-download minor patches" />
-            <Toggle label="Share anonymous crash reports" />
+            <SettingToggle label="Check for updates at launch" defaultOn />
+            <SettingToggle label="Notify me about new templates" defaultOn />
+            <SettingToggle label="Auto-download minor patches" />
+            <SettingToggle label="Share anonymous crash reports" />
           </div>
           <div className="mt-3 flex items-center gap-2">
             <GhostBtn icon={Download} onClick={() => toast.success("lot51 Core Library up to date")}>
@@ -1664,11 +2641,11 @@ function SettingsView() {
 
         <Card title="Editor" className="col-span-6">
           <div className="space-y-2 text-xs">
-            <Toggle label="Autosave every 30s" defaultOn />
-            <Toggle label="Confirm before compiling" defaultOn />
-            {advanced && <Toggle label="Enable node canvas snapping" defaultOn />}
-            {advanced && <Toggle label="Show hex IDs" />}
-            {advanced && <Toggle label="Validate on save" defaultOn />}
+            <SettingToggle label="Autosave every 30s" defaultOn />
+            <SettingToggle label="Confirm before compiling" defaultOn />
+            {advanced && <SettingToggle label="Enable node canvas snapping" defaultOn />}
+            {advanced && <SettingToggle label="Show hex IDs" />}
+            {advanced && <SettingToggle label="Validate on save" defaultOn />}
             {!advanced && (
               <p className="rounded-md bg-muted/40 px-2 py-1.5 text-[11px] text-muted-foreground">
                 More editor toggles appear when Advanced mode is on.
@@ -1691,7 +2668,7 @@ function SettingsView() {
   );
 }
 
-function Toggle({ label, defaultOn }: { label: string; defaultOn?: boolean }) {
+function SettingToggle({ label, defaultOn }: { label: string; defaultOn?: boolean }) {
   const [on, setOn] = useState(!!defaultOn);
   return (
     <label className="flex cursor-pointer items-center justify-between rounded-md px-2 py-1.5 hover:bg-accent/50">
