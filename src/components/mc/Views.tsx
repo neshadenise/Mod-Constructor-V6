@@ -3209,10 +3209,13 @@ function SettingsView() {
 
       <HostModeCard />
 
+      <EngineCapabilitiesCard />
+
       <ImageProviderCard />
 
       {host.isChatGPT && <McpToolsCard />}
 
+      <DemoDataCard />
 
       <Card
         title="Interface Mode"
