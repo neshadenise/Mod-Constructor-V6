@@ -21,7 +21,9 @@ import {
   History,
   BarChart3,
   Radio,
+  Palette,
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
 import type { SectionId } from "./sections";
@@ -46,8 +48,10 @@ export const SIDEBAR_ITEMS: Item[] = [
   { id: "trait", label: "Trait Builder", icon: Sparkles, group: "builders" },
   { id: "aspiration", label: "Aspiration Builder", icon: Target, group: "builders" },
   { id: "notifications", label: "Notification Library", icon: Bell, group: "builders" },
-  { id: "assets", label: "Assets", icon: Boxes, badge: "48", group: "builders" },
+  { id: "icons", label: "Icon Library", icon: Palette, badge: "200+", group: "builders" },
+  { id: "assets", label: "Project Assets", icon: Boxes, group: "builders" },
   { id: "snippets", label: "Snippets", icon: Code2, group: "builders" },
+
   { id: "exporter", label: "Package Exporter", icon: Package, group: "builders" },
   { id: "queue", label: "Build Queue", icon: ListChecks, badge: "2", group: "builders" },
 

@@ -7,6 +7,7 @@ export type SectionId =
   | "aspiration"
   | "notifications"
   | "tuning"
+  | "icons"
   | "assets"
   | "reference"
   | "exporter"
@@ -29,7 +30,8 @@ export const SECTION_LABEL: Record<SectionId, string> = {
   aspiration: "Aspiration Builder",
   notifications: "Notification Library",
   tuning: "Tuning Editor",
-  assets: "Assets",
+  icons: "Icon Library",
+  assets: "Project Assets",
   reference: "Reference Viewer",
   exporter: "Package Exporter",
   validation: "Validation Center",
@@ -42,3 +44,4 @@ export const SECTION_LABEL: Record<SectionId, string> = {
   updates: "Update Center",
   settings: "Settings",
 };
+
