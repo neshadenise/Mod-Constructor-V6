@@ -19,6 +19,7 @@ export type SectionId =
   | "timeline"
   | "analytics"
   | "updates"
+  | "community"
   | "settings";
 
 export const SECTION_LABEL: Record<SectionId, string> = {
@@ -42,6 +43,7 @@ export const SECTION_LABEL: Record<SectionId, string> = {
   timeline: "Activity Timeline",
   analytics: "Build Analytics",
   updates: "Update Center",
+  community: "Community Library",
   settings: "Settings",
 };
 

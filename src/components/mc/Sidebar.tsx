@@ -22,6 +22,7 @@ import {
   BarChart3,
   Radio,
   Palette,
+  Globe2,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -33,7 +34,7 @@ type Item = {
   label: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   badge?: string | null;
-  group: "workspace" | "builders" | "insights" | "advanced";
+  group: "workspace" | "builders" | "library" | "insights" | "advanced";
   advanced?: boolean;
 };
 
@@ -55,6 +56,8 @@ export const SIDEBAR_ITEMS: Item[] = [
   { id: "exporter", label: "Package Exporter", icon: Package, group: "builders" },
   { id: "queue", label: "Build Queue", icon: ListChecks, badge: "2", group: "builders" },
 
+  { id: "community", label: "Community Library", icon: Globe2, badge: "Beta", group: "library" },
+
   { id: "graph", label: "Dependency Graph", icon: Network, group: "insights" },
   { id: "timeline", label: "Activity", icon: History, group: "insights" },
   { id: "analytics", label: "Build Analytics", icon: BarChart3, group: "insights" },
@@ -70,6 +73,7 @@ export const SIDEBAR_ITEMS: Item[] = [
 const groups: { key: Item["group"]; label: string; advanced?: boolean }[] = [
   { key: "workspace", label: "Workspace" },
   { key: "builders", label: "Builders" },
+  { key: "library", label: "Library" },
   { key: "insights", label: "Insights" },
   { key: "advanced", label: "Advanced", advanced: true },
 ];
