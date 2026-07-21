@@ -1443,20 +1443,120 @@ function EventEditor({
   );
 }
 
-/* ---------- Trait Builder ---------- */
+/* ---------- Trait Builder (Zerbu V5 aligned) ---------- */
+
+const TRAIT_TYPES = ["Personality", "Gameplay", "Hidden", "Aspiration", "Phase"] as const;
+type TraitType = (typeof TRAIT_TYPES)[number];
+const TRAIT_CATEGORIES = ["Emotional", "Hobby", "Lifestyle", "Social"] as const;
+type TraitCategory = (typeof TRAIT_CATEGORIES)[number];
+
+const TRAIT_AGES = [
+  { id: "infant", label: "Infant" },
+  { id: "toddler", label: "Toddler" },
+  { id: "child", label: "Child" },
+  { id: "teen", label: "Teen" },
+  { id: "youngAdult", label: "Young Adult" },
+  { id: "adult", label: "Adult" },
+  { id: "elder", label: "Elder" },
+] as const;
+type AgeId = (typeof TRAIT_AGES)[number]["id"];
+
+const EMOTIONS_V5 = [
+  "Happy", "Angry", "Bored", "Confident", "Embarrassed", "Energized",
+  "Fine", "Flirty", "Focused", "Inspired", "Playful", "Sad",
+  "Stressed", "Uncomfortable", "Scared",
+] as const;
+type EmotionV5 = (typeof EMOTIONS_V5)[number];
+
+const VOICE_EFFECTS = ["None", "Robotic", "Ghost", "Alien", "Muffled", "Underwater", "Whisper"];
+
+type TraitBuff = {
+  id: string;
+  name: string;
+  description: string;
+  emotion: EmotionV5;
+  weight: number;
+  duration: string;
+  hasEmotion: boolean;
+  color: string;
+  icon: string;
+};
+
+type TraitTab =
+  | "identity"
+  | "buffs"
+  | "special"
+  | "modifiers"
+  | "social"
+  | "advanced";
+
+const EMOTION_COLOR: Record<EmotionV5, string> = {
+  Happy: "green", Angry: "red", Bored: "gray", Confident: "amber",
+  Embarrassed: "pink", Energized: "yellow", Fine: "blue", Flirty: "pink",
+  Focused: "blue", Inspired: "violet", Playful: "orange", Sad: "blue",
+  Stressed: "red", Uncomfortable: "gray", Scared: "violet",
+};
+
+const EMOTION_ICON: Record<EmotionV5, string> = {
+  Happy: "😊", Angry: "😠", Bored: "😐", Confident: "😎",
+  Embarrassed: "😳", Energized: "⚡", Fine: "🙂", Flirty: "😘",
+  Focused: "🎯", Inspired: "💡", Playful: "😄", Sad: "😢",
+  Stressed: "😰", Uncomfortable: "😖", Scared: "😱",
+};
 
 function TraitBuilder() {
   const { advanced } = useAdvanced();
+  const [tab, setTab] = useState<TraitTab>("identity");
+
   const [name, setName] = useState("Lucid Dreamer");
-  const [category, setCategory] = useState("Emotional");
   const [description, setDescription] = useState(
     "This Sim experiences vivid dreams that grant temporary skill boosts on waking.",
   );
-  const [buffs, setBuffs] = useState([
-    { name: "Well-Rested Focus", dur: "6h", mood: "Focused", strength: 2, color: "blue", icon: "🎯" },
-    { name: "Dream Recall", dur: "3h", mood: "Inspired", strength: 1, color: "violet", icon: "💭" },
-    { name: "Foggy Morning", dur: "2h", mood: "Tense", strength: 1, color: "orange", icon: "🌫️" },
+  const [icon, setIcon] = useState("ic_trait_lucid.png");
+  const [traitType, setTraitType] = useState<TraitType>("Personality");
+  const [category, setCategory] = useState<TraitCategory>("Emotional");
+  const [ages, setAges] = useState<Record<AgeId, boolean>>({
+    infant: false, toddler: false, child: true, teen: true,
+    youngAdult: true, adult: true, elder: true,
+  });
+
+  const [buffs, setBuffs] = useState<TraitBuff[]>([
+    { id: "b1", name: "Well-Rested Focus", description: "Sharp after a good dream.", emotion: "Focused", weight: 2, duration: "6h", hasEmotion: true, color: "blue", icon: "🎯" },
+    { id: "b2", name: "Dream Recall", description: "Struck by a vivid memory.", emotion: "Inspired", weight: 1, duration: "3h", hasEmotion: true, color: "violet", icon: "💭" },
+    { id: "b3", name: "Foggy Morning", description: "Slow to shake the dream.", emotion: "Uncomfortable", weight: 1, duration: "2h", hasEmotion: true, color: "gray", icon: "🌫️" },
   ]);
+  const [selectedBuffId, setSelectedBuffId] = useState<string>("b1");
+  const selectedBuff = buffs.find((b) => b.id === selectedBuffId) ?? buffs[0];
+
+  const [blockAging, setBlockAging] = useState<Record<AgeId, boolean>>({
+    infant: false, toddler: false, child: false, teen: false,
+    youngAdult: false, adult: false, elder: false,
+  });
+  const [blockedEmotions, setBlockedEmotions] = useState<EmotionV5[]>([]);
+  const [hideRelationships, setHideRelationships] = useState(false);
+  const [immuneToDeath, setImmuneToDeath] = useState(false);
+  const [isNonPersisted, setIsNonPersisted] = useState(false);
+  const [isNPCOnly, setIsNPCOnly] = useState(false);
+  const [isGlobalTrait, setIsGlobalTrait] = useState(false);
+  const [traitOrigin, setTraitOrigin] = useState("Earned through vivid dreaming.");
+  const [voiceEffect, setVoiceEffect] = useState("None");
+
+  const [skillMults, setSkillMults] = useState([
+    { skill: "Logic", mult: 1.15 },
+    { skill: "Wellness", mult: 1.10 },
+  ]);
+  const [needMults, setNeedMults] = useState([{ need: "Energy Decay", mult: 0.85 }]);
+  const [relMults, setRelMults] = useState([{ track: "Friendship (gain)", mult: 1.05 }]);
+  const [commodities, setCommodities] = useState([{ commodity: "Autonomy: Sleep", weight: 1.5 }]);
+
+  const [whimSet, setWhimSet] = useState("Whims_LucidDreamer");
+  const [socialInteractions, setSocialInteractions] = useState(["Share Dream Story", "Ask About Nightmares"]);
+  const [buffReplacements, setBuffReplacements] = useState([{ from: "Buff_Tired", to: "Buff_Focused_Lucid" }]);
+  const [proximityBuffs, setProximityBuffs] = useState(["Buff_LucidAmbience"]);
+
+  const [lootActionSets, setLootActionSets] = useState(["Loot_TraitAdd_LucidWelcome"]);
+  const [blacklist, setBlacklist] = useState(["Insomniac", "Hot-Headed"]);
+  const [whitelist, setWhitelist] = useState<string[]>([]);
 
   const previewData: TraitPreviewData = {
     name,
@@ -1466,118 +1566,636 @@ function TraitBuilder() {
     color: "violet",
     buffs: buffs.map((b) => ({
       name: b.name,
-      mood: `${b.mood} +${b.strength}`,
-      duration: b.dur,
-      color: b.color,
-      icon: b.icon,
-      description: `Triggered by ${name}. Adds ${b.mood} for ${b.dur}.`,
+      mood: `${b.emotion} +${b.weight}`,
+      duration: b.duration,
+      color: EMOTION_COLOR[b.emotion] ?? "blue",
+      icon: b.icon || EMOTION_ICON[b.emotion],
+      description: b.description || `Triggered by ${name}.`,
     })),
     effects: [
-      "Boosts skill gain when waking up rested",
-      "Occasional Inspired moodlet after long naps",
-      "Small chance to talk about dreams autonomously",
-    ],
-    autonomy:
-      "Sims with this trait will occasionally nap during the day and share dream stories with friends.",
+      traitType === "Personality" ? `Category: ${category}` : `Type: ${traitType}`,
+      hideRelationships ? "Hides relationship panel entries" : "Standard relationship visibility",
+      immuneToDeath ? "Sim cannot die from most causes" : "",
+      isGlobalTrait ? "Applies globally to all matching Sims" : "",
+    ].filter(Boolean),
+    autonomy: traitOrigin,
   };
+
+  const tabs: { id: TraitTab; label: string; icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; advanced?: boolean }[] = [
+    { id: "identity", label: "Identity", icon: Sparkles },
+    { id: "buffs", label: "Buffs & Moodlets", icon: Bell },
+    { id: "special", label: "Special Cases", icon: Shield, advanced: true },
+    { id: "modifiers", label: "Modifiers", icon: Sliders, advanced: true },
+    { id: "social", label: "Social & Whims", icon: Users, advanced: true },
+    { id: "advanced", label: "Advanced", icon: FileCode2, advanced: true },
+  ];
+
+  const toggleAge = (id: AgeId) => setAges((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggleBlockAge = (id: AgeId) => setBlockAging((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const editor = (
     <div className="space-y-4">
       <PageHeader
         icon={Sparkles}
-        subtitle="Builder"
+        subtitle="Builder · V5 aligned"
         title="Trait Builder"
         accent="violet"
         actions={
           <>
-            <GhostBtn icon={Wand2}>Template</GhostBtn>
+            <GhostBtn icon={Wand2} onClick={() => toast("Applied Lucid Dreamer template")}>Template</GhostBtn>
             <GhostBtn icon={Save} onClick={() => toast.success("Trait saved")}>Save Draft</GhostBtn>
-            <PrimaryBtn icon={Play} onClick={() => toast.success("Trait compiled")}>Compile</PrimaryBtn>
+            <PrimaryBtn icon={Play} onClick={() => toast.success("Trait compiled → lucid_dreamer.package")}>
+              Compile
+            </PrimaryBtn>
           </>
         }
       />
 
-      <Card title="Trait Definition">
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Trait Name" value={name} onChange={setName} />
-          <Field label="Category" value={category} onChange={setCategory} />
-          {advanced && <Field label="Internal ID" value="trait_lucid_dreamer" />}
-          {advanced && <Field label="Icon Reference" value="ic_trait_lucid.png" />}
-          <div className="col-span-2">
-            <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Description
-            </label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="h-16 resize-none text-xs"
-            />
-          </div>
+      {!advanced && (
+        <div className="rounded-lg border border-[var(--violet)]/25 bg-[var(--violet)]/5 px-3 py-2 text-[11px] text-muted-foreground">
+          Simple mode — Identity and Buffs are shown. Turn on Advanced in the top bar for special cases, modifiers, social interactions, and raw tuning.
         </div>
+      )}
 
-        <div className="mt-4">
-          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Conflicts With
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {["Insomniac", "Hot-Headed", "Gloomy"].map((t) => (
-              <span key={t} className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10px] font-medium">
-                ⊘ {t}
-              </span>
-            ))}
-            <button className="rounded-full border border-dashed border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-accent">
-              + Add
-            </button>
-          </div>
-        </div>
-      </Card>
+      <div className="flex flex-wrap items-center gap-1 border-b border-border">
+        {tabs
+          .filter((t) => !t.advanced || advanced)
+          .map((t) => {
+            const Ic = t.icon;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 border-b-2 px-3 py-1.5 text-[11.5px] font-semibold transition-colors",
+                  tab === t.id
+                    ? "border-[var(--violet)] text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Ic className="h-3.5 w-3.5" />
+                {t.label}
+                {t.advanced && (
+                  <span className="rounded bg-muted px-1 py-0.5 text-[9px] font-bold text-muted-foreground">
+                    ADV
+                  </span>
+                )}
+              </button>
+            );
+          })}
+      </div>
 
-      <Card
-        title="Buffs & Moodlets"
-        action={<CopyToMenu what="all buffs" label="Copy buffs to…" disallowBranches />}
-      >
-        <ul className="space-y-1.5 text-xs">
-          {buffs.map((b, i) => (
-            <li key={b.name + i} className="rounded-md border border-border bg-background/60 p-2">
-              <div className="grid grid-cols-[1fr_5rem_5rem] gap-2">
-                <Input
-                  value={b.name}
-                  onChange={(e) =>
-                    setBuffs((prev) => prev.map((x, xi) => (xi === i ? { ...x, name: e.target.value } : x)))
-                  }
-                  className="h-7 text-xs"
-                />
-                <Input
-                  value={b.mood}
-                  onChange={(e) =>
-                    setBuffs((prev) => prev.map((x, xi) => (xi === i ? { ...x, mood: e.target.value } : x)))
-                  }
-                  className="h-7 text-xs"
-                />
-                <Input
-                  value={b.dur}
-                  onChange={(e) =>
-                    setBuffs((prev) => prev.map((x, xi) => (xi === i ? { ...x, dur: e.target.value } : x)))
-                  }
-                  className="h-7 text-xs"
+      {tab === "identity" && (
+        <div className="space-y-4">
+          <Card title="Trait Identity">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Trait Name" value={name} onChange={setName} />
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Trait Type
+                </label>
+                <select
+                  value={traitType}
+                  onChange={(e) => setTraitType(e.target.value as TraitType)}
+                  className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
+                >
+                  {TRAIT_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <div className="mt-1 text-[10px] text-muted-foreground">
+                  Personality shows in CAS; Hidden is set by gameplay only.
+                </div>
+              </div>
+              {traitType === "Personality" && (
+                <div>
+                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Category
+                  </label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value as TraitCategory)}
+                    className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
+                  >
+                    {TRAIT_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {advanced && <Field label="Icon Reference" value={icon} onChange={setIcon} />}
+              <div className="col-span-2">
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Description
+                </label>
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="h-16 resize-none text-xs"
                 />
               </div>
-            </li>
-          ))}
-        </ul>
-        <button
-          onClick={() =>
-            setBuffs((prev) => [...prev, { name: "New Buff", dur: "2h", mood: "Happy", strength: 1, color: "green", icon: "🙂" }])
-          }
-          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent"
+            </div>
+          </Card>
+
+          <Card title="Available For (Ages)">
+            <div className="flex flex-wrap gap-1.5">
+              {TRAIT_AGES.map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => toggleAge(a.id)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors",
+                    ages[a.id]
+                      ? "border-[var(--violet)] bg-[var(--violet)]/10 text-foreground"
+                      : "border-border bg-muted/40 text-muted-foreground hover:bg-accent",
+                  )}
+                >
+                  {ages[a.id] ? "✓ " : ""}{a.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 text-[10px] text-muted-foreground">
+              Uncheck an age to hide the trait from that life stage.
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {tab === "buffs" && (
+        <Card
+          title="Buffs & Moodlets"
+          action={<CopyToMenu what="all buffs" label="Copy buffs to…" disallowBranches />}
         >
-          <Plus className="h-3 w-3" /> Add Buff
-        </button>
-      </Card>
+          <div className="mb-2 flex flex-wrap gap-1">
+            {buffs.map((b) => (
+              <button
+                key={b.id}
+                onClick={() => setSelectedBuffId(b.id)}
+                className={cn(
+                  "rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors",
+                  b.id === selectedBuffId
+                    ? "border-[var(--violet)] bg-[var(--violet)]/10"
+                    : "border-border bg-muted/40 text-muted-foreground hover:bg-accent",
+                )}
+              >
+                {b.icon} {b.name || "Untitled"}
+              </button>
+            ))}
+            <button
+              onClick={() => {
+                const id = `b${Date.now()}`;
+                setBuffs((p) => [
+                  ...p,
+                  { id, name: "New Buff", description: "", emotion: "Happy", weight: 1, duration: "2h", hasEmotion: true, color: "green", icon: "🙂" },
+                ]);
+                setSelectedBuffId(id);
+              }}
+              className="rounded-md border border-dashed border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
+            >
+              <Plus className="mr-1 inline h-3 w-3" /> Add Buff
+            </button>
+          </div>
+
+          {selectedBuff && (
+            <div className="space-y-3 rounded-md border border-border bg-background/60 p-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Field
+                  label="Buff Name"
+                  value={selectedBuff.name}
+                  onChange={(v) => setBuffs((p) => p.map((b) => b.id === selectedBuff.id ? { ...b, name: v } : b))}
+                />
+                <div>
+                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Emotion
+                  </label>
+                  <select
+                    value={selectedBuff.emotion}
+                    onChange={(e) => setBuffs((p) => p.map((b) => b.id === selectedBuff.id ? { ...b, emotion: e.target.value as EmotionV5, color: EMOTION_COLOR[e.target.value as EmotionV5] } : b))}
+                    className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
+                  >
+                    {EMOTIONS_V5.map((em) => (
+                      <option key={em} value={em}>{EMOTION_ICON[em]} {em}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Emotion Weight
+                  </label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={5}
+                    value={selectedBuff.weight}
+                    onChange={(e) => setBuffs((p) => p.map((b) => b.id === selectedBuff.id ? { ...b, weight: Number(e.target.value) || 1 } : b))}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <Field
+                  label="Duration"
+                  value={selectedBuff.duration}
+                  onChange={(v) => setBuffs((p) => p.map((b) => b.id === selectedBuff.id ? { ...b, duration: v } : b))}
+                  hint="e.g. 4h, 240 min, permanent"
+                />
+                <div className="col-span-2">
+                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Description
+                  </label>
+                  <Textarea
+                    value={selectedBuff.description}
+                    onChange={(e) => setBuffs((p) => p.map((b) => b.id === selectedBuff.id ? { ...b, description: e.target.value } : b))}
+                    className="h-14 resize-none text-xs"
+                  />
+                </div>
+                <label className="col-span-2 inline-flex items-center gap-2 text-[11.5px]">
+                  <input
+                    type="checkbox"
+                    checked={selectedBuff.hasEmotion}
+                    onChange={(e) => setBuffs((p) => p.map((b) => b.id === selectedBuff.id ? { ...b, hasEmotion: e.target.checked } : b))}
+                  />
+                  Visible in the Moodlets panel
+                  <span className="text-muted-foreground">(uncheck for silent buffs)</span>
+                </label>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    const remaining = buffs.filter((b) => b.id !== selectedBuff.id);
+                    setBuffs(remaining);
+                    setSelectedBuffId(remaining[0]?.id ?? "");
+                  }}
+                  className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[10.5px] text-muted-foreground hover:bg-destructive hover:text-white"
+                >
+                  <Trash2 className="h-3 w-3" /> Delete buff
+                </button>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {tab === "special" && advanced && (
+        <div className="space-y-4">
+          <Card title="Behavior Flags">
+            <div className="grid grid-cols-2 gap-2 text-[11.5px]">
+              <FlagToggle checked={hideRelationships} onChange={setHideRelationships} label="Hide from Relationships panel" />
+              <FlagToggle checked={immuneToDeath} onChange={setImmuneToDeath} label="Immune to death" />
+              <FlagToggle checked={isNonPersisted} onChange={setIsNonPersisted} label="Non-persisted (temporary)" />
+              <FlagToggle checked={isNPCOnly} onChange={setIsNPCOnly} label="NPC-only" />
+              <FlagToggle checked={isGlobalTrait} onChange={setIsGlobalTrait} label="Global trait (all matching Sims)" />
+            </div>
+          </Card>
+
+          <Card title="Aging & Voice">
+            <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Block Aging From</div>
+            <div className="flex flex-wrap gap-1.5">
+              {TRAIT_AGES.map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => toggleBlockAge(a.id)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors",
+                    blockAging[a.id]
+                      ? "border-[var(--red)] bg-[var(--red)]/10 text-foreground"
+                      : "border-border bg-muted/40 text-muted-foreground hover:bg-accent",
+                  )}
+                >
+                  {blockAging[a.id] ? "⏸ " : ""}{a.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Voice Effect
+                </label>
+                <select
+                  value={voiceEffect}
+                  onChange={(e) => setVoiceEffect(e.target.value)}
+                  className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
+                >
+                  {VOICE_EFFECTS.map((v) => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
+              <Field label="Trait Origin" value={traitOrigin} onChange={setTraitOrigin} hint="Shown as the 'how did I get this trait?' text." />
+            </div>
+          </Card>
+
+          <Card title="Blocked Emotions">
+            <div className="flex flex-wrap gap-1.5">
+              {EMOTIONS_V5.map((em) => {
+                const on = blockedEmotions.includes(em);
+                return (
+                  <button
+                    key={em}
+                    onClick={() => setBlockedEmotions((p) => on ? p.filter((x) => x !== em) : [...p, em])}
+                    className={cn(
+                      "rounded-full border px-2 py-0.5 text-[10.5px] font-semibold transition-colors",
+                      on
+                        ? "border-[var(--red)] bg-[var(--red)]/10 text-foreground"
+                        : "border-border bg-muted/40 text-muted-foreground hover:bg-accent",
+                    )}
+                  >
+                    {on ? "⊘ " : ""}{EMOTION_ICON[em]} {em}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-2 text-[10px] text-muted-foreground">
+              Sims with this trait cannot enter selected emotions.
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {tab === "modifiers" && advanced && (
+        <div className="space-y-4">
+          <MultiplierList title="Skill Multipliers" hint="Multiplies skill gain rate while active." rows={skillMults} keyLabel="Skill" keyField="skill" onChange={setSkillMults} />
+          <MultiplierList title="Need Modifiers" hint="Values <1 slow decay, >1 speed it up." rows={needMults} keyLabel="Need" keyField="need" onChange={setNeedMults} />
+          <MultiplierList title="Relationship Track Multipliers" hint="Applied to relationship gains/losses." rows={relMults} keyLabel="Track" keyField="track" onChange={setRelMults} />
+          <Card title="Autonomy Commodities">
+            <div className="mb-2 text-[10px] text-muted-foreground">Higher weight → more likely to run related interactions autonomously.</div>
+            <ul className="space-y-1.5">
+              {commodities.map((c, i) => (
+                <li key={i} className="grid grid-cols-[1fr_6rem_auto] gap-2">
+                  <Input
+                    value={c.commodity}
+                    onChange={(e) => setCommodities((p) => p.map((x, xi) => xi === i ? { ...x, commodity: e.target.value } : x))}
+                    className="h-7 text-xs"
+                  />
+                  <Input
+                    type="number"
+                    step="0.05"
+                    value={c.weight}
+                    onChange={(e) => setCommodities((p) => p.map((x, xi) => xi === i ? { ...x, weight: Number(e.target.value) || 0 } : x))}
+                    className="h-7 text-xs"
+                  />
+                  <button
+                    onClick={() => setCommodities((p) => p.filter((_, xi) => xi !== i))}
+                    className="rounded-md border border-border px-2 text-muted-foreground hover:bg-accent"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => setCommodities((p) => [...p, { commodity: "New Commodity", weight: 1 }])}
+              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent"
+            >
+              <Plus className="h-3 w-3" /> Add Commodity
+            </button>
+          </Card>
+        </div>
+      )}
+
+      {tab === "social" && advanced && (
+        <div className="space-y-4">
+          <Card title="Whim Set">
+            <Field label="Whim Set Reference" value={whimSet} onChange={setWhimSet} hint="Whim set used when this trait is active." />
+          </Card>
+
+          <Card title="Social Interactions">
+            <ul className="space-y-1">
+              {socialInteractions.map((si, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <Input
+                    value={si}
+                    onChange={(e) => setSocialInteractions((p) => p.map((x, xi) => xi === i ? e.target.value : x))}
+                    className="h-7 text-xs"
+                  />
+                  <button
+                    onClick={() => setSocialInteractions((p) => p.filter((_, xi) => xi !== i))}
+                    className="rounded-md border border-border p-1 text-muted-foreground hover:bg-accent"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => setSocialInteractions((p) => [...p, "New Interaction"])}
+              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent"
+            >
+              <Plus className="h-3 w-3" /> Add Interaction
+            </button>
+          </Card>
+
+          <Card title="Buff Replacements">
+            <div className="mb-2 text-[10px] text-muted-foreground">Replace the "from" buff with the "to" buff while trait is active.</div>
+            <ul className="space-y-1.5">
+              {buffReplacements.map((r, i) => (
+                <li key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                  <Input
+                    value={r.from}
+                    placeholder="Original buff"
+                    onChange={(e) => setBuffReplacements((p) => p.map((x, xi) => xi === i ? { ...x, from: e.target.value } : x))}
+                    className="h-7 text-xs"
+                  />
+                  <Input
+                    value={r.to}
+                    placeholder="Replacement buff"
+                    onChange={(e) => setBuffReplacements((p) => p.map((x, xi) => xi === i ? { ...x, to: e.target.value } : x))}
+                    className="h-7 text-xs"
+                  />
+                  <button
+                    onClick={() => setBuffReplacements((p) => p.filter((_, xi) => xi !== i))}
+                    className="rounded-md border border-border p-1 text-muted-foreground hover:bg-accent"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => setBuffReplacements((p) => [...p, { from: "", to: "" }])}
+              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent"
+            >
+              <Plus className="h-3 w-3" /> Add Replacement
+            </button>
+          </Card>
+
+          <Card title="Proximity Buffs">
+            <div className="mb-2 text-[10px] text-muted-foreground">Granted to nearby Sims while this Sim is present.</div>
+            <ChipList items={proximityBuffs} onChange={setProximityBuffs} placeholder="Buff reference" />
+          </Card>
+        </div>
+      )}
+
+      {tab === "advanced" && advanced && (
+        <div className="space-y-4">
+          <Card title="Setup Actions (Loot on Trait Add)">
+            <ChipList items={lootActionSets} onChange={setLootActionSets} placeholder="Loot Action Set reference" />
+          </Card>
+
+          <Card title="Conflicting Traits (Blacklist)">
+            <ChipList items={blacklist} onChange={setBlacklist} placeholder="Trait name" />
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              Sims cannot receive this trait if they already have any listed trait.
+            </div>
+          </Card>
+
+          <Card title="Required Traits (Whitelist)">
+            <ChipList items={whitelist} onChange={setWhitelist} placeholder="Trait name" />
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              Only Sims with a listed trait can receive this one.
+            </div>
+          </Card>
+
+          <Card title="XML Manifest Preview" action={<GhostBtn icon={Copy} onClick={() => toast("XML copied")}>Copy</GhostBtn>}>
+            <pre className="max-h-64 overflow-auto rounded-md bg-muted/40 p-3 text-[10.5px] leading-relaxed">
+{`<Trait n="${name.replace(/\s+/g, "_")}"
+  type="${traitType}"${traitType === "Personality" ? `
+  category="TraitGroup_${category}"` : ""}
+  ages="${TRAIT_AGES.filter((a) => ages[a.id]).map((a) => a.label).join(",")}"
+  hide_relationships="${hideRelationships}"
+  can_die="${!immuneToDeath}"
+  persistable="${!isNonPersisted}"
+  npc_only="${isNPCOnly}"
+  global="${isGlobalTrait}"
+  voice_effect="${voiceEffect}">
+  <buffs count="${buffs.length}" />
+  <block_aging count="${TRAIT_AGES.filter((a) => blockAging[a.id]).length}" />
+  <blocked_emotions count="${blockedEmotions.length}" />
+  <skill_multipliers count="${skillMults.length}" />
+  <social_interactions count="${socialInteractions.length}" />
+  <buff_replacements count="${buffReplacements.length}" />
+  <blacklist_traits count="${blacklist.length}" />
+</Trait>`}
+            </pre>
+          </Card>
+        </div>
+      )}
     </div>
   );
 
   return <PreviewSplit editor={editor} preview={<TraitPreview data={previewData} />} />;
+}
+
+/* ---------- Trait Builder helpers ---------- */
+
+function FlagToggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background/60 px-2 py-1.5 hover:bg-accent/40">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span>{label}</span>
+    </label>
+  );
+}
+
+function ChipList({
+  items,
+  onChange,
+  placeholder,
+}: {
+  items: string[];
+  onChange: (v: string[]) => void;
+  placeholder: string;
+}) {
+  const [draft, setDraft] = useState("");
+  return (
+    <div>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((it, i) => (
+          <span key={it + i} className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10.5px]">
+            {it}
+            <button
+              onClick={() => onChange(items.filter((_, xi) => xi !== i))}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              ×
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="mt-2 flex gap-1.5">
+        <Input
+          value={draft}
+          placeholder={placeholder}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && draft.trim()) {
+              onChange([...items, draft.trim()]);
+              setDraft("");
+            }
+          }}
+          className="h-7 text-xs"
+        />
+        <button
+          onClick={() => { if (draft.trim()) { onChange([...items, draft.trim()]); setDraft(""); } }}
+          className="rounded-md border border-border px-2 text-[11px] hover:bg-accent"
+        >
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type MultiplierRow = Record<string, string | number>;
+function MultiplierList<T extends MultiplierRow>({
+  title,
+  hint,
+  rows,
+  keyLabel,
+  keyField,
+  onChange,
+}: {
+  title: string;
+  hint?: string;
+  rows: T[];
+  keyLabel: string;
+  keyField: keyof T & string;
+  onChange: (rows: T[]) => void;
+}) {
+  return (
+    <Card title={title}>
+      {hint && <div className="mb-2 text-[10px] text-muted-foreground">{hint}</div>}
+      <div className="grid grid-cols-[1fr_6rem_auto] gap-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span>{keyLabel}</span>
+        <span>Multiplier</span>
+        <span />
+      </div>
+      <ul className="mt-1 space-y-1.5">
+        {rows.map((r, i) => (
+          <li key={i} className="grid grid-cols-[1fr_6rem_auto] gap-2">
+            <Input
+              value={String(r[keyField])}
+              onChange={(e) => onChange(rows.map((x, xi) => xi === i ? { ...x, [keyField]: e.target.value } as T : x))}
+              className="h-7 text-xs"
+            />
+            <Input
+              type="number"
+              step="0.05"
+              value={Number(r.mult)}
+              onChange={(e) => onChange(rows.map((x, xi) => xi === i ? { ...x, mult: Number(e.target.value) || 0 } as T : x))}
+              className="h-7 text-xs"
+            />
+            <button
+              onClick={() => onChange(rows.filter((_, xi) => xi !== i))}
+              className="rounded-md border border-border px-2 text-muted-foreground hover:bg-accent"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </li>
+        ))}
+      </ul>
+      <button
+        onClick={() => onChange([...rows, { [keyField]: "New", mult: 1 } as unknown as T])}
+        className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent"
+      >
+        <Plus className="h-3 w-3" /> Add
+      </button>
+    </Card>
+  );
 }
 
 /* ---------- Aspiration Builder ---------- */
