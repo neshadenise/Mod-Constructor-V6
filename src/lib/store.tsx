@@ -609,19 +609,23 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       id: uid(),
       name: init.name,
       kind: init.kind,
-      author: init.author ?? "You",
       summary: init.summary ?? "",
-      official: false,
-      custom: true,
+      source: init.source ?? "user-created",
+      builtIn: false,
+      license: init.license,
+      difficulty: init.difficulty ?? "beginner",
+      requiredPacks: init.requiredPacks ?? [],
+      includes: init.includes ?? [],
+      targetGameVersion: init.targetGameVersion ?? "1.108+",
+      tested: init.tested ?? "untested",
       payload: init.payload ?? null,
-      rating: 0,
-      installs: 0,
       createdAt: now(),
       updatedAt: now(),
     };
     mutate((s) => ({ ...s, templates: [t, ...s.templates] }));
     return t;
   }, [mutate]);
+
 
   const updateTemplate: StoreAPI["updateTemplate"] = useCallback((id, patch) => {
     mutate((s) => ({ ...s, templates: s.templates.map((t) => t.id === id ? { ...t, ...patch, updatedAt: now() } : t) }));
@@ -752,7 +756,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       aspirations: scope(s.aspirations) as Aspiration[],
       notifications: scope(s.notifications) as NotificationTemplate[],
       assets: scope(s.assets) as Asset[],
-      templates: s.templates.filter((t) => t.custom),
+      templates: s.templates.filter((t) => !t.builtIn && t.source === "user-created"),
       snippets: s.snippets,
     };
     log({ kind: "export", entityType: "project", entityId: project.id, summary: `Exported bundle for "${project.name}"` });
