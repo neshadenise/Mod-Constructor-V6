@@ -36,48 +36,14 @@ type Node = {
   children?: Node[];
 };
 
-const TREE: Node[] = [
-  {
-    id: "p1",
-    name: "Epic Careers Overhaul",
-    updated: "2m ago",
-    children: [
-      { id: "p1-c1", name: "Marine Biologist", kind: "career", status: "building", updated: "2m ago", favorite: true },
-      { id: "p1-c2", name: "Deep-Sea Engineer", kind: "career", status: "draft", updated: "1h ago" },
-      { id: "p1-c3", name: "Reef Guardian", kind: "career", status: "validated", updated: "3h ago" },
-      { id: "p1-n1", name: "Promotion Popup", kind: "notification", status: "validated", updated: "yesterday" },
-    ],
-  },
-  {
-    id: "p2",
-    name: "Lucid Dreamer Traits",
-    updated: "1h ago",
-    children: [
-      { id: "p2-t1", name: "Lucid Dreamer", kind: "trait", status: "validated", updated: "1h ago", favorite: true },
-      { id: "p2-t2", name: "Sleepwalker", kind: "trait", status: "draft", updated: "1h ago" },
-      { id: "p2-t3", name: "Dreamweaver", kind: "trait", status: "error", updated: "2h ago" },
-      { id: "p2-a1", name: "Iconic Portrait", kind: "asset", updated: "2h ago" },
-    ],
-  },
-  {
-    id: "p3",
-    name: "Trailblazer Aspirations",
-    updated: "yesterday",
-    children: [
-      { id: "p3-as1", name: "Peak Climber", kind: "aspiration", status: "validated", updated: "yesterday" },
-      { id: "p3-as2", name: "Desert Wanderer", kind: "aspiration", status: "draft", updated: "yesterday" },
-    ],
-  },
-  {
-    id: "p4",
-    name: "Weathercore Tuning",
-    updated: "1w ago",
-    children: [
-      { id: "p4-tu1", name: "climate_hot.xml", kind: "tuning", status: "validated", updated: "1w ago" },
-      { id: "p4-tu2", name: "climate_cold.xml", kind: "tuning", status: "draft", updated: "1w ago" },
-    ],
-  },
-];
+function fmtAgo(t: number): string {
+  const diff = Date.now() - t;
+  if (diff < 60_000) return "just now";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return `${Math.floor(diff / 86_400_000)}d ago`;
+}
+
 
 const KIND_META: Record<Kind, { icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; color: string; label: string }> = {
   career: { icon: Briefcase, color: "var(--blue)", label: "Career" },
