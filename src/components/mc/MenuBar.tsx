@@ -163,9 +163,21 @@ export function MenuBar() {
           <X className="h-3 w-3" />
         </WinBtn>
       </div>
+      <Dialog open={creditsOpen} onOpenChange={setCreditsOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Credits & Acknowledgements</DialogTitle>
+            <DialogDescription>
+              Factual attribution for external work that inspired or informed Mod Constructor V6.
+            </DialogDescription>
+          </DialogHeader>
+          <CreditsContent />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 function WinBtn({ children, danger }: { children: React.ReactNode; danger?: boolean }) {
   return (
