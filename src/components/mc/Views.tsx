@@ -745,9 +745,56 @@ function QueueView() {
 /* ---------- Settings ---------- */
 
 function SettingsView() {
+  const { advanced, toggle: toggleAdvanced } = useAdvanced();
   return (
     <div className="space-y-4">
       <PageHeader icon={SettingsIcon} subtitle="Application" title="Settings" accent="violet" />
+
+      <Card
+        title="Interface Mode"
+        action={
+          <span className="text-[11px] text-muted-foreground">
+            Controls what appears in the sidebar and builders.
+          </span>
+        }
+      >
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => advanced && toggleAdvanced()}
+            className={cn(
+              "rounded-lg border p-3 text-left transition-all",
+              !advanced
+                ? "border-[var(--blue)] bg-[var(--blue)]/8 shadow-sm"
+                : "border-border bg-card hover:border-foreground/20",
+            )}
+          >
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--blue)]/15 text-[var(--blue)]">✓</span>
+              Simple
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Recommended. Guided builders, plain-English fields, one-click compile. No code required.
+            </p>
+          </button>
+          <button
+            onClick={() => !advanced && toggleAdvanced()}
+            className={cn(
+              "rounded-lg border p-3 text-left transition-all",
+              advanced
+                ? "border-[var(--orange)] bg-[var(--orange)]/8 shadow-sm"
+                : "border-border bg-card hover:border-foreground/20",
+            )}
+          >
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--orange)]/15 text-[var(--orange)]">⚙</span>
+              Advanced
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Adds the Tuning Editor, Validation panel, XML output, internal IDs, and the build log.
+            </p>
+          </button>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-12 gap-4">
         <Card title="Sims 4 Installation" className="col-span-6">
@@ -781,9 +828,15 @@ function SettingsView() {
         <Card title="Editor" className="col-span-6">
           <div className="space-y-2 text-xs">
             <Toggle label="Autosave every 30s" defaultOn />
-            <Toggle label="Enable node canvas snapping" defaultOn />
-            <Toggle label="Show hex IDs" />
-            <Toggle label="Validate on save" defaultOn />
+            <Toggle label="Confirm before compiling" defaultOn />
+            {advanced && <Toggle label="Enable node canvas snapping" defaultOn />}
+            {advanced && <Toggle label="Show hex IDs" />}
+            {advanced && <Toggle label="Validate on save" defaultOn />}
+            {!advanced && (
+              <p className="rounded-md bg-muted/40 px-2 py-1.5 text-[11px] text-muted-foreground">
+                More editor toggles appear when Advanced mode is on.
+              </p>
+            )}
           </div>
         </Card>
 
@@ -791,9 +844,9 @@ function SettingsView() {
           <div className="space-y-1.5 text-xs">
             <Row k="Application" v="Mod Constructor V6" />
             <Row k="Version" v="6.0.0 (offline build)" />
-            <Row k="Framework" v=".NET 8 · WPF portable" />
             <Row k="Runtime Mode" v="Local · no telemetry" />
             <Row k="License" v="Personal · Non-commercial" />
+            {advanced && <Row k="Framework" v=".NET 8 · WPF portable" />}
           </div>
         </Card>
       </div>
