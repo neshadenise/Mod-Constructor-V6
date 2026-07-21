@@ -32,6 +32,19 @@ import {
   Radar,
   Apple,
   MonitorCog,
+  Clock,
+  Calendar,
+  Users,
+  Bell,
+  MapPin,
+  MessageSquare,
+  Shield,
+  Image as ImageIcon,
+  Zap,
+  ChevronRight,
+  ChevronDown,
+  Copy,
+  GripVertical,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
