@@ -174,7 +174,7 @@ function CurrentProject() {
     );
   }
 
-  const meta = STATUS_META[project.status];
+  const meta = STATUS_META[project.status] ?? STATUS_META["draft"];
   const careers = store.state.careers.filter((c) => c.projectId === project.id).length;
   const traits = store.state.traits.filter((t) => t.projectId === project.id).length;
   const aspirations = store.state.aspirations.filter((a) => a.projectId === project.id).length;
