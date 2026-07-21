@@ -241,7 +241,12 @@ export function ProjectExplorer() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => toast.success("New project scaffold created")}
+            onClick={() => {
+              const p = store.createProject();
+              setSelected(p.id);
+              setExpanded((s) => ({ ...s, [p.id]: true }));
+              toast.success(`Created "${p.name}"`);
+            }}
             className="inline-flex items-center gap-1.5 rounded-md bg-[var(--blue)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90"
           >
             <Plus className="h-3.5 w-3.5" /> New Project
