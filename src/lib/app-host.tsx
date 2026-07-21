@@ -97,9 +97,11 @@ export function AppHostProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AppHostCapabilities>(() => {
     const isChatGPT = mode === "chatgpt";
     const isDesktop = mode === "desktop";
-    const availableImageProviders: ImageProvider[] = isChatGPT
-      ? ["chatgpt", "local"]
-      : ["local", "stable-diffusion", "openai-api", "none"];
+    // ChatGPT image generation is intentionally NOT offered as an active
+    // provider: neither the standalone desktop app nor the web preview can
+    // consume a user's ChatGPT subscription. The tile remains visible in
+    // Settings only as a disabled "Coming later" affordance.
+    const availableImageProviders: ImageProvider[] = ["local", "stable-diffusion", "openai-api", "none"];
     return {
       mode,
       isChatGPT,
@@ -108,8 +110,7 @@ export function AppHostProvider({ children }: { children: React.ReactNode }) {
       imageProvider,
       setImageProvider,
       canGenerateImagesInline:
-        (isChatGPT && imageProvider === "chatgpt") ||
-        (isDesktop && (imageProvider === "stable-diffusion" || imageProvider === "openai-api")),
+        imageProvider === "stable-diffusion" || imageProvider === "openai-api",
       canExportToDesktop: true,
       mcpTools: isChatGPT ? MCP_TOOLS : [],
     };
