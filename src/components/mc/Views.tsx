@@ -2668,7 +2668,7 @@ function SettingsView() {
   );
 }
 
-function Toggle({ label, defaultOn }: { label: string; defaultOn?: boolean }) {
+function SettingToggle({ label, defaultOn }: { label: string; defaultOn?: boolean }) {
   const [on, setOn] = useState(!!defaultOn);
   return (
     <label className="flex cursor-pointer items-center justify-between rounded-md px-2 py-1.5 hover:bg-accent/50">
