@@ -3289,15 +3289,6 @@ function SettingsView() {
         <Card title="About" className="col-span-6">
           <div className="space-y-1.5 text-xs">
             <Row k="Application" v="Mod Constructor V6" />
-            <Row k="Version" v="6.0.0 (offline build)" />
-            <Row k="Runtime Mode" v="Local · no telemetry" />
-            <Row k="License" v="Personal · Non-commercial" />
-            {advanced && <Row k="Framework" v=".NET 8 · WPF portable" />}
-          </div>
-        </Card>
-        <Card title="About" className="col-span-6">
-          <div className="space-y-1.5 text-xs">
-            <Row k="Application" v="Mod Constructor V6" />
             <Row k="Version" v="6.0.0" />
             <Row k="Host" v={host.isChatGPT ? "ChatGPT App" : "Standalone Desktop"} />
             <Row k="Platforms" v="Windows · macOS" />
