@@ -148,33 +148,74 @@ function SectionCard({
   );
 }
 
+const STATUS_META: Record<ProjectStatus, { label: string; c: string }> = {
+  "draft": { label: "Draft", c: "orange" },
+  "in-progress": { label: "In Progress", c: "blue" },
+  "complete": { label: "Complete", c: "green" },
+  "tested": { label: "Tested", c: "teal" },
+  "released": { label: "Released", c: "violet" },
+};
+const STATUS_ORDER: ProjectStatus[] = ["draft", "in-progress", "complete", "tested", "released"];
+
 function CurrentProject() {
+  const store = useStore();
+  const project = useActiveProject();
+
+  if (!project) {
+    return (
+      <section className="col-span-6 rounded-xl border border-dashed border-border bg-card p-5">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Current Project
+        </div>
+        <div className="mt-2 text-sm text-muted-foreground">
+          No project selected. Open <b>Projects</b> and pick one — every builder will scope to it.
+        </div>
+      </section>
+    );
+  }
+
+  const meta = STATUS_META[project.status];
+  const careers = store.state.careers.filter((c) => c.projectId === project.id).length;
+  const traits = store.state.traits.filter((t) => t.projectId === project.id).length;
+  const aspirations = store.state.aspirations.filter((a) => a.projectId === project.id).length;
+  const assets = store.state.assets.filter((a) => a.projectId === project.id).length;
+
   return (
-    <section className="col-span-6 relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-card via-card to-[color-mix(in_oklab,var(--blue)_8%,var(--card))] p-5 card-elevated">
+    <section
+      className="col-span-6 relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-card via-card to-[color-mix(in_oklab,var(--blue)_8%,var(--card))] p-5 card-elevated"
+    >
       <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[var(--teal)]/20 blur-3xl" />
       <div className="absolute -bottom-24 -right-8 h-56 w-56 rounded-full bg-[var(--violet)]/15 blur-3xl" />
       <div className="relative">
-        <div className="flex items-start justify-between">
-          <div>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--blue)]">
               Current Project
             </div>
-            <h2 className="mt-1 text-xl font-bold tracking-tight">Epic Careers Overhaul</h2>
+            <h2 className="mt-1 truncate text-xl font-bold tracking-tight">{project.name}</h2>
             <div className="mt-1 text-xs text-muted-foreground">
-              v2.4.1-beta · Sims 4 · 14 careers · 6 traits · 3 aspirations
+              v{project.version} · {careers} careers · {traits} traits · {aspirations} aspirations
+              {project.isDemo && <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide">Demo</span>}
             </div>
           </div>
-          <span className="rounded-full border border-[var(--orange)]/30 bg-[var(--orange)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--orange)]">
-            Beta
+          <span
+            className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+            style={{
+              color: `var(--${meta.c})`,
+              backgroundColor: `color-mix(in oklab, var(--${meta.c}) 14%, transparent)`,
+              border: `1px solid color-mix(in oklab, var(--${meta.c}) 30%, transparent)`,
+            }}
+          >
+            {meta.label}
           </span>
         </div>
 
         <div className="mt-4 grid grid-cols-4 gap-3">
           {[
-            { label: "Careers", val: "14", icon: Briefcase, c: "blue" },
-            { label: "Traits", val: "6", icon: Sparkles, c: "violet" },
-            { label: "Aspirations", val: "3", icon: Target, c: "teal" },
-            { label: "Assets", val: "142", icon: FileCode2, c: "orange" },
+            { label: "Careers", val: careers, icon: Briefcase, c: "blue" },
+            { label: "Traits", val: traits, icon: Sparkles, c: "violet" },
+            { label: "Aspirations", val: aspirations, icon: Target, c: "teal" },
+            { label: "Assets", val: assets, icon: FileCode2, c: "orange" },
           ].map((s) => {
             const Icon = s.icon;
             return (
@@ -187,21 +228,40 @@ function CurrentProject() {
           })}
         </div>
 
-        <div className="mt-4 flex items-center gap-2">
-          <button className="inline-flex items-center gap-1.5 rounded-md bg-[var(--blue)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90">
-            <PlayCircle className="h-3.5 w-3.5" /> Continue Building
-          </button>
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent">
-            <Eye className="h-3.5 w-3.5" /> Preview
-          </button>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</div>
+          {STATUS_ORDER.map((s) => {
+            const isActive = s === project.status;
+            const m = STATUS_META[s];
+            return (
+              <button
+                key={s}
+                onClick={() => {
+                  store.setProjectStatus(project.id, s);
+                  toast.success(`v${project.version} → ${m.label}`);
+                }}
+                className={cn(
+                  "rounded-md border px-2 py-1 text-[10px] font-semibold uppercase transition",
+                  isActive ? "border-transparent" : "border-border hover:bg-accent",
+                )}
+                style={isActive ? {
+                  color: `var(--${m.c})`,
+                  backgroundColor: `color-mix(in oklab, var(--${m.c}) 14%, transparent)`,
+                } : undefined}
+              >
+                {m.label}
+              </button>
+            );
+          })}
           <div className="ml-auto text-[11px] text-muted-foreground">
-            Last edit · 2 min ago by <span className="font-medium text-foreground">Alex</span>
+            Last edit · {new Date(project.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </div>
         </div>
       </div>
     </section>
   );
 }
+
 
 function MetricCard({
   title,
