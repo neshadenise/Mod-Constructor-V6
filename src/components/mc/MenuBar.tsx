@@ -1,6 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { Circle, Minus, Square, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { CreditsContent } from "@/components/mc/CreditsContent";
+
 
 type MenuDef = {
   label: string;
