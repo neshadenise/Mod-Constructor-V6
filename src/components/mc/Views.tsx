@@ -67,6 +67,10 @@ import {
 } from "@/lib/app-host";
 import { MCP_TOOL_DEFS } from "@/lib/mcp-tools";
 import { downloadBundle, loadBundle, emptyBundle } from "@/lib/project-store";
+import { ProjectExplorer } from "./views/ProjectExplorer";
+import { AssetManager } from "./views/AssetManager";
+import { ReferenceViewer } from "./views/ReferenceViewer";
+import { ValidationCenter } from "./views/ValidationCenter";
 
 /* ---------- Shared shell for builder pages ---------- */
 
@@ -3501,14 +3505,16 @@ export function SectionView({
 }) {
   if (active === "dashboard") return <>{DashboardEl}</>;
   if (active === "projects") return <div className="mx-auto max-w-[1600px] p-6"><ProjectsView /></div>;
+  if (active === "explorer") return <div className="mx-auto max-w-[1600px] p-6"><ProjectExplorer /></div>;
+  if (active === "reference") return <div className="mx-auto max-w-[1600px] p-6"><ReferenceViewer /></div>;
   if (active === "career") return <div className="mx-auto max-w-[1600px] p-6"><CareerBuilder /></div>;
   if (active === "trait") return <div className="mx-auto max-w-[1600px] p-6"><TraitBuilder /></div>;
   if (active === "aspiration") return <div className="mx-auto max-w-[1600px] p-6"><AspirationBuilder /></div>;
   if (active === "notifications") return <div className="mx-auto max-w-[1600px] p-6"><NotificationLibrary /></div>;
   if (active === "tuning") return <div className="mx-auto max-w-[1600px] p-6"><TuningEditor /></div>;
-  if (active === "assets") return <div className="mx-auto max-w-[1600px] p-6"><AssetsView /></div>;
+  if (active === "assets") return <div className="mx-auto max-w-[1600px] p-6"><AssetManager /></div>;
   if (active === "exporter") return <div className="mx-auto max-w-[1600px] p-6"><ExporterView /></div>;
-  if (active === "validation") return <div className="mx-auto max-w-[1600px] p-6"><ValidationView /></div>;
+  if (active === "validation") return <div className="mx-auto max-w-[1600px] p-6"><ValidationCenter /></div>;
   if (active === "queue") return <div className="mx-auto max-w-[1600px] p-6"><QueueView /></div>;
   if (active === "settings") return <div className="mx-auto max-w-[1600px] p-6"><SettingsView /></div>;
   return null;
