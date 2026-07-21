@@ -559,23 +559,20 @@ function ProjectsView() {
                       <Copy className="h-3.5 w-3.5" />
                     </button>
                     <button
-                      className={cn(
-                        "rounded p-1 hover:bg-accent",
-                        p.isDemo && "cursor-not-allowed opacity-40 hover:bg-transparent",
-                      )}
-                      disabled={p.isDemo}
+                      className="rounded p-1 hover:bg-accent"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (p.isDemo) return;
-                        if (window.confirm(`Delete "${p.name}"?`)) {
+                        const label = p.isDemo ? `Delete the demo project "${p.name}"? You can restore it later from Settings → Demo Data.` : `Delete "${p.name}"?`;
+                        if (window.confirm(label)) {
                           store.deleteProject(p.id);
                           toast.success(`Deleted "${p.name}"`);
                         }
                       }}
-                      title={p.isDemo ? "Demo project is protected" : "Delete"}
+                      title="Delete"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
+
                   </td>
                 </tr>
               );
