@@ -1,86 +1,102 @@
-# Ship ChatGPT App / MCP integration for real
+# Community Library — Beta (Supabase Free)
 
 ## Current state (verified)
 
-- `src/lib/mcp-tools.ts` defines 12 tool *descriptors* only — a UI scaffold with no runtime.
-- No `src/lib/mcp/` server entry, no `@lovable.dev/mcp-js` install, no `mcpPlugin()` in Vite, no `/mcp` route.
-- All project data lives in the browser via `src/lib/store.tsx` (localStorage). There is no per-user backend.
+- No `src/integrations/supabase/` — **Lovable Cloud is not enabled yet**.
+- No `communityUploadsEnabled` flag anywhere; `TemplatesGallery` already understands `community-submission` as a template source.
+- All project data today lives in `store.tsx` (localStorage).
 
-So today ChatGPT has nothing to connect to. This plan makes it real.
+## Approach
 
-## Decisions (from your answers)
+Ship in **two clean layers** so the frontend + service adapter can land immediately (per your rule: "if Supabase is not connected yet, build the complete frontend and service interfaces but show `Community service not configured`; do not simulate uploads"). Then, if you say the word, enable Lovable Cloud (Supabase Free under the hood — no paid upgrade) and wire the backend.
 
-- **Access:** Public — no login. This is a **public MCP server**: anyone on the internet with the URL can call these tools. Because the app has no accounts and no server database, the tools only operate on data the caller passes into the call itself — nothing about your local projects is exposed.
-- **Tool scope:** read-only inspection · authoring · bundle import/export · templates & snippets.
+### Layer 1 — Frontend + service adapter (no backend yet)
 
-## What ships
+New workspace section under **Library** in the sidebar:
 
-### 1. Install & config
-- `bun add @lovable.dev/mcp-js zod`
-- `bunfig.toml`: add `@lovable.dev/mcp-js` to `minimumReleaseAgeExcludes`.
-- `vite.config.ts`: add `mcpPlugin()` (mounts at `/mcp` — public app, default path is fine).
+- Label: `Community Library — Beta`
+- Notice banner at top of every subview:
+  > Community features depend on available free cloud capacity. Uploads may be temporarily paused while browsing and local projects remain available.
+- When adapter reports `configured: false`, subviews render a single centered card **"Community service not configured"** — no simulated data, no fake uploads/ratings/downloads/creators/reviews.
 
-### 2. MCP server (`src/lib/mcp/`)
+Subviews:
+1. **Browse** — search + filter by kind (Career / Trait / Aspiration / Buff / Notification / Snippet / Project bundle). Paginated (20/page). Lists only `approved` items. Loads compressed thumbnail preview (never full image).
+2. **My uploads** — user's own items across all statuses (draft, pending, approved, rejected, hidden). Shows quota usage: `X / 10 uploads used`.
+3. **Upload** — form with kind picker, name, description, tags, single preview image, resource file. Enforces client-side validation (see limits). Disabled entirely when `communityUploadsEnabled=false` (shows moderator-set reason).
+4. **Admin** (only for users with `admin` role, once auth is wired) — global `communityUploadsEnabled` toggle + moderation queue (pending → approve / reject / hide).
 
-Pure functions — no store, no localStorage, no env reads at module scope. Each tool takes a full state blob or the specific input it needs and returns a result. The client-side app can call the same helpers; ChatGPT calls them over MCP.
+**Service adapter** at `src/lib/community/adapter.ts` — a TypeScript interface used by every subview:
 
-```
-src/lib/mcp/
-├── index.ts                       # defineMcp — name, title, version, instructions, tools
-└── tools/
-    ├── inspect/
-    │   ├── list-projects.ts       # in: { bundle } → projects[]
-    │   ├── get-project.ts
-    │   ├── list-careers.ts
-    │   ├── list-traits.ts
-    │   ├── list-aspirations.ts
-    │   └── list-notifications.ts
-    ├── authoring/
-    │   ├── create-project.ts      # in: { name, author? } → project + patch
-    │   ├── add-career.ts          # in: { project, career } → career + patch
-    │   ├── add-trait.ts
-    │   ├── add-aspiration.ts
-    │   ├── add-notification.ts
-    │   ├── set-project-status.ts
-    │   └── bump-version.ts
-    ├── bundle/
-    │   ├── export-bundle.ts       # in: { bundle } → .mcbundle.json string
-    │   └── import-bundle.ts       # in: { bundleJson } → validated bundle
-    └── templates/
-        ├── list-templates.ts      # reads built-in templates from src/lib/builtin-templates.ts
-        ├── use-template.ts        # in: { templateId, projectName? } → scaffolded records
-        └── list-snippets.ts
+```ts
+export interface CommunityAdapter {
+  isConfigured(): boolean;
+  getFlags(): Promise<{ uploadsEnabled: boolean; reason?: string }>;
+  list(q: BrowseQuery): Promise<Page<CommunityItem>>;
+  getMine(): Promise<CommunityItem[]>;
+  upload(input: UploadInput): Promise<CommunityItem>;   // rejects when disabled or quota hit
+  download(id: string): Promise<Blob>;
+  // admin-only
+  setUploadsEnabled?(enabled: boolean, reason?: string): Promise<void>;
+  moderate?(id: string, status: ModerationStatus): Promise<void>;
+}
 ```
 
-Every tool gets accurate `title`, one-sentence `description`, and correct `annotations` (`readOnlyHint`, `destructiveHint`, `idempotentHint`). These drive the connector list and how ChatGPT chooses tools.
+Two implementations:
+- `NullAdapter` — used when Cloud is off. `isConfigured() = false`, every other method throws `CommunityServiceNotConfigured`.
+- `SupabaseAdapter` — implemented in Layer 2. Codex desktop can import the same file and pass its own Supabase creds; no UI code changes needed.
 
-### 3. Shared contracts
-- Reuse the entity types from `src/lib/types.ts` (Career, Trait, Aspiration, NotificationTemplate, Project, Bundle).
-- Zod schemas mirror the Property Inspector validation already in the app so ChatGPT-produced content passes the same checks a human would.
+**Client-side upload safeguards (both layers):**
+- Resource file: max **2 MB**; MIME must be `application/json` (Mod Constructor bundle/template/snippet). Reject everything else — no `.package`, `.ts4script`, `.zip`, video, executable.
+- Preview image: max **500 KB**, one only, accepted `image/webp`, `image/jpeg`, `image/png`.
+- Browser-side WebP compression of previews before upload via `<canvas>` + `toBlob('image/webp', 0.8)`, downscaled to 512×512 max. Only ship the compressed blob.
+- JSON validation: parse + shape-check every resource file against the corresponding Mod Constructor type before allowing upload.
+- Quota gate: **max 10 community uploads per user** (counted in DB by Layer 2; adapter surfaces `quotaRemaining`).
+- Errors shown inline; no infinite retry — one automatic retry on transient network error, then a clear failure toast.
 
-### 4. Delete UI-only scaffold
-- Remove `src/lib/mcp-tools.ts` and its imports (`Views.tsx`) — the real manifest replaces it. The Settings "App host / MCP" panel is repointed to show the live manifest from `.lovable/mcp/manifest.json`.
+**No comments · no DMs · no follows · no activity feed · no AI moderation.** Not built, not stubbed.
 
-### 5. Favicon
-- Add a simple favicon (icon-library palette mark) so the connector listing has a proper icon.
+### Layer 2 — Supabase Free backend (opt-in, follow-up)
 
-### 6. Validate & finish
-- Run `app_mcp_server--extract_mcp_manifest` after wiring.
-- Tell you the MCP exists but only works after publishing, and surface the Publish action.
+Enabled only after you confirm. Uses Lovable Cloud (Supabase Free) — no paid plan is enabled and none can be triggered automatically.
 
-## What this means in practice
+Schema (migration):
+- `community_flags(key text primary key, value jsonb, updated_at)` — seeded with `{ uploads_enabled: true }`.
+- `community_items(id, owner_id → auth.users, kind, name, description, tags text[], preview_path, resource_path, size_bytes, status enum('draft','pending','approved','rejected','hidden'), created_at, updated_at, moderated_by, moderation_note)`.
+- `user_roles(user_id, role app_role)` + `has_role()` security-definer function per platform standard.
+- Full GRANT block for every new table.
 
-- After publish, the ChatGPT connector URL is `https://<your-app>.lovable.app/mcp`.
-- In ChatGPT: Settings → Connectors → Add → paste that URL. No login prompt.
-- ChatGPT can then: list/create projects, add careers/traits/aspirations/notifications, apply built-in templates, and return a downloadable `.mcbundle.json` you import back into the app via the existing Import button.
-- Because tools are stateless, ChatGPT works on a bundle you paste in (or a fresh empty one) and returns an updated bundle — your browser stays the source of truth.
+RLS:
+- Anyone (`anon` + `authenticated`) can SELECT `community_items` **only** where `status = 'approved'`.
+- Authenticated users can SELECT their own rows in any status; can INSERT with `status IN ('draft','pending')` and `owner_id = auth.uid()`; can UPDATE/DELETE only their own draft/pending rows.
+- Admins (via `has_role`) can UPDATE status/moderation fields and toggle `community_flags`.
+- Quota enforced by a `BEFORE INSERT` trigger counting rows for `owner_id`.
 
-## Public-exposure notice
+Storage:
+- Two **private** buckets: `community-resources` (2 MB cap) and `community-previews` (500 KB cap). Objects served via short-lived signed URLs; approved-item previews signed by a `createServerFn`. No public bucket = no free-tier bandwidth surprises.
 
-This will be a **public MCP server**: anyone on the internet with the `/mcp` URL can invoke these tools and receive the JSON they return. The tools do **not** read from or write to your local browser store, and they do **not** expose your existing projects — they only operate on what the caller sends in the request. If that changes later (e.g. we add accounts + a real backend), we'd switch to the OAuth path before exposing per-user data.
+Server functions (`createServerFn` — no Edge Functions):
+- `communityList`, `communityGetMine`, `communityUpload` (validates size/MIME/quota + inserts row + returns signed upload URLs), `communityDownload`, `communitySetFlag`, `communityModerate`. All read `process.env.SUPABASE_URL` etc. inside the handler; admin ops verify role with `context.supabase` before importing `supabaseAdmin`.
 
-## Out of scope for this pass
+Auth:
+- Enable email/password + Google (Lovable-managed OAuth). Sign-in required only for uploading/managing; browsing approved items works signed-out.
 
-- User accounts / Supabase / OAuth MCP.
-- Long-running tools (image generation, large validation sweeps) — MCP is synchronous request/response; those stay in-app.
-- Two-way live sync between ChatGPT and your open browser tab (would need a backend).
+New uploads always land as `pending`. They are invisible to everyone except the owner and admins until an admin approves.
+
+## What ships in this turn
+
+**Layer 1 only** — the full UI + adapter interface + `NullAdapter`, mounted in the sidebar under Library. Every upload path is disabled with the "not configured" card. No fake data anywhere.
+
+I'll stop before Layer 2 and ask you to confirm enabling Lovable Cloud (Supabase Free) — because that's the only step that provisions cloud resources, and you asked me never to silently upgrade or enable a paid plan.
+
+## Free-tier guardrails encoded in the plan
+
+- Private buckets + signed URLs (no bandwidth-heavy public egress).
+- Hard 2 MB / 500 KB / 1-image / 10-uploads limits, enforced client-side AND server-side (RLS + trigger).
+- `communityUploadsEnabled` kill switch stops new writes without affecting reads.
+- Paginated list, thumbnail-only previews in browse view.
+- No AI, no video, no ZIP, no `.package`, no executables — MIME-checked client- and server-side.
+- Never auto-retry beyond one attempt; surface storage errors verbatim.
+
+## Out of scope (explicit non-goals)
+
+Comments, DMs, follows, activity feed, AI moderation, ratings, downloads counter, reviews, `.package` / `.ts4script` / ZIP uploads, video, multi-image galleries.
