@@ -35,7 +35,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Standalone desktop app for Sims 4 gameplay mod creators. Downloads on Patreon.",
+          "Build careers, traits, aspirations, notifications, and reusable Sims 4 gameplay mods in one guided desktop workspace by NeshaDenise Sims. Windows and macOS.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
