@@ -286,12 +286,6 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
   }, [mutate, log]);
 
   const deleteProject: StoreAPI["deleteProject"] = useCallback((id) => {
-    // Guard the built-in demo project.
-    const target = stateRef.current.projects.find((p) => p.id === id);
-    if (target?.isDemo) {
-      log({ kind: "update", entityType: "project", entityId: id, summary: `Blocked delete of demo project` });
-      return;
-    }
     mutate((s) => ({
       ...s,
       projects: s.projects.filter((p) => p.id !== id),
@@ -300,10 +294,11 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       aspirations: s.aspirations.filter((a) => a.projectId !== id),
       notifications: s.notifications.filter((n) => n.projectId !== id),
       assets: s.assets.filter((a) => a.projectId !== id),
-      activeProjectId: s.activeProjectId === id ? s.projects[0]?.id : s.activeProjectId,
+      activeProjectId: s.activeProjectId === id ? s.projects.find((p) => p.id !== id)?.id : s.activeProjectId,
     }));
     log({ kind: "delete", entityType: "project", entityId: id, summary: `Deleted project` });
   }, [mutate, log]);
+
 
   const duplicateProject: StoreAPI["duplicateProject"] = useCallback((id) => {
     const src = stateRef.current.projects.find((p) => p.id === id);
