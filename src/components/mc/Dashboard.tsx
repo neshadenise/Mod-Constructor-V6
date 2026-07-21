@@ -25,6 +25,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
+import { useStore, useActiveProject } from "@/lib/store";
+import type { ProjectStatus } from "@/lib/types";
+import { toast } from "sonner";
 
 export function Dashboard() {
   const { advanced } = useAdvanced();
