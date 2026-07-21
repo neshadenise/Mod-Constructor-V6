@@ -556,7 +556,11 @@ function AspirationBuilder() {
           />
         </Card>
 
-        <Card title="Tiers" className="col-span-7">
+        <Card
+          title="Tiers"
+          className="col-span-7"
+          action={<CopyToMenu what="all tiers & rewards" label="Copy tiers to…" disallowBranches />}
+        >
           <ol className="space-y-2">
             {[
               { t: "I", title: "Curious Wanderer", goals: ["Visit 3 lots", "Meet 5 sims"], done: true },
@@ -564,7 +568,7 @@ function AspirationBuilder() {
               { t: "III", title: "Named Explorer", goals: ["Discover secret area", "Level Fitness to 6"], done: false },
               { t: "IV", title: "Legendary Trailblazer", goals: ["Complete 3 expeditions"], done: false },
             ].map((tier) => (
-              <li key={tier.t} className="rounded-md border border-border bg-background/60 p-2.5">
+              <li key={tier.t} className="group rounded-md border border-border bg-background/60 p-2.5">
                 <div className="flex items-center gap-2">
                   <span
                     className={cn(
@@ -574,7 +578,10 @@ function AspirationBuilder() {
                   >
                     {tier.t}
                   </span>
-                  <span className="font-semibold text-xs">{tier.title}</span>
+                  <span className="flex-1 font-semibold text-xs">{tier.title}</span>
+                  <span className="opacity-0 transition-opacity group-hover:opacity-100">
+                    <CopyToMenu what={`tier ${tier.t} reward`} compact disallowBranches />
+                  </span>
                 </div>
                 <ul className="mt-1 ml-8 space-y-0.5 text-[11px] text-muted-foreground">
                   {tier.goals.map((g) => (
