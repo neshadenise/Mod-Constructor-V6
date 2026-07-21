@@ -33,9 +33,11 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   return (
-    <AdvancedModeProvider>
-      <Shell />
-    </AdvancedModeProvider>
+    <AppHostProvider>
+      <AdvancedModeProvider>
+        <Shell />
+      </AdvancedModeProvider>
+    </AppHostProvider>
   );
 }
 
