@@ -3522,6 +3522,12 @@ export function SectionView({
   if (active === "exporter") return <div className="mx-auto max-w-[1600px] p-6"><ExporterView /></div>;
   if (active === "validation") return <div className="mx-auto max-w-[1600px] p-6"><ValidationCenter /></div>;
   if (active === "queue") return <div className="mx-auto max-w-[1600px] p-6"><QueueView /></div>;
+  if (active === "templates") return <div className="mx-auto max-w-[1600px] p-6"><TemplatesGallery /></div>;
+  if (active === "snippets") return <div className="mx-auto max-w-[1600px] p-6"><SnippetsLibrary /></div>;
+  if (active === "graph") return <div className="mx-auto max-w-[1600px] p-6"><DependencyGraph /></div>;
+  if (active === "timeline") return <div className="mx-auto max-w-[1600px] p-6"><ActivityTimeline /></div>;
+  if (active === "analytics") return <div className="mx-auto max-w-[1600px] p-6"><BuildAnalytics /></div>;
+  if (active === "updates") return <div className="mx-auto max-w-[1600px] p-6"><UpdateCenter /></div>;
   if (active === "settings") return <div className="mx-auto max-w-[1600px] p-6"><SettingsView /></div>;
   return null;
 }
