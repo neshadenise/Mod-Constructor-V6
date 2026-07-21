@@ -1680,7 +1680,16 @@ function TraitBuilder() {
                   </select>
                 </div>
               )}
-              {advanced && <Field label="Icon Reference" value={icon} onChange={setIcon} />}
+              <div className="col-span-2">
+                <ImageField
+                  label="Trait Icon"
+                  value={icon}
+                  onChange={setIcon}
+                  slot="icon"
+                  hint="Small square icon shown in CAS and tooltips"
+                  context={{ subject: `${name || "trait"} icon`, style: "flat, game UI" }}
+                />
+              </div>
               <div className="col-span-2">
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Description
