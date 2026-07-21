@@ -67,6 +67,14 @@ import {
 } from "@/lib/app-host";
 import { MCP_TOOL_DEFS } from "@/lib/mcp-tools";
 import { downloadBundle, loadBundle, emptyBundle } from "@/lib/project-store";
+import { useStore, downloadBundle as downloadStoreBundle } from "@/lib/store";
+import {
+  defaultEngineCapabilities,
+  ENGINE_STATE_LABEL,
+  ENGINE_STATE_TOOLTIP,
+  type EngineCapabilities,
+  type EngineState,
+} from "@/lib/engine-capabilities";
 import { ProjectExplorer } from "./views/ProjectExplorer";
 import { AssetManager } from "./views/AssetManager";
 import { ReferenceViewer } from "./views/ReferenceViewer";
@@ -3201,10 +3209,13 @@ function SettingsView() {
 
       <HostModeCard />
 
+      <EngineCapabilitiesCard />
+
       <ImageProviderCard />
 
       {host.isChatGPT && <McpToolsCard />}
 
+      <DemoDataCard />
 
       <Card
         title="Interface Mode"
@@ -3376,24 +3387,30 @@ function HostModeCard() {
 
 function ImageProviderCard() {
   const host = useAppHost();
+  // Render the built-in "coming later" ChatGPT tile alongside the
+  // currently-available providers, even though it is not selectable.
+  const tiles: ImageProvider[] = [...host.availableImageProviders, "chatgpt"];
   return (
     <Card
       title="Image Generation Provider"
       action={
         <span className="text-[11px] text-muted-foreground">
-          Powers "Generate with ChatGPT" and related image actions.
+          Powers "Generate icon" actions in builder fields.
         </span>
       }
     >
       <div className="grid grid-cols-2 gap-2">
-        {host.availableImageProviders.map((p) => {
+        {tiles.map((p) => {
           const active = host.imageProvider === p;
-          const disabled = p === "chatgpt" && !host.isChatGPT;
+          // ChatGPT is never active: the standalone/web build cannot
+          // consume a user's ChatGPT subscription.
+          const disabled = p === "chatgpt";
           return (
             <button
               key={p}
               disabled={disabled}
               onClick={() => {
+                if (disabled) return;
                 host.setImageProvider(p);
                 toast.success(`Provider · ${PROVIDER_LABEL[p]}`);
               }}
@@ -3402,21 +3419,21 @@ function ImageProviderCard() {
                 active
                   ? "border-[var(--blue)] bg-[var(--blue)]/8 shadow-sm"
                   : "border-border bg-card hover:border-foreground/20",
-                disabled && "cursor-not-allowed opacity-50",
+                disabled && "cursor-not-allowed opacity-60",
               )}
             >
               <div className="flex items-center justify-between text-sm font-semibold">
                 <span>{PROVIDER_LABEL[p]}</span>
                 {p === "chatgpt" && (
-                  <span className="rounded-full bg-[var(--green)]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--green)]">
-                    No API key
+                  <span className="rounded-full bg-[var(--orange)]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--orange)]">
+                    Coming later
                   </span>
                 )}
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground">{PROVIDER_DESCRIPTION[p]}</p>
               {disabled && (
                 <p className="mt-1 text-[10px] italic text-muted-foreground">
-                  Only available while running in the ChatGPT App.
+                  This app cannot consume a user's ChatGPT subscription. Placeholder for a future integration.
                 </p>
               )}
             </button>
@@ -3426,6 +3443,147 @@ function ImageProviderCard() {
     </Card>
   );
 }
+
+function EngineCapabilitiesCard() {
+  const caps: EngineCapabilities = defaultEngineCapabilities;
+  const rows: { key: keyof EngineCapabilities; label: string }[] = [
+    { key: "compilePackage", label: "Compile Sims 4 .package" },
+    { key: "installToModsFolder", label: "Install into Mods folder" },
+    { key: "detectSimsInstall", label: "Detect Sims 4 install" },
+    { key: "readGameFiles", label: "Read live game files" },
+    { key: "produceProductionXml", label: "Produce production XML" },
+    { key: "nativeFilePicker", label: "Native file/folder picker" },
+    { key: "fetchThirdPartyTuning", label: "Fetch lot51.cc / Core Library updates" },
+    { key: "chatgptImageGeneration", label: "ChatGPT image generation" },
+  ];
+  const color = (s: EngineState) =>
+    s === "available"
+      ? "bg-[var(--green)]/15 text-[var(--green)]"
+      : s === "not-connected"
+      ? "bg-[var(--orange)]/15 text-[var(--orange)]"
+      : s === "coming-later"
+      ? "bg-[var(--violet)]/15 text-[var(--violet)]"
+      : "bg-muted text-muted-foreground";
+  return (
+    <Card
+      title="Engine Integrations"
+      action={
+        <span className="text-[11px] text-muted-foreground">
+          Wired by Codex in the desktop build.
+        </span>
+      }
+    >
+      <p className="mb-3 text-xs text-muted-foreground">
+        These actions need the real Mod Architect engine or an external
+        service. In this preview they show explicit states and any button
+        that depends on them is disabled with a matching tooltip.
+      </p>
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        {rows.map((r) => {
+          const s = caps[r.key];
+          return (
+            <div key={r.key} className="rounded-md border border-border bg-muted/30 p-2" title={ENGINE_STATE_TOOLTIP[s]}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold">{r.label}</span>
+                <span className={cn("rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider", color(s))}>
+                  {ENGINE_STATE_LABEL[s]}
+                </span>
+              </div>
+              <p className="mt-1 text-[10.5px] text-muted-foreground">{ENGINE_STATE_TOOLTIP[s]}</p>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function DemoDataCard() {
+  const store = useStore();
+  const [confirm, setConfirm] = useState(false);
+  return (
+    <Card
+      title="Demo Data"
+      action={
+        <span className="text-[11px] text-muted-foreground">
+          Storage · {store.adapter.label}
+        </span>
+      }
+    >
+      <p className="text-xs text-muted-foreground">
+        The prototype persists projects, careers, traits, assets, templates,
+        snippets, validation dismissals and preferences to the storage
+        adapter above. Export a portable bundle any time or reset everything
+        to a blank slate.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <GhostBtn
+          icon={Download}
+          onClick={() => {
+            const bundle = store.exportBundle();
+            downloadStoreBundle(bundle);
+            toast.success(`Exported "${bundle.project.name}"`);
+          }}
+        >
+          Export Bundle
+        </GhostBtn>
+        <GhostBtn
+          icon={Upload}
+          onClick={() => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "application/json,.mcbundle.json";
+            input.onchange = async () => {
+              const file = input.files?.[0];
+              if (!file) return;
+              try {
+                const text = await file.text();
+                const parsed = JSON.parse(text);
+                const project = store.importBundle(parsed);
+                toast.success(`Imported "${project.name}"`);
+              } catch (e) {
+                toast.error(`Import failed: ${String((e as Error)?.message ?? e)}`);
+              }
+            };
+            input.click();
+          }}
+        >
+          Import Bundle
+        </GhostBtn>
+        {!confirm ? (
+          <button
+            onClick={() => setConfirm(true)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--red)]/40 bg-background px-2.5 py-1 text-[11px] font-semibold text-[var(--red)] hover:bg-[var(--red)]/10"
+          >
+            <Trash2 className="h-3 w-3" />
+            Reset Demo Data
+          </button>
+        ) : (
+          <div className="inline-flex items-center gap-2 rounded-md border border-[var(--red)]/40 bg-[var(--red)]/5 px-2 py-1 text-[11px]">
+            <span className="font-semibold text-[var(--red)]">Delete everything?</span>
+            <button
+              onClick={async () => {
+                await store.resetDemoData();
+                setConfirm(false);
+                toast.success("Demo data cleared");
+              }}
+              className="rounded bg-[var(--red)] px-2 py-0.5 font-semibold text-white"
+            >
+              Yes, reset
+            </button>
+            <button
+              onClick={() => setConfirm(false)}
+              className="rounded border border-border px-2 py-0.5 font-semibold"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 
 function McpToolsCard() {
   const groups: Record<string, typeof MCP_TOOL_DEFS[number][]> = {};

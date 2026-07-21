@@ -14,6 +14,7 @@ import { AppHostProvider } from "@/lib/app-host";
 import { AppNavigationProvider } from "@/lib/navigation";
 import { NotificationsProvider } from "@/lib/notifications";
 import { InspectorHistoryProvider } from "@/lib/inspector-history";
+import { StoreProvider } from "@/lib/store";
 import type { SectionId } from "@/components/mc/sections";
 
 const ADVANCED_ONLY: SectionId[] = ["tuning", "validation"];
@@ -40,13 +41,15 @@ export const Route = createFileRoute("/")({
 function Index() {
   return (
     <AppHostProvider>
-      <NotificationsProvider>
-        <InspectorHistoryProvider>
-          <AdvancedModeProvider>
-            <Shell />
-          </AdvancedModeProvider>
-        </InspectorHistoryProvider>
-      </NotificationsProvider>
+      <StoreProvider>
+        <NotificationsProvider>
+          <InspectorHistoryProvider>
+            <AdvancedModeProvider>
+              <Shell />
+            </AdvancedModeProvider>
+          </InspectorHistoryProvider>
+        </NotificationsProvider>
+      </StoreProvider>
     </AppHostProvider>
   );
 }
