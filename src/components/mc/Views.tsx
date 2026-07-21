@@ -58,6 +58,15 @@ import { CareerPreview, type CareerPreviewData } from "./preview/CareerPreview";
 import { TraitPreview, type TraitPreviewData } from "./preview/TraitPreview";
 import { AspirationPreview, type AspirationPreviewData } from "./preview/AspirationPreview";
 import { NotificationLibrary } from "./preview/NotificationLibrary";
+import { ImageField } from "./ImageField";
+import {
+  useAppHost,
+  PROVIDER_LABEL,
+  PROVIDER_DESCRIPTION,
+  type ImageProvider,
+} from "@/lib/app-host";
+import { MCP_TOOL_DEFS } from "@/lib/mcp-tools";
+import { downloadBundle, loadBundle, emptyBundle } from "@/lib/project-store";
 
 /* ---------- Shared shell for builder pages ---------- */
 
