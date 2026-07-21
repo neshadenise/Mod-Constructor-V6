@@ -222,6 +222,54 @@ const PROJECTS = [
 ];
 
 function ProjectsView() {
+  const store = useStore();
+  const [filter, setFilter] = useState("");
+
+  const projects = store.state.projects;
+
+  const kindFor = (id: string) => {
+    if (store.state.careers.some((c) => c.projectId === id)) return { type: "Career", c: "blue" };
+    if (store.state.traits.some((t) => t.projectId === id)) return { type: "Trait", c: "violet" };
+    if (store.state.aspirations.some((a) => a.projectId === id)) return { type: "Aspiration", c: "teal" };
+    return { type: "Project", c: "green" };
+  };
+
+  const fmtTime = (t: number) => {
+    const diff = Date.now() - t;
+    if (diff < 60_000) return "just now";
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+    if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+    return `${Math.floor(diff / 86_400_000)}d ago`;
+  };
+
+  const handleImport = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json,.mcbundle.json,.json";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        const project = store.importBundle(parsed);
+        toast.success(`Imported "${project.name}"`);
+      } catch (e) {
+        toast.error(`Import failed: ${String((e as Error)?.message ?? e)}`);
+      }
+    };
+    input.click();
+  };
+
+  const handleNew = () => {
+    const p = store.createProject();
+    toast.success(`Created "${p.name}"`);
+  };
+
+  const filtered = projects.filter((p) =>
+    !filter || p.name.toLowerCase().includes(filter.toLowerCase())
+  );
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -231,8 +279,8 @@ function ProjectsView() {
         accent="blue"
         actions={
           <>
-            <GhostBtn icon={Upload}>Import</GhostBtn>
-            <PrimaryBtn icon={Plus} onClick={() => toast.success("New project draft created")}>
+            <GhostBtn icon={Upload} onClick={handleImport}>Import</GhostBtn>
+            <PrimaryBtn icon={Plus} onClick={handleNew}>
               New Project
             </PrimaryBtn>
           </>
@@ -242,7 +290,12 @@ function ProjectsView() {
       <div className="flex items-center gap-2">
         <div className="relative flex-1 max-w-sm">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Filter projects…" className="h-8 pl-8 text-xs" />
+          <Input
+            placeholder="Filter projects…"
+            className="h-8 pl-8 text-xs"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          />
         </div>
         <GhostBtn icon={Filter}>All Types</GhostBtn>
         <GhostBtn icon={Filter}>All Status</GhostBtn>
@@ -254,42 +307,86 @@ function ProjectsView() {
             <tr className="text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               <th className="pb-2 pl-2">Name</th>
               <th className="pb-2">Type</th>
-              <th className="pb-2">Version</th>
+              <th className="pb-2">Author</th>
               <th className="pb-2">Status</th>
               <th className="pb-2">Updated</th>
               <th />
             </tr>
           </thead>
           <tbody>
-            {PROJECTS.map((p) => (
-              <tr key={p.name} className="border-t border-border/60 hover:bg-accent/40">
-                <td className="py-2 pl-2">
-                  <div className="flex items-center gap-2">
-                    <div className="h-6 w-1 rounded" style={{ backgroundColor: `var(--${p.c})` }} />
-                    <span className="font-semibold">{p.name}</span>
-                  </div>
-                </td>
-                <td className="py-2 text-muted-foreground">{p.type}</td>
-                <td className="py-2 font-mono">{p.ver}</td>
-                <td className="py-2">
-                  <span
-                    className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
-                    style={{
-                      color: `var(--${p.c})`,
-                      backgroundColor: `color-mix(in oklab, var(--${p.c}) 12%, transparent)`,
-                    }}
-                  >
-                    {p.status}
-                  </span>
-                </td>
-                <td className="py-2 text-muted-foreground">{p.updated}</td>
-                <td className="py-2 pr-2 text-right">
-                  <button className="rounded p-1 hover:bg-accent">
-                    <MoreHorizontal className="h-3.5 w-3.5" />
-                  </button>
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  No projects yet. Click <span className="font-semibold">New Project</span> to create one.
                 </td>
               </tr>
-            ))}
+            )}
+            {filtered.map((p) => {
+              const k = kindFor(p.id);
+              const active = store.state.activeProjectId === p.id;
+              return (
+                <tr
+                  key={p.id}
+                  className="cursor-pointer border-t border-border/60 hover:bg-accent/40"
+                  onClick={() => {
+                    store.setActiveProject(p.id);
+                    toast(`Switched to "${p.name}"`);
+                  }}
+                >
+                  <td className="py-2 pl-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-1 rounded" style={{ backgroundColor: `var(--${k.c})` }} />
+                      <span className="font-semibold">{p.name}</span>
+                      {active && (
+                        <span className="rounded-full bg-[var(--teal)]/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-[var(--teal)]">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-2 text-muted-foreground">{k.type}</td>
+                  <td className="py-2 text-muted-foreground">{p.author}</td>
+                  <td className="py-2">
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
+                      style={{
+                        color: `var(--${k.c})`,
+                        backgroundColor: `color-mix(in oklab, var(--${k.c}) 12%, transparent)`,
+                      }}
+                    >
+                      Draft
+                    </span>
+                  </td>
+                  <td className="py-2 text-muted-foreground">{fmtTime(p.updatedAt)}</td>
+                  <td className="py-2 pr-2 text-right">
+                    <button
+                      className="rounded p-1 hover:bg-accent"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const copy = store.duplicateProject(p.id);
+                        if (copy) toast.success(`Duplicated as "${copy.name}"`);
+                      }}
+                      title="Duplicate"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      className="rounded p-1 hover:bg-accent"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Delete "${p.name}"?`)) {
+                          store.deleteProject(p.id);
+                          toast.success(`Deleted "${p.name}"`);
+                        }
+                      }}
+                      title="Delete"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </Card>
