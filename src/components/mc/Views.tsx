@@ -602,7 +602,35 @@ function TraitBuilder() {
 /* ---------- Aspiration Builder ---------- */
 
 function AspirationBuilder() {
-  return (
+  const [name, setName] = useState("Trailblazer");
+  const [category, setCategory] = useState("Adventure");
+  const [rewardTrait, setRewardTrait] = useState("Explorer's Instinct");
+  const [description, setDescription] = useState(
+    "Chart the unknown and become a legend across the map.",
+  );
+  const [tiers, setTiers] = useState([
+    { t: "I", title: "Curious Wanderer", goals: ["Visit 3 lots", "Meet 5 sims"], done: true },
+    { t: "II", title: "Field Journalist", goals: ["Collect 10 artifacts", "Write 2 field notes"], done: true },
+    { t: "III", title: "Named Explorer", goals: ["Discover secret area", "Level Fitness to 6"], done: false },
+    { t: "IV", title: "Legendary Trailblazer", goals: ["Complete 3 expeditions"], done: false },
+  ]);
+
+  const previewData: AspirationPreviewData = {
+    name,
+    category,
+    emoji: "🎯",
+    color: "teal",
+    rewardTrait,
+    description,
+    tiers: tiers.map((tier, i) => ({
+      tier: tier.t,
+      title: tier.title,
+      objectives: tier.goals.map((g, gi) => ({ label: g, done: tier.done || (i === 2 && gi === 0) })),
+      progress: tier.done ? 1 : i === 2 ? 0.4 : 0,
+    })),
+  };
+
+  const editor = (
     <div className="space-y-4">
       <PageHeader
         icon={Target}
@@ -616,59 +644,57 @@ function AspirationBuilder() {
           </>
         }
       />
-      <div className="grid grid-cols-12 gap-4">
-        <Card title="Aspiration" className="col-span-5">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Name" value="Trailblazer" />
-            <Field label="Category" value="Adventure" />
-            <Field label="Bonus Trait" value="Explorer's Instinct" />
-            <Field label="Icon" value="ic_asp_trailblazer.png" />
-          </div>
-          <Textarea
-            defaultValue="Chart the unknown and become a legend across the map."
-            className="mt-3 h-16 resize-none text-xs"
-          />
-        </Card>
+      <Card title="Aspiration">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Name" value={name} onChange={setName} />
+          <Field label="Category" value={category} onChange={setCategory} />
+          <Field label="Bonus Trait" value={rewardTrait} onChange={setRewardTrait} />
+          <Field label="Icon" value="ic_asp_trailblazer.png" />
+        </div>
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="mt-3 h-16 resize-none text-xs"
+        />
+      </Card>
 
-        <Card
-          title="Tiers"
-          className="col-span-7"
-          action={<CopyToMenu what="all tiers & rewards" label="Copy tiers to…" disallowBranches />}
-        >
-          <ol className="space-y-2">
-            {[
-              { t: "I", title: "Curious Wanderer", goals: ["Visit 3 lots", "Meet 5 sims"], done: true },
-              { t: "II", title: "Field Journalist", goals: ["Collect 10 artifacts", "Write 2 field notes"], done: true },
-              { t: "III", title: "Named Explorer", goals: ["Discover secret area", "Level Fitness to 6"], done: false },
-              { t: "IV", title: "Legendary Trailblazer", goals: ["Complete 3 expeditions"], done: false },
-            ].map((tier) => (
-              <li key={tier.t} className="group rounded-md border border-border bg-background/60 p-2.5">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold",
-                      tier.done ? "bg-[var(--green)] text-white" : "border border-border text-muted-foreground",
-                    )}
-                  >
-                    {tier.t}
-                  </span>
-                  <span className="flex-1 font-semibold text-xs">{tier.title}</span>
-                  <span className="opacity-0 transition-opacity group-hover:opacity-100">
-                    <CopyToMenu what={`tier ${tier.t} reward`} compact disallowBranches />
-                  </span>
-                </div>
-                <ul className="mt-1 ml-8 space-y-0.5 text-[11px] text-muted-foreground">
-                  {tier.goals.map((g) => (
-                    <li key={g}>• {g}</li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ol>
-        </Card>
-      </div>
+      <Card title="Tiers" action={<CopyToMenu what="all tiers & rewards" label="Copy tiers to…" disallowBranches />}>
+        <ol className="space-y-2">
+          {tiers.map((tier, i) => (
+            <li key={tier.t} className="group rounded-md border border-border bg-background/60 p-2.5">
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold",
+                    tier.done ? "bg-[var(--green)] text-white" : "border border-border text-muted-foreground",
+                  )}
+                >
+                  {tier.t}
+                </span>
+                <Input
+                  value={tier.title}
+                  onChange={(e) =>
+                    setTiers((prev) => prev.map((x, xi) => (xi === i ? { ...x, title: e.target.value } : x)))
+                  }
+                  className="h-7 flex-1 text-xs font-semibold"
+                />
+                <span className="opacity-0 transition-opacity group-hover:opacity-100">
+                  <CopyToMenu what={`tier ${tier.t} reward`} compact disallowBranches />
+                </span>
+              </div>
+              <ul className="mt-1 ml-8 space-y-0.5 text-[11px] text-muted-foreground">
+                {tier.goals.map((g) => (
+                  <li key={g}>• {g}</li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ol>
+      </Card>
     </div>
   );
+
+  return <PreviewSplit editor={editor} preview={<AspirationPreview data={previewData} />} />;
 }
 
 /* ---------- Tuning Editor ---------- */
