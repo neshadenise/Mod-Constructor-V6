@@ -1,58 +1,61 @@
-# Copy Rewards / Branches / Perks / Salary
+# Mod Architect Studio V6 — Production Overhaul Plan
 
-Currently the Career Builder shows a single promotion track, a perks list, and a base salary field with no way to reuse them. This plan adds a lightweight "copy to…" flow across the builders so non-coders can duplicate content without retyping it.
+This is a very large scope (23 systems). To keep the visual language intact and avoid a half-working mega-refactor, I'll ship it in 6 phases. Each phase is independently useful and builds on the previous one. After each phase you can review and re-prioritize.
 
-## Scope (UI-only prototype)
+Nothing here changes the current light theme, typography, spacing, or card styling — every new surface reuses the existing tokens and shadcn primitives already in the project.
 
-Add copy actions in three places:
-1. **Promotion Track** card — copy a single rank, or the whole branch.
-2. **Perks & Rewards** card — copy one perk, or the whole list.
-3. **Career Identity** — copy Base Salary (and Work Hours) as a package.
+## Phase 1 — Shared Foundation (this turn)
 
-Same pattern reused in **Trait Builder** (rewards list) and **Aspiration Builder** (milestone rewards) so the interaction is consistent.
+The pieces every other phase depends on. Building these first prevents duplicated UI later.
 
-## The "Copy to…" picker
+1. **Command Palette** (Ctrl/Cmd+K) — shadcn `Command` dialog with grouped actions: Create Career/Trait/Aspiration, Generate Icon, Validate, Export, Toggle Advanced, Open Settings, Import Assets, Duplicate Branch, Find References, Generate XML.
+2. **Universal Search** — same `Command` primitive, indexes projects, careers, traits, aspirations, buffs, notifications, assets, IDs, validation issues, recent files, settings, templates. Opens from top bar or `/`.
+3. **Notification Center** — right-side drawer + bell in top bar. Toast + persistent log for background builds, validation, exports, updates, undo.
+4. **Enhanced Status Bar** — expand existing bar with: game version, project version, validation status, build status, autosave, provider status, online/offline, selection count, CPU/memory placeholders, git placeholder.
+5. **`PropertyField` primitive** (`src/components/mc/inspector/PropertyField.tsx`) — one component for every editable field with label, subtitle, tooltip, example, validation state, reset, copy, paste, duplicate, lock, favorite, recently-edited highlight. Variants: text, number, slider, switch, chips, color, icon, asset, select, multi-select, reorderable list, reference, conditional.
+6. **Inspector History context** — undo/redo stack + per-field history (last edited time, previous value, restore). Wired into `PropertyField`.
 
-A small popover triggered by a `Copy` icon button on each row and each card header. It offers three destination scopes:
+## Phase 2 — Workspace Systems
 
-- **Another branch** (within this career) — pick from a mock branch list: Astronaut → Space Ranger, Astronaut → Interstellar Smuggler, etc.
-- **Another section** (another builder in this project) — Trait Builder, Aspiration Builder, Tuning Editor.
-- **Another project** — mock list of recent projects (Epic Careers Pack, Cozy Life Mod, Sci-Fi Overhaul).
+7. **Project Explorer** — tree view with folders, right-click menu (rename, duplicate, delete, move, color label, favorite, pin), recently opened.
+8. **Asset Manager 2.0** — thumbnail/list/details view toggle, tags, collections, favorites, unused finder, duplicate finder, "Where Used", bulk rename/move/delete, replace-everywhere, drag-drop, version history strip.
+9. **Reference Viewer** — per-asset panel showing Used By / Dependencies / Broken / Circular refs with clickable navigation.
+10. **Validation Center** — dashboard grouping Errors/Warnings/Suggestions/Info; each row has severity, builder, field, reason, fix, jump-to, ignore, auto-fix, related; filter/search/group/export.
 
-Multi-select destinations allowed. Confirm with a toast: "Copied 3 perks to Space Ranger branch and Cozy Life Mod."
+## Phase 3 — AI & Integrations
 
-## Where the buttons appear
+11. **AI Workspace** — dedicated section with sidebar (prompt history, saved, favorites, recent generations), tabs for Image/Text/Validation/Docs, context selector, project memory, conversation history. Insert-into-project approval flow.
+12. **Integrations page** — provider cards (ChatGPT App, OpenAI API, Replicate, Stability, HuggingFace, Local AI, Custom). Each shows status, capabilities, model selector, usage, connect/disconnect. Pluggable `IntegrationProvider` interface — no hardcoded impls.
 
-```text
-Promotion Track card
-  header:  [＋ Add Rank]  [⧉ Copy branch to…]
-  each row: hover → [⧉] icon to copy that rank only
+## Phase 4 — Visual & Simulation
 
-Perks & Rewards card
-  header:  [⧉ Copy all perks to…]
-  each row: hover → [⧉] icon to copy that perk only
+13. **Visual Graph** — node editor showing relationships between careers/traits/buffs/loot/notifications/interactions/conditions/rewards. Selecting a node opens inspector.
+14. **Live Simulator** — expand existing preview: career panel, CAS preview, promotion popup, work/WFH popup, reward notification, buff tooltip, moodlet panel, calendar, relationship panel, phone UI, career-join screen, promotion history, multiple Sims, zoom, device scaling.
 
-Career Identity card
-  next to Base Salary field: [⧉] icon → "Copy salary & hours to…"
-```
+## Phase 5 — Build & Analytics
 
-## Branch switcher (bonus, small)
+15. **Build Center** — queued/completed/failed tabs, per-build logs, warnings, errors, package size, files generated, duration, incremental, cancel, retry, clean build, open folder.
+16. **Project Analytics** — dashboard widgets: completion, missing assets, validation score, unused assets, duplicate IDs, builder progress, lines generated, estimated XML count, recent activity, exports.
+17. **Template Marketplace** — browser for Career/Trait/Notification/Aspiration templates with Favorites, Installed, Official, Community tabs, import/export.
+18. **Project Settings** — tabs for General, Metadata, Packaging, Localization, Dependencies, Build Profiles, Namespaces, Author, License, Versioning, Compatibility, Game Packs, Output Folders, Autosave, Cloud Sync.
 
-Above the Promotion Track card, a compact branch tab strip:
-`[Astronaut ▾]  [+ New branch]`
-Switching tabs swaps the mock rank/perk data. Enables the "copy from A to B" story visually. No routing changes.
+## Phase 6 — Polish
 
-## Non-goals
-
-- No real persistence — this is prototype UI, so copies are simulated with toasts and (optionally) in-memory state so the destination card visibly updates when the user stays in the same session.
-- No changes to Advanced-mode XML output beyond re-rendering with copied data.
-- No cross-project data model — the "other projects" list is mocked.
+19. **Workspace Customization** — dockable/resizable panels, save layout, reset, builder-specific layouts, compact/accessibility/focus modes.
+20. **Beginner vs Advanced** — audit every builder; ensure Simple hides all XML/tuning fields, Advanced exposes everything, switching preserves data.
+21. **Accessibility pass** — keyboard shortcuts overlay, high-contrast token, large-text scale, reduced-motion, screen-reader labels on every icon-only button.
+22. **Onboarding & Polish** — first-run tour, empty states, contextual tips, skeleton loaders, keyboard shortcut overlay (`?`), recent-activity timeline, micro animations.
 
 ## Technical notes
 
-- New component `CopyToMenu.tsx` in `src/components/mc/` — a shadcn `Popover` + checkbox list + Copy button.
-- New mock data in `src/lib/mock-data.ts` (or inline): `MOCK_BRANCHES`, `MOCK_SECTIONS`, `MOCK_PROJECTS`.
-- Edits limited to `src/components/mc/Views.tsx` (`CareerBuilder`, `TraitBuilder`, `AspirationBuilder`) plus the new component.
-- Icons: `Copy`, `CopyPlus` from lucide-react (already a dependency).
-- All copy actions produce `sonner` toasts; destinations arrays feed the toast description so users see exactly where content landed.
-- Respects Advanced mode: copy buttons remain available in Simple mode (this is a usability feature, not an advanced one).
+- Every new field re-exports through `PropertyField`. Existing builders get migrated incrementally — Phase 1 introduces the primitive without breaking current forms.
+- Command Palette + Universal Search share one `useCommandRegistry()` hook so commands and search results come from the same source of truth.
+- Inspector History is a React context at the root; `PropertyField` writes to it on every commit.
+- Notification Center replaces direct `sonner` calls with a `useNotifications()` API that fans out to both toast and drawer.
+- Integrations expose an `IntegrationProvider` TS interface (`id`, `name`, `capabilities`, `connect()`, `disconnect()`, `models()`, `usage()`). New providers register into a registry — zero UI changes required.
+- Visual Graph reuses the existing Constructor Canvas rendering primitives.
+- All new panels use the existing `card-elevated`, `surface-card`, and `grid-canvas` utilities. No new color tokens.
+
+## Deliverable for this turn
+
+Phase 1 only — Command Palette, Universal Search, Notification Center, expanded Status Bar, `PropertyField` primitive with all variants and controls, Inspector History context. Wire the palette and search into the top bar, wire notifications into existing toast call-sites, and migrate one builder (Career Identity tab) to `PropertyField` as the reference implementation for later phases.

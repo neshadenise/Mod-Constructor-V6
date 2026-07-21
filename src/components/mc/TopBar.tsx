@@ -1,15 +1,20 @@
-import { Bell, HelpCircle, Search, Moon, Sun, Save, ChevronRight, Wifi, WifiOff, RefreshCw, Cloud, Wrench } from "lucide-react";
+import { Bell, HelpCircle, Search, Moon, Sun, Save, ChevronRight, Wifi, WifiOff, RefreshCw, Cloud, Wrench, Command as CommandIcon } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { useTheme } from "@/lib/theme";
 import { useAdvanced } from "@/lib/advanced-mode";
-import { Input } from "@/components/ui/input";
+import { useNotifications } from "@/lib/notifications";
 import { SECTION_LABEL, type SectionId } from "./sections";
 import { cn } from "@/lib/utils";
 
-export function TopBar({ active }: { active: SectionId }) {
+type Props = {
+  active: SectionId;
+  onOpenPalette: () => void;
+};
+
+export function TopBar({ active, onOpenPalette }: Props) {
   const { theme, toggle } = useTheme();
   const { advanced, toggle: toggleAdvanced } = useAdvanced();
+  const { unread, setDrawerOpen, push } = useNotifications();
   const [online, setOnline] = useState(false);
   const [checking, setChecking] = useState(false);
 
@@ -17,10 +22,12 @@ export function TopBar({ active }: { active: SectionId }) {
     if (checking) return;
     setChecking(true);
     setOnline(true);
-    toast.message("Contacting lot51.cc…", { description: "Checking for framework updates." });
+    push({ kind: "update", title: "Contacting lot51.cc…", description: "Checking for framework updates." });
     setTimeout(() => {
       setChecking(false);
-      toast.success("Up to date", {
+      push({
+        kind: "success",
+        title: "Up to date",
         description: "Lot51 Core Library v1.108.318 · no updates available.",
       });
     }, 1600);
@@ -44,7 +51,9 @@ export function TopBar({ active }: { active: SectionId }) {
         <button
           onClick={() => {
             toggleAdvanced();
-            toast(advanced ? "Simple mode" : "Advanced mode enabled", {
+            push({
+              kind: "info",
+              title: advanced ? "Simple mode" : "Advanced mode enabled",
               description: advanced
                 ? "Advanced tools and code fields are hidden."
                 : "Tuning editor, XML output, and validation are now visible.",
@@ -75,13 +84,17 @@ export function TopBar({ active }: { active: SectionId }) {
           </span>
         </button>
 
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search mods, traits, careers…"
-            className="h-9 w-56 pl-8 text-xs"
-          />
-        </div>
+        <button
+          onClick={onOpenPalette}
+          className="group flex h-9 w-64 items-center gap-2 rounded-md border border-border bg-card px-2.5 text-left text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          aria-label="Open command palette and universal search"
+        >
+          <Search className="h-3.5 w-3.5" />
+          <span className="flex-1 truncate">Search or run a command…</span>
+          <kbd className="hidden shrink-0 items-center gap-0.5 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground md:inline-flex">
+            <CommandIcon className="h-2.5 w-2.5" />K
+          </kbd>
+        </button>
 
         <button
           onClick={checkUpdates}
@@ -98,13 +111,24 @@ export function TopBar({ active }: { active: SectionId }) {
           <RefreshCw className={"h-3 w-3 text-muted-foreground " + (checking ? "animate-spin" : "")} />
         </button>
 
-        <IconBtn>
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="relative flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-foreground/70 transition-colors hover:bg-accent hover:text-foreground"
+          aria-label={`Notifications${unread ? ` · ${unread} unread` : ""}`}
+        >
           <Bell className="h-4 w-4" />
-          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--orange)]" />
-        </IconBtn>
-        <IconBtn>
+          {unread > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--orange)] px-1 text-[9px] font-bold text-white">
+              {unread}
+            </span>
+          )}
+        </button>
+        <button
+          className="relative flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-foreground/70 transition-colors hover:bg-accent hover:text-foreground"
+          aria-label="Help"
+        >
           <HelpCircle className="h-4 w-4" />
-        </IconBtn>
+        </button>
         <button
           onClick={toggle}
           className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-foreground/80 transition-colors hover:bg-accent"
@@ -123,13 +147,5 @@ export function TopBar({ active }: { active: SectionId }) {
         </div>
       </div>
     </header>
-  );
-}
-
-function IconBtn({ children }: { children: React.ReactNode }) {
-  return (
-    <button className="relative flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-foreground/70 transition-colors hover:bg-accent hover:text-foreground">
-      {children}
-    </button>
   );
 }
