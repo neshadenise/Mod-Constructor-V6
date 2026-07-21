@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Briefcase,
   Sparkles,
@@ -221,18 +222,192 @@ const PROJECTS = [
   { name: "Weathercore Overhaul", ver: "0.9.2", type: "Tuning", updated: "1w ago", status: "Archived", c: "orange" },
 ];
 
+const STATUS_META: Record<import("@/lib/types").ProjectStatus, { label: string; c: string }> = {
+  "draft": { label: "Draft", c: "orange" },
+  "in-progress": { label: "In Progress", c: "blue" },
+  "complete": { label: "Complete", c: "green" },
+  "tested": { label: "Tested", c: "teal" },
+  "released": { label: "Released", c: "violet" },
+};
+
+const STATUS_ORDER: import("@/lib/types").ProjectStatus[] = ["draft", "in-progress", "complete", "tested", "released"];
+
+function StatusPill({ status }: { status: import("@/lib/types").ProjectStatus }) {
+  const m = STATUS_META[status];
+  return (
+    <span
+      className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+      style={{
+        color: `var(--${m.c})`,
+        backgroundColor: `color-mix(in oklab, var(--${m.c}) 14%, transparent)`,
+      }}
+    >
+      {m.label}
+    </span>
+  );
+}
+
+function ProjectDetailDialog({
+  projectId,
+  open,
+  onOpenChange,
+}: {
+  projectId: string | null;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const store = useStore();
+  const project = store.state.projects.find((p) => p.id === projectId) ?? null;
+  const [versionDraft, setVersionDraft] = useState("");
+  const [notesDraft, setNotesDraft] = useState("");
+
+  // Sync draft when opening for a different project.
+  useEffect(() => {
+    if (project) {
+      setVersionDraft(project.version);
+      setNotesDraft("");
+    }
+  }, [project?.id, open]);
+
+  if (!project) return null;
+
+  const bumpVersion = () => {
+    const v = versionDraft.trim();
+    if (!v) {
+      toast.error("Version cannot be empty.");
+      return;
+    }
+    if (v === project.version) {
+      toast("Version unchanged.");
+      return;
+    }
+    store.setProjectVersion(project.id, v, notesDraft.trim() || undefined);
+    setNotesDraft("");
+    toast.success(`Bumped to v${v}. Mark complete when ready.`);
+  };
+
+  const setStatus = (status: import("@/lib/types").ProjectStatus) => {
+    store.setProjectStatus(project.id, status, notesDraft.trim() || undefined);
+    setNotesDraft("");
+    toast.success(`v${project.version} → ${STATUS_META[status].label}`);
+  };
+
+  const nextIsMilestone = project.status === "draft" || project.status === "in-progress";
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FolderKanban className="h-4 w-4" />
+            {project.name}
+            {project.isDemo && (
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Demo
+              </span>
+            )}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</div>
+            <StatusPill status={project.status} />
+          </div>
+
+          <div className="grid grid-cols-5 gap-1">
+            {STATUS_ORDER.map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatus(s)}
+                className={cn(
+                  "rounded-md border border-border px-2 py-1.5 text-[10px] font-semibold uppercase transition",
+                  s === project.status ? "bg-accent" : "hover:bg-accent/60",
+                )}
+                style={s === project.status ? { color: `var(--${STATUS_META[s].c})` } : undefined}
+              >
+                {STATUS_META[s].label}
+              </button>
+            ))}
+          </div>
+
+          <div className="rounded-lg border border-border bg-card/50 p-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Version</div>
+            <div className="mt-2 flex items-center gap-2">
+              <Input
+                value={versionDraft}
+                onChange={(e) => setVersionDraft(e.target.value)}
+                placeholder="1.0.0"
+                className="h-8 max-w-[140px] text-xs"
+              />
+              <div className="text-[11px] text-muted-foreground">
+                Current: <span className="font-semibold text-foreground">v{project.version}</span>
+              </div>
+              <div className="ml-auto">
+                <PrimaryBtn icon={Save} onClick={bumpVersion}>Save version</PrimaryBtn>
+              </div>
+            </div>
+            <Textarea
+              value={notesDraft}
+              onChange={(e) => setNotesDraft(e.target.value)}
+              placeholder="Optional notes for this version / status change (added to changelog)…"
+              className="mt-2 h-16 text-xs"
+            />
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              Bumping the version resets status to <b>In Progress</b>. Mark the new version <b>Complete</b> when ready — a changelog entry is added automatically. Later mark it <b>Tested</b> once QA passes.
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border bg-card/50 p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Changelog</div>
+              <div className="text-[10px] text-muted-foreground">{project.changelog.length} entries</div>
+            </div>
+            {project.changelog.length === 0 ? (
+              <div className="rounded-md border border-dashed border-border p-4 text-center text-[11px] text-muted-foreground">
+                No entries yet. Marking a version <b>Complete</b> will add one automatically.
+              </div>
+            ) : (
+              <ul className="max-h-56 space-y-1.5 overflow-y-auto pr-1">
+                {project.changelog.map((c) => (
+                  <li key={c.id} className="rounded-md border border-border/60 bg-background/60 p-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold tabular-nums">v{c.version}</span>
+                      <StatusPill status={c.status} />
+                      {c.auto && (
+                        <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-muted-foreground">
+                          Auto
+                        </span>
+                      )}
+                      <span className="ml-auto text-[10px] text-muted-foreground">
+                        {new Date(c.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="mt-1 whitespace-pre-wrap text-[11px] text-muted-foreground">{c.notes}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {nextIsMilestone && (
+            <div className="rounded-md border border-[var(--blue)]/30 bg-[var(--blue)]/8 p-2 text-[11px]">
+              Tip: every new version should be marked <b>Complete</b> before it can be <b>Tested</b> or <b>Released</b>.
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ProjectsView() {
   const store = useStore();
   const [filter, setFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | import("@/lib/types").ProjectStatus>("all");
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const projects = store.state.projects;
-
-  const kindFor = (id: string) => {
-    if (store.state.careers.some((c) => c.projectId === id)) return { type: "Career", c: "blue" };
-    if (store.state.traits.some((t) => t.projectId === id)) return { type: "Trait", c: "violet" };
-    if (store.state.aspirations.some((a) => a.projectId === id)) return { type: "Aspiration", c: "teal" };
-    return { type: "Project", c: "green" };
-  };
 
   const fmtTime = (t: number) => {
     const diff = Date.now() - t;
@@ -267,7 +442,8 @@ function ProjectsView() {
   };
 
   const filtered = projects.filter((p) =>
-    !filter || p.name.toLowerCase().includes(filter.toLowerCase())
+    (!filter || p.name.toLowerCase().includes(filter.toLowerCase()))
+    && (statusFilter === "all" || p.status === statusFilter)
   );
 
   return (
@@ -297,8 +473,16 @@ function ProjectsView() {
             onChange={(e) => setFilter(e.target.value)}
           />
         </div>
-        <GhostBtn icon={Filter}>All Types</GhostBtn>
-        <GhostBtn icon={Filter}>All Status</GhostBtn>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+          className="h-8 rounded-md border border-border bg-background px-2 text-xs"
+        >
+          <option value="all">All statuses</option>
+          {STATUS_ORDER.map((s) => (
+            <option key={s} value={s}>{STATUS_META[s].label}</option>
+          ))}
+        </select>
       </div>
 
       <Card>
@@ -306,7 +490,7 @@ function ProjectsView() {
           <thead>
             <tr className="text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               <th className="pb-2 pl-2">Name</th>
-              <th className="pb-2">Type</th>
+              <th className="pb-2">Version</th>
               <th className="pb-2">Author</th>
               <th className="pb-2">Status</th>
               <th className="pb-2">Updated</th>
@@ -317,12 +501,11 @@ function ProjectsView() {
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                  No projects yet. Click <span className="font-semibold">New Project</span> to create one.
+                  No projects match. Click <span className="font-semibold">New Project</span> to create one.
                 </td>
               </tr>
             )}
             {filtered.map((p) => {
-              const k = kindFor(p.id);
               const active = store.state.activeProjectId === p.id;
               return (
                 <tr
@@ -335,30 +518,35 @@ function ProjectsView() {
                 >
                   <td className="py-2 pl-2">
                     <div className="flex items-center gap-2">
-                      <div className="h-6 w-1 rounded" style={{ backgroundColor: `var(--${k.c})` }} />
+                      <div className="h-6 w-1 rounded" style={{ backgroundColor: `var(--${STATUS_META[p.status].c})` }} />
                       <span className="font-semibold">{p.name}</span>
                       {active && (
                         <span className="rounded-full bg-[var(--teal)]/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-[var(--teal)]">
                           Active
                         </span>
                       )}
+                      {p.isDemo && (
+                        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase text-muted-foreground">
+                          Demo
+                        </span>
+                      )}
                     </div>
                   </td>
-                  <td className="py-2 text-muted-foreground">{k.type}</td>
+                  <td className="py-2 font-mono text-[11px] tabular-nums text-muted-foreground">v{p.version}</td>
                   <td className="py-2 text-muted-foreground">{p.author}</td>
-                  <td className="py-2">
-                    <span
-                      className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
-                      style={{
-                        color: `var(--${k.c})`,
-                        backgroundColor: `color-mix(in oklab, var(--${k.c}) 12%, transparent)`,
-                      }}
-                    >
-                      Draft
-                    </span>
-                  </td>
+                  <td className="py-2"><StatusPill status={p.status} /></td>
                   <td className="py-2 text-muted-foreground">{fmtTime(p.updatedAt)}</td>
                   <td className="py-2 pr-2 text-right">
+                    <button
+                      className="rounded p-1 hover:bg-accent"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDetailId(p.id);
+                      }}
+                      title="Manage status & changelog"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
                     <button
                       className="rounded p-1 hover:bg-accent"
                       onClick={(e) => {
@@ -371,15 +559,20 @@ function ProjectsView() {
                       <Copy className="h-3.5 w-3.5" />
                     </button>
                     <button
-                      className="rounded p-1 hover:bg-accent"
+                      className={cn(
+                        "rounded p-1 hover:bg-accent",
+                        p.isDemo && "cursor-not-allowed opacity-40 hover:bg-transparent",
+                      )}
+                      disabled={p.isDemo}
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (p.isDemo) return;
                         if (window.confirm(`Delete "${p.name}"?`)) {
                           store.deleteProject(p.id);
                           toast.success(`Deleted "${p.name}"`);
                         }
                       }}
-                      title="Delete"
+                      title={p.isDemo ? "Demo project is protected" : "Delete"}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -390,9 +583,16 @@ function ProjectsView() {
           </tbody>
         </table>
       </Card>
+
+      <ProjectDetailDialog
+        projectId={detailId}
+        open={detailId !== null}
+        onOpenChange={(v) => { if (!v) setDetailId(null); }}
+      />
     </div>
   );
 }
+
 
 /* ---------- Career Builder (V5-aligned) ---------- */
 
