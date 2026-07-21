@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { useState } from "react";
 import {
   LayoutDashboard,
   FolderKanban,
@@ -15,20 +15,21 @@ import {
 } from "lucide-react";
 
 const nav = [
-  { label: "Dashboard", to: "/", icon: LayoutDashboard },
-  { label: "Projects", to: "/projects", icon: FolderKanban },
-  { label: "Career Builder", to: "/career", icon: Briefcase },
-  { label: "Trait Builder", to: "/traits", icon: Sparkles },
-  { label: "Aspiration Builder", to: "/aspirations", icon: Target },
-  { label: "Tuning", to: "/tuning", icon: SlidersHorizontal },
-  { label: "Assets", to: "/assets", icon: Package },
-  { label: "Validation", to: "/validation", icon: ShieldCheck },
-  { label: "Build Queue", to: "/build-queue", icon: ListChecks },
-  { label: "Settings", to: "/settings", icon: Settings },
+  { label: "Dashboard", icon: LayoutDashboard },
+  { label: "Projects", icon: FolderKanban },
+  { label: "Career Builder", icon: Briefcase },
+  { label: "Trait Builder", icon: Sparkles },
+  { label: "Aspiration Builder", icon: Target },
+  { label: "Tuning", icon: SlidersHorizontal },
+  { label: "Assets", icon: Package },
+  { label: "Validation", icon: ShieldCheck },
+  { label: "Build Queue", icon: ListChecks },
+  { label: "Settings", icon: Settings },
 ];
 
 export function AppSidebar() {
-  const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const [active, setActive] = useState("Dashboard");
+
 
   return (
     <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-border bg-surface">
@@ -50,16 +51,16 @@ export function AppSidebar() {
           Workspace
         </div>
         {nav.map((item) => {
-          const active = pathname === item.to || (item.to === "/" && pathname === "/");
+          const isActive = active === item.label;
           const Icon = item.icon;
           return (
-            <Link
-              key={item.to}
-              to={item.to}
+            <button
+              key={item.label}
+              onClick={() => setActive(item.label)}
               className={[
-                "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium outline-none transition",
+                "group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium outline-none transition",
                 "focus-visible:ring-2 focus-visible:ring-ring",
-                active
+                isActive
                   ? "bg-primary-soft text-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               ].join(" ")}
@@ -67,13 +68,13 @@ export function AppSidebar() {
               <Icon
                 className={[
                   "h-4 w-4 shrink-0 transition",
-                  active ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
+                  isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
                 ].join(" ")}
                 strokeWidth={2}
               />
               <span className="truncate">{item.label}</span>
-              {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
-            </Link>
+              {isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
+            </button>
           );
         })}
       </nav>
