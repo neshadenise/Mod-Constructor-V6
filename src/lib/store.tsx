@@ -756,7 +756,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       aspirations: scope(s.aspirations) as Aspiration[],
       notifications: scope(s.notifications) as NotificationTemplate[],
       assets: scope(s.assets) as Asset[],
-      templates: s.templates.filter((t) => t.custom),
+      templates: s.templates.filter((t) => !t.builtIn && t.source === "user-created"),
       snippets: s.snippets,
     };
     log({ kind: "export", entityType: "project", entityId: project.id, summary: `Exported bundle for "${project.name}"` });
