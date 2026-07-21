@@ -7,6 +7,7 @@ export type SectionId =
   | "notifications"
   | "tuning"
   | "assets"
+  | "exporter"
   | "validation"
   | "queue"
   | "settings";
@@ -20,6 +21,7 @@ export const SECTION_LABEL: Record<SectionId, string> = {
   notifications: "Notification Library",
   tuning: "Tuning Editor",
   assets: "Assets",
+  exporter: "Package Exporter",
   validation: "Validation",
   queue: "Build Queue",
   settings: "Settings",
