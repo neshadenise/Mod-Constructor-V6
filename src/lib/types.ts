@@ -174,6 +174,11 @@ export interface NotificationTemplate {
   title: string;
   body: string;
   iconAssetId?: ID;
+  /** Optional preview style tag used by the in-app Notification Library. */
+  previewKind?:
+    | "success" | "warning" | "error" | "info"
+    | "promotion" | "reward" | "relationship"
+    | "buff" | "trait" | "career" | "aging";
   actions: { label: string; kind: "primary" | "secondary" | "dismiss" }[];
   createdAt: Timestamp;
   updatedAt: Timestamp;

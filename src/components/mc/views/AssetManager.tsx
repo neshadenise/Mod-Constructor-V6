@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Boxes,
   FolderPlus,
@@ -21,136 +21,152 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
-type AssetKind = "image" | "audio" | "text" | "xml";
-
-type Asset = {
-  id: string;
-  name: string;
-  kind: AssetKind;
-  size: string;
-  folder: string;
-  updated: string;
-  tags: string[];
-  favorite?: boolean;
-};
-
-const INITIAL_FOLDERS = ["Careers/Icons", "Careers/Uniforms", "Traits/Portraits", "Audio/Stings", "Text/Strings"];
-
-const INITIAL_ASSETS: Asset[] = [
-  { id: "a1", name: "marine_bio_icon.png", kind: "image", size: "18 KB", folder: "Careers/Icons", updated: "2m ago", tags: ["career", "icon"], favorite: true },
-  { id: "a2", name: "reef_guardian_icon.png", kind: "image", size: "22 KB", folder: "Careers/Icons", updated: "1h ago", tags: ["career"] },
-  { id: "a3", name: "diver_uniform_f.png", kind: "image", size: "94 KB", folder: "Careers/Uniforms", updated: "3h ago", tags: ["uniform", "female"] },
-  { id: "a4", name: "diver_uniform_m.png", kind: "image", size: "92 KB", folder: "Careers/Uniforms", updated: "3h ago", tags: ["uniform", "male"] },
-  { id: "a5", name: "dreamer_portrait.png", kind: "image", size: "128 KB", folder: "Traits/Portraits", updated: "yesterday", tags: ["trait"], favorite: true },
-  { id: "a6", name: "promotion_sting.wav", kind: "audio", size: "42 KB", folder: "Audio/Stings", updated: "yesterday", tags: ["sfx"] },
-  { id: "a7", name: "career_strings.stbl", kind: "text", size: "6 KB", folder: "Text/Strings", updated: "4d ago", tags: ["stbl"] },
-  { id: "a8", name: "career_base.xml", kind: "xml", size: "3 KB", folder: "Careers/Icons", updated: "1w ago", tags: ["tuning"] },
-];
+import { useStore } from "@/lib/store";
+import type { Asset, AssetKind } from "@/lib/types";
 
 const KIND_META: Record<AssetKind, { icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; color: string }> = {
+  icon: { icon: ImageIcon, color: "var(--pink)" },
   image: { icon: ImageIcon, color: "var(--pink)" },
   audio: { icon: FileAudio, color: "var(--orange)" },
-  text: { icon: FileText, color: "var(--teal)" },
-  xml: { icon: FileCode2, color: "var(--blue)" },
+  other: { icon: FileText, color: "var(--teal)" },
 };
 
+function kindFromMime(mime: string): AssetKind {
+  if (mime.startsWith("image/")) return "image";
+  if (mime.startsWith("audio/")) return "audio";
+  return "other";
+}
+
+function fmtSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function fmtWhen(ts: number): string {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60_000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
+}
+
 export function AssetManager() {
-  const [folders, setFolders] = useState<string[]>(INITIAL_FOLDERS);
-  const [assets, setAssets] = useState<Asset[]>(INITIAL_ASSETS);
-  const [activeFolder, setActiveFolder] = useState<string>("Careers/Icons");
+  const store = useStore();
+  const activeProject = store.state.projects.find((p) => p.id === store.state.activeProjectId);
+  const projectAssets = useMemo(
+    () => store.state.assets.filter((a) => a.projectId === activeProject?.id),
+    [store.state.assets, activeProject?.id],
+  );
+
+  const folders = useMemo(() => {
+    const set = new Set<string>();
+    projectAssets.forEach((a) => set.add(a.folder || "/"));
+    return Array.from(set).sort();
+  }, [projectAssets]);
+
+  const [activeFolder, setActiveFolder] = useState<string>("All");
   const [view, setView] = useState<"grid" | "list">("grid");
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<string | null>("a1");
+  const [selected, setSelected] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return assets.filter((a) => {
-      if (activeFolder !== "All" && a.folder !== activeFolder) return false;
+    return projectAssets.filter((a) => {
+      if (activeFolder !== "All" && (a.folder || "/") !== activeFolder) return false;
       if (!q) return true;
       return (
         a.name.toLowerCase().includes(q) ||
-        a.tags.some((t) => t.toLowerCase().includes(q))
+        (a.tags ?? []).some((t) => t.toLowerCase().includes(q))
       );
     });
-  }, [assets, activeFolder, query]);
+  }, [projectAssets, activeFolder, query]);
 
-  const active = assets.find((a) => a.id === selected) ?? null;
+  const active = projectAssets.find((a) => a.id === selected) ?? null;
 
   const addFolder = () => {
+    if (!activeProject) return;
     const n = window.prompt("New folder path (e.g. Careers/Rewards):")?.trim();
     if (!n) return;
-    if (folders.includes(n)) {
-      toast.error("Folder already exists");
-      return;
-    }
-    setFolders((f) => [...f, n]);
     setActiveFolder(n);
-    toast.success("Folder created");
+    toast.success(`Folder "${n}" ready — assets moved here will create it.`);
   };
 
   const renameFolder = () => {
+    if (activeFolder === "All" || activeFolder === "/") return;
     const n = window.prompt("Rename folder", activeFolder)?.trim();
     if (!n || n === activeFolder) return;
-    setFolders((f) => f.map((x) => (x === activeFolder ? n : x)));
-    setAssets((a) => a.map((x) => (x.folder === activeFolder ? { ...x, folder: n } : x)));
+    projectAssets
+      .filter((a) => (a.folder || "/") === activeFolder)
+      .forEach((a) => store.moveAsset(a.id, n));
     setActiveFolder(n);
     toast.success("Folder renamed");
   };
 
   const deleteFolder = () => {
-    if (!window.confirm(`Delete folder "${activeFolder}"? Assets will move to Unsorted.`)) return;
-    setAssets((a) => a.map((x) => (x.folder === activeFolder ? { ...x, folder: "Unsorted" } : x)));
-    setFolders((f) => f.filter((x) => x !== activeFolder));
+    if (activeFolder === "All" || activeFolder === "/") return;
+    if (!window.confirm(`Delete folder "${activeFolder}"? Assets will move to /.`)) return;
+    projectAssets
+      .filter((a) => (a.folder || "/") === activeFolder)
+      .forEach((a) => store.moveAsset(a.id, "/"));
     setActiveFolder("All");
-    toast.success("Folder deleted");
+    toast.success("Folder emptied");
   };
+
+  const onImport = async (files: FileList | null) => {
+    if (!files || !activeProject) return;
+    for (const file of Array.from(files)) {
+      const dataUrl = await new Promise<string>((resolve) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.readAsDataURL(file);
+      });
+      store.addAsset({
+        projectId: activeProject.id,
+        name: file.name,
+        folder: activeFolder === "All" ? "/" : activeFolder,
+        kind: kindFromMime(file.type),
+        mimeType: file.type || "application/octet-stream",
+        sizeBytes: file.size,
+        dataUrl,
+        source: "upload",
+        tags: [],
+      });
+    }
+    toast.success(`Imported ${files.length} file${files.length === 1 ? "" : "s"}`);
+  };
+
+  if (!activeProject) {
+    return (
+      <div className="space-y-4">
+        <Header title="Assets" subtitle="No project selected" onImport={() => {}} disabled />
+        <div className="rounded-lg border border-dashed border-border bg-muted/30 p-10 text-center text-xs text-muted-foreground">
+          Select or create a project to manage its assets.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between border-b border-border pb-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--pink)] text-white shadow-sm">
-            <Boxes className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Media
-            </div>
-            <h1 className="text-xl font-bold tracking-tight">Asset Manager</h1>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="inline-flex overflow-hidden rounded-md border border-border">
-            <button
-              onClick={() => setView("grid")}
-              className={cn(
-                "px-2 py-1.5 text-xs",
-                view === "grid" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/60",
-              )}
-              title="Grid"
-            >
-              <Grid3x3 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => setView("list")}
-              className={cn(
-                "px-2 py-1.5 text-xs",
-                view === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/60",
-              )}
-              title="List"
-            >
-              <List className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <button
-            onClick={() => toast.success("Import dialog opened")}
-            className="inline-flex items-center gap-1.5 rounded-md bg-[var(--blue)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90"
-          >
-            <Upload className="h-3.5 w-3.5" /> Import
-          </button>
-        </div>
-      </div>
+      <Header
+        title="Assets"
+        subtitle={`Project · ${activeProject.name}`}
+        view={view}
+        onView={setView}
+        onImport={() => fileRef.current?.click()}
+      />
+      <input
+        ref={fileRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={(e) => { void onImport(e.target.files); e.target.value = ""; }}
+      />
 
       <div className="grid grid-cols-12 gap-4">
         {/* Folders */}
@@ -168,19 +184,20 @@ export function AssetManager() {
             </button>
           </div>
           <div className="space-y-0.5">
-            <FolderRow name="All" count={assets.length} active={activeFolder === "All"} onClick={() => setActiveFolder("All")} />
+            <FolderRow name="All" label="All" count={projectAssets.length} active={activeFolder === "All"} onClick={() => setActiveFolder("All")} />
             {folders.map((f) => (
               <FolderRow
                 key={f}
                 name={f}
-                count={assets.filter((a) => a.folder === f).length}
+                label={f === "/" ? "(root)" : f}
+                count={projectAssets.filter((a) => (a.folder || "/") === f).length}
                 active={activeFolder === f}
                 onClick={() => setActiveFolder(f)}
               />
             ))}
           </div>
 
-          {activeFolder !== "All" && (
+          {activeFolder !== "All" && activeFolder !== "/" && (
             <div className="mt-3 flex gap-1 border-t border-border pt-2">
               <button
                 onClick={renameFolder}
@@ -198,7 +215,7 @@ export function AssetManager() {
           )}
         </aside>
 
-        {/* Assets grid/list */}
+        {/* Assets */}
         <section className="col-span-12 rounded-xl border border-border bg-card p-4 card-elevated md:col-span-6 lg:col-span-7">
           <div className="mb-3 flex items-center gap-2">
             <div className="relative flex-1">
@@ -211,50 +228,21 @@ export function AssetManager() {
               />
             </div>
             <div className="text-[10px] text-muted-foreground tabular-nums">
-              {shown.length} of {assets.length}
+              {shown.length} of {projectAssets.length}
             </div>
           </div>
 
           {shown.length === 0 ? (
             <div className="rounded-md border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
-              Empty folder. Import an asset or drag files here.
+              {projectAssets.length === 0
+                ? "This project has no assets yet. Click Import to add images, audio, or files."
+                : "No assets match this folder or search."}
             </div>
           ) : view === "grid" ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {shown.map((a) => {
-                const meta = KIND_META[a.kind];
-                const Icon = meta.icon;
-                return (
-                  <button
-                    key={a.id}
-                    onClick={() => setSelected(a.id)}
-                    className={cn(
-                      "group flex flex-col items-start gap-2 rounded-lg border p-2.5 text-left transition-all",
-                      selected === a.id
-                        ? "border-[var(--blue)] bg-[var(--blue)]/5"
-                        : "border-border bg-background/40 hover:border-border/80 hover:bg-accent/40",
-                    )}
-                  >
-                    <div
-                      className="grid aspect-square w-full place-items-center rounded-md"
-                      style={{ backgroundColor: meta.color + "18" }}
-                    >
-                      <Icon className="h-7 w-7" style={{ color: meta.color }} />
-                    </div>
-                    <div className="w-full min-w-0">
-                      <div className="flex items-center gap-1">
-                        <div className="min-w-0 flex-1 truncate text-[11px] font-semibold">
-                          {a.name}
-                        </div>
-                        {a.favorite && (
-                          <Star className="h-3 w-3 fill-[var(--orange)] text-[var(--orange)]" />
-                        )}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">{a.size}</div>
-                    </div>
-                  </button>
-                );
-              })}
+              {shown.map((a) => (
+                <AssetTile key={a.id} asset={a} selected={selected === a.id} onClick={() => setSelected(a.id)} />
+              ))}
             </div>
           ) : (
             <div className="overflow-hidden rounded-md border border-border">
@@ -264,7 +252,7 @@ export function AssetManager() {
                     <th className="px-2 py-1.5 text-left font-semibold">Name</th>
                     <th className="px-2 py-1.5 text-left font-semibold">Folder</th>
                     <th className="px-2 py-1.5 text-left font-semibold">Size</th>
-                    <th className="px-2 py-1.5 text-left font-semibold">Updated</th>
+                    <th className="px-2 py-1.5 text-left font-semibold">Added</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -285,9 +273,9 @@ export function AssetManager() {
                           <span className="font-medium">{a.name}</span>
                           {a.favorite && <Star className="h-3 w-3 fill-[var(--orange)] text-[var(--orange)]" />}
                         </td>
-                        <td className="px-2 py-1.5 text-muted-foreground">{a.folder}</td>
-                        <td className="px-2 py-1.5 text-muted-foreground tabular-nums">{a.size}</td>
-                        <td className="px-2 py-1.5 text-muted-foreground">{a.updated}</td>
+                        <td className="px-2 py-1.5 text-muted-foreground">{a.folder || "/"}</td>
+                        <td className="px-2 py-1.5 text-muted-foreground tabular-nums">{fmtSize(a.sizeBytes)}</td>
+                        <td className="px-2 py-1.5 text-muted-foreground">{fmtWhen(a.createdAt)}</td>
                       </tr>
                     );
                   })}
@@ -307,56 +295,75 @@ export function AssetManager() {
           ) : (
             <div className="space-y-3">
               <div
-                className="grid aspect-square w-full place-items-center rounded-lg"
+                className="grid aspect-square w-full place-items-center overflow-hidden rounded-lg"
                 style={{ backgroundColor: KIND_META[active.kind].color + "18" }}
               >
-                {(() => {
-                  const Icon = KIND_META[active.kind].icon;
-                  return <Icon className="h-10 w-10" style={{ color: KIND_META[active.kind].color }} />;
-                })()}
+                {active.kind === "image" || active.kind === "icon" ? (
+                  active.dataUrl ? (
+                    <img src={active.dataUrl} alt={active.name} className="h-full w-full object-contain" />
+                  ) : (
+                    <ImageIcon className="h-10 w-10" style={{ color: KIND_META[active.kind].color }} />
+                  )
+                ) : (
+                  (() => {
+                    const Icon = KIND_META[active.kind].icon;
+                    return <Icon className="h-10 w-10" style={{ color: KIND_META[active.kind].color }} />;
+                  })()
+                )}
               </div>
               <div>
                 <div className="truncate text-sm font-semibold">{active.name}</div>
                 <div className="text-[10px] text-muted-foreground">
-                  {active.folder} · {active.size} · {active.updated}
+                  {(active.folder || "/")} · {fmtSize(active.sizeBytes)} · {fmtWhen(active.createdAt)}
                 </div>
               </div>
-              <div>
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Tags
+              {(active.tags?.length ?? 0) > 0 && (
+                <div>
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Tags
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {active.tags!.map((t) => (
+                      <span
+                        key={t}
+                        className="inline-flex items-center gap-1 rounded-full border border-border bg-background/60 px-1.5 py-0.5 text-[10px]"
+                      >
+                        <Tag className="h-2.5 w-2.5" />
+                        {t}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-1">
-                  {active.tags.map((t) => (
-                    <span
-                      key={t}
-                      className="inline-flex items-center gap-1 rounded-full border border-border bg-background/60 px-1.5 py-0.5 text-[10px]"
-                    >
-                      <Tag className="h-2.5 w-2.5" />
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              )}
               <div className="flex flex-wrap gap-1 border-t border-border pt-3">
                 <button
-                  onClick={() => {
-                    setAssets((a) =>
-                      a.map((x) => (x.id === active.id ? { ...x, favorite: !x.favorite } : x)),
-                    );
-                  }}
+                  onClick={() => store.updateAsset(active.id, { favorite: !active.favorite })}
                   className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-[10px] font-medium hover:bg-accent"
                 >
                   <Star className="h-3 w-3" /> {active.favorite ? "Unfavorite" : "Favorite"}
                 </button>
                 <button
-                  onClick={() => toast.success("Duplicated")}
+                  onClick={() => {
+                    store.addAsset({
+                      projectId: active.projectId!,
+                      name: active.name.replace(/(\.[^.]+)?$/, " (copy)$1"),
+                      folder: active.folder,
+                      kind: active.kind,
+                      mimeType: active.mimeType,
+                      sizeBytes: active.sizeBytes,
+                      dataUrl: active.dataUrl,
+                      tags: active.tags,
+                      source: active.source,
+                    });
+                    toast.success("Duplicated");
+                  }}
                   className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-[10px] font-medium hover:bg-accent"
                 >
                   <Copy className="h-3 w-3" /> Duplicate
                 </button>
                 <button
                   onClick={() => {
-                    setAssets((a) => a.filter((x) => x.id !== active.id));
+                    store.deleteAsset(active.id);
                     setSelected(null);
                     toast("Asset removed");
                   }}
@@ -373,19 +380,100 @@ export function AssetManager() {
   );
 }
 
-function FolderRow({
-  name,
-  count,
-  active,
-  onClick,
+function Header({
+  title, subtitle, view, onView, onImport, disabled,
 }: {
-  name: string;
-  count: number;
-  active: boolean;
-  onClick: () => void;
+  title: string;
+  subtitle: string;
+  view?: "grid" | "list";
+  onView?: (v: "grid" | "list") => void;
+  onImport: () => void;
+  disabled?: boolean;
 }) {
   return (
+    <div className="flex items-center justify-between border-b border-border pb-4">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--pink)] text-white shadow-sm">
+          <Boxes className="h-5 w-5" />
+        </div>
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {subtitle}
+          </div>
+          <h1 className="text-xl font-bold tracking-tight">{title}</h1>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        {view && onView && (
+          <div className="inline-flex overflow-hidden rounded-md border border-border">
+            <button
+              onClick={() => onView("grid")}
+              className={cn("px-2 py-1.5 text-xs", view === "grid" ? "bg-accent" : "text-muted-foreground hover:bg-accent/60")}
+              title="Grid"
+            >
+              <Grid3x3 className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => onView("list")}
+              className={cn("px-2 py-1.5 text-xs", view === "list" ? "bg-accent" : "text-muted-foreground hover:bg-accent/60")}
+              title="List"
+            >
+              <List className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+        <button
+          onClick={onImport}
+          disabled={disabled}
+          className="inline-flex items-center gap-1.5 rounded-md bg-[var(--blue)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50"
+        >
+          <Upload className="h-3.5 w-3.5" /> Import
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AssetTile({ asset, selected, onClick }: { asset: Asset; selected: boolean; onClick: () => void }) {
+  const meta = KIND_META[asset.kind];
+  const Icon = meta.icon;
+  return (
     <button
+      onClick={onClick}
+      className={cn(
+        "group flex flex-col items-start gap-2 rounded-lg border p-2.5 text-left transition-all",
+        selected
+          ? "border-[var(--blue)] bg-[var(--blue)]/5"
+          : "border-border bg-background/40 hover:border-border/80 hover:bg-accent/40",
+      )}
+    >
+      <div
+        className="grid aspect-square w-full place-items-center overflow-hidden rounded-md"
+        style={{ backgroundColor: meta.color + "18" }}
+      >
+        {(asset.kind === "image" || asset.kind === "icon") && asset.dataUrl ? (
+          <img src={asset.dataUrl} alt={asset.name} className="h-full w-full object-contain" />
+        ) : (
+          <Icon className="h-7 w-7" style={{ color: meta.color }} />
+        )}
+      </div>
+      <div className="w-full min-w-0">
+        <div className="flex items-center gap-1">
+          <div className="min-w-0 flex-1 truncate text-[11px] font-semibold">{asset.name}</div>
+          {asset.favorite && <Star className="h-3 w-3 fill-[var(--orange)] text-[var(--orange)]" />}
+        </div>
+        <div className="text-[10px] text-muted-foreground">{fmtSize(asset.sizeBytes)}</div>
+      </div>
+    </button>
+  );
+}
+
+function FolderRow({
+  name, label, count, active, onClick,
+}: { name: string; label: string; count: number; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      key={name}
       onClick={onClick}
       className={cn(
         "flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs transition-colors",
@@ -397,7 +485,7 @@ function FolderRow({
       ) : (
         <Folder className="h-3.5 w-3.5 text-muted-foreground" />
       )}
-      <span className="min-w-0 flex-1 truncate">{name}</span>
+      <span className="min-w-0 flex-1 truncate">{label}</span>
       <span className="text-[10px] text-muted-foreground tabular-nums">{count}</span>
     </button>
   );
