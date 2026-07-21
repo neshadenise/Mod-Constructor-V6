@@ -1,61 +1,86 @@
-# Mod Architect Studio V6 — Production Overhaul Plan
+# Ship ChatGPT App / MCP integration for real
 
-This is a very large scope (23 systems). To keep the visual language intact and avoid a half-working mega-refactor, I'll ship it in 6 phases. Each phase is independently useful and builds on the previous one. After each phase you can review and re-prioritize.
+## Current state (verified)
 
-Nothing here changes the current light theme, typography, spacing, or card styling — every new surface reuses the existing tokens and shadcn primitives already in the project.
+- `src/lib/mcp-tools.ts` defines 12 tool *descriptors* only — a UI scaffold with no runtime.
+- No `src/lib/mcp/` server entry, no `@lovable.dev/mcp-js` install, no `mcpPlugin()` in Vite, no `/mcp` route.
+- All project data lives in the browser via `src/lib/store.tsx` (localStorage). There is no per-user backend.
 
-## Phase 1 — Shared Foundation (this turn)
+So today ChatGPT has nothing to connect to. This plan makes it real.
 
-The pieces every other phase depends on. Building these first prevents duplicated UI later.
+## Decisions (from your answers)
 
-1. **Command Palette** (Ctrl/Cmd+K) — shadcn `Command` dialog with grouped actions: Create Career/Trait/Aspiration, Generate Icon, Validate, Export, Toggle Advanced, Open Settings, Import Assets, Duplicate Branch, Find References, Generate XML.
-2. **Universal Search** — same `Command` primitive, indexes projects, careers, traits, aspirations, buffs, notifications, assets, IDs, validation issues, recent files, settings, templates. Opens from top bar or `/`.
-3. **Notification Center** — right-side drawer + bell in top bar. Toast + persistent log for background builds, validation, exports, updates, undo.
-4. **Enhanced Status Bar** — expand existing bar with: game version, project version, validation status, build status, autosave, provider status, online/offline, selection count, CPU/memory placeholders, git placeholder.
-5. **`PropertyField` primitive** (`src/components/mc/inspector/PropertyField.tsx`) — one component for every editable field with label, subtitle, tooltip, example, validation state, reset, copy, paste, duplicate, lock, favorite, recently-edited highlight. Variants: text, number, slider, switch, chips, color, icon, asset, select, multi-select, reorderable list, reference, conditional.
-6. **Inspector History context** — undo/redo stack + per-field history (last edited time, previous value, restore). Wired into `PropertyField`.
+- **Access:** Public — no login. This is a **public MCP server**: anyone on the internet with the URL can call these tools. Because the app has no accounts and no server database, the tools only operate on data the caller passes into the call itself — nothing about your local projects is exposed.
+- **Tool scope:** read-only inspection · authoring · bundle import/export · templates & snippets.
 
-## Phase 2 — Workspace Systems
+## What ships
 
-7. **Project Explorer** — tree view with folders, right-click menu (rename, duplicate, delete, move, color label, favorite, pin), recently opened.
-8. **Asset Manager 2.0** — thumbnail/list/details view toggle, tags, collections, favorites, unused finder, duplicate finder, "Where Used", bulk rename/move/delete, replace-everywhere, drag-drop, version history strip.
-9. **Reference Viewer** — per-asset panel showing Used By / Dependencies / Broken / Circular refs with clickable navigation.
-10. **Validation Center** — dashboard grouping Errors/Warnings/Suggestions/Info; each row has severity, builder, field, reason, fix, jump-to, ignore, auto-fix, related; filter/search/group/export.
+### 1. Install & config
+- `bun add @lovable.dev/mcp-js zod`
+- `bunfig.toml`: add `@lovable.dev/mcp-js` to `minimumReleaseAgeExcludes`.
+- `vite.config.ts`: add `mcpPlugin()` (mounts at `/mcp` — public app, default path is fine).
 
-## Phase 3 — AI & Integrations
+### 2. MCP server (`src/lib/mcp/`)
 
-11. **AI Workspace** — dedicated section with sidebar (prompt history, saved, favorites, recent generations), tabs for Image/Text/Validation/Docs, context selector, project memory, conversation history. Insert-into-project approval flow.
-12. **Integrations page** — provider cards (ChatGPT App, OpenAI API, Replicate, Stability, HuggingFace, Local AI, Custom). Each shows status, capabilities, model selector, usage, connect/disconnect. Pluggable `IntegrationProvider` interface — no hardcoded impls.
+Pure functions — no store, no localStorage, no env reads at module scope. Each tool takes a full state blob or the specific input it needs and returns a result. The client-side app can call the same helpers; ChatGPT calls them over MCP.
 
-## Phase 4 — Visual & Simulation
+```
+src/lib/mcp/
+├── index.ts                       # defineMcp — name, title, version, instructions, tools
+└── tools/
+    ├── inspect/
+    │   ├── list-projects.ts       # in: { bundle } → projects[]
+    │   ├── get-project.ts
+    │   ├── list-careers.ts
+    │   ├── list-traits.ts
+    │   ├── list-aspirations.ts
+    │   └── list-notifications.ts
+    ├── authoring/
+    │   ├── create-project.ts      # in: { name, author? } → project + patch
+    │   ├── add-career.ts          # in: { project, career } → career + patch
+    │   ├── add-trait.ts
+    │   ├── add-aspiration.ts
+    │   ├── add-notification.ts
+    │   ├── set-project-status.ts
+    │   └── bump-version.ts
+    ├── bundle/
+    │   ├── export-bundle.ts       # in: { bundle } → .mcbundle.json string
+    │   └── import-bundle.ts       # in: { bundleJson } → validated bundle
+    └── templates/
+        ├── list-templates.ts      # reads built-in templates from src/lib/builtin-templates.ts
+        ├── use-template.ts        # in: { templateId, projectName? } → scaffolded records
+        └── list-snippets.ts
+```
 
-13. **Visual Graph** — node editor showing relationships between careers/traits/buffs/loot/notifications/interactions/conditions/rewards. Selecting a node opens inspector.
-14. **Live Simulator** — expand existing preview: career panel, CAS preview, promotion popup, work/WFH popup, reward notification, buff tooltip, moodlet panel, calendar, relationship panel, phone UI, career-join screen, promotion history, multiple Sims, zoom, device scaling.
+Every tool gets accurate `title`, one-sentence `description`, and correct `annotations` (`readOnlyHint`, `destructiveHint`, `idempotentHint`). These drive the connector list and how ChatGPT chooses tools.
 
-## Phase 5 — Build & Analytics
+### 3. Shared contracts
+- Reuse the entity types from `src/lib/types.ts` (Career, Trait, Aspiration, NotificationTemplate, Project, Bundle).
+- Zod schemas mirror the Property Inspector validation already in the app so ChatGPT-produced content passes the same checks a human would.
 
-15. **Build Center** — queued/completed/failed tabs, per-build logs, warnings, errors, package size, files generated, duration, incremental, cancel, retry, clean build, open folder.
-16. **Project Analytics** — dashboard widgets: completion, missing assets, validation score, unused assets, duplicate IDs, builder progress, lines generated, estimated XML count, recent activity, exports.
-17. **Template Marketplace** — browser for Career/Trait/Notification/Aspiration templates with Favorites, Installed, Official, Community tabs, import/export.
-18. **Project Settings** — tabs for General, Metadata, Packaging, Localization, Dependencies, Build Profiles, Namespaces, Author, License, Versioning, Compatibility, Game Packs, Output Folders, Autosave, Cloud Sync.
+### 4. Delete UI-only scaffold
+- Remove `src/lib/mcp-tools.ts` and its imports (`Views.tsx`) — the real manifest replaces it. The Settings "App host / MCP" panel is repointed to show the live manifest from `.lovable/mcp/manifest.json`.
 
-## Phase 6 — Polish
+### 5. Favicon
+- Add a simple favicon (icon-library palette mark) so the connector listing has a proper icon.
 
-19. **Workspace Customization** — dockable/resizable panels, save layout, reset, builder-specific layouts, compact/accessibility/focus modes.
-20. **Beginner vs Advanced** — audit every builder; ensure Simple hides all XML/tuning fields, Advanced exposes everything, switching preserves data.
-21. **Accessibility pass** — keyboard shortcuts overlay, high-contrast token, large-text scale, reduced-motion, screen-reader labels on every icon-only button.
-22. **Onboarding & Polish** — first-run tour, empty states, contextual tips, skeleton loaders, keyboard shortcut overlay (`?`), recent-activity timeline, micro animations.
+### 6. Validate & finish
+- Run `app_mcp_server--extract_mcp_manifest` after wiring.
+- Tell you the MCP exists but only works after publishing, and surface the Publish action.
 
-## Technical notes
+## What this means in practice
 
-- Every new field re-exports through `PropertyField`. Existing builders get migrated incrementally — Phase 1 introduces the primitive without breaking current forms.
-- Command Palette + Universal Search share one `useCommandRegistry()` hook so commands and search results come from the same source of truth.
-- Inspector History is a React context at the root; `PropertyField` writes to it on every commit.
-- Notification Center replaces direct `sonner` calls with a `useNotifications()` API that fans out to both toast and drawer.
-- Integrations expose an `IntegrationProvider` TS interface (`id`, `name`, `capabilities`, `connect()`, `disconnect()`, `models()`, `usage()`). New providers register into a registry — zero UI changes required.
-- Visual Graph reuses the existing Constructor Canvas rendering primitives.
-- All new panels use the existing `card-elevated`, `surface-card`, and `grid-canvas` utilities. No new color tokens.
+- After publish, the ChatGPT connector URL is `https://<your-app>.lovable.app/mcp`.
+- In ChatGPT: Settings → Connectors → Add → paste that URL. No login prompt.
+- ChatGPT can then: list/create projects, add careers/traits/aspirations/notifications, apply built-in templates, and return a downloadable `.mcbundle.json` you import back into the app via the existing Import button.
+- Because tools are stateless, ChatGPT works on a bundle you paste in (or a fresh empty one) and returns an updated bundle — your browser stays the source of truth.
 
-## Deliverable for this turn
+## Public-exposure notice
 
-Phase 1 only — Command Palette, Universal Search, Notification Center, expanded Status Bar, `PropertyField` primitive with all variants and controls, Inspector History context. Wire the palette and search into the top bar, wire notifications into existing toast call-sites, and migrate one builder (Career Identity tab) to `PropertyField` as the reference implementation for later phases.
+This will be a **public MCP server**: anyone on the internet with the `/mcp` URL can invoke these tools and receive the JSON they return. The tools do **not** read from or write to your local browser store, and they do **not** expose your existing projects — they only operate on what the caller sends in the request. If that changes later (e.g. we add accounts + a real backend), we'd switch to the OAuth path before exposing per-user data.
+
+## Out of scope for this pass
+
+- User accounts / Supabase / OAuth MCP.
+- Long-running tools (image generation, large validation sweeps) — MCP is synchronous request/response; those stay in-app.
+- Two-way live sync between ChatGPT and your open browser tab (would need a backend).
