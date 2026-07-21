@@ -774,12 +774,12 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       return { ...r, id, projectId: r.projectId ? newProjectId : undefined };
     };
     const importedProject: Project = {
-      version: "0.1.0",
-      status: "draft",
-      changelog: [],
       ...bundle.project,
       id: newProjectId,
       name: `${bundle.project.name} (imported)`,
+      version: bundle.project.version ?? "0.1.0",
+      status: bundle.project.status ?? "draft",
+      changelog: bundle.project.changelog ?? [],
       isDemo: false,
       createdAt: now(),
       updatedAt: now(),
