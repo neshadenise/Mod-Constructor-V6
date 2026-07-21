@@ -251,6 +251,10 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       name: init.name ?? "New Project",
       author: init.author ?? "You",
       description: init.description ?? "",
+      version: init.version ?? "0.1.0",
+      status: init.status ?? "draft",
+      changelog: init.changelog ?? [],
+      isDemo: false,
       createdAt: now(),
       updatedAt: now(),
       careerIds: [],
@@ -275,6 +279,12 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
   }, [mutate, log]);
 
   const deleteProject: StoreAPI["deleteProject"] = useCallback((id) => {
+    // Guard the built-in demo project.
+    const target = stateRef.current.projects.find((p) => p.id === id);
+    if (target?.isDemo) {
+      log({ kind: "update", entityType: "project", entityId: id, summary: `Blocked delete of demo project` });
+      return;
+    }
     mutate((s) => ({
       ...s,
       projects: s.projects.filter((p) => p.id !== id),
@@ -291,12 +301,86 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
   const duplicateProject: StoreAPI["duplicateProject"] = useCallback((id) => {
     const src = stateRef.current.projects.find((p) => p.id === id);
     if (!src) return null;
-    return createProject({ name: `${src.name} (copy)`, author: src.author, description: src.description, tags: src.tags });
+    return createProject({
+      name: `${src.name} (copy)`,
+      author: src.author,
+      description: src.description,
+      tags: src.tags,
+      version: src.version,
+    });
   }, [createProject]);
 
   const setActiveProject: StoreAPI["setActiveProject"] = useCallback((id) => {
     mutate((s) => ({ ...s, activeProjectId: id }));
   }, [mutate]);
+
+  /**
+   * Change a project's lifecycle status. If moving into a terminal state
+   * (complete / tested / released) and no changelog entry exists for the
+   * current version, one is appended automatically.
+   */
+  const setProjectStatus = useCallback((id: ID, status: import("./types").ProjectStatus, notes?: string) => {
+    mutate((s) => ({
+      ...s,
+      projects: s.projects.map((p) => {
+        if (p.id !== id) return p;
+        const isMilestone = status === "complete" || status === "tested" || status === "released";
+        const already = p.changelog.some((c) => c.version === p.version && c.status === status);
+        const nextChangelog = isMilestone && !already
+          ? [{
+              id: uid(),
+              version: p.version,
+              status,
+              notes: notes ?? `Marked v${p.version} as ${status}.`,
+              createdAt: now(),
+              auto: !notes,
+            }, ...p.changelog]
+          : p.changelog;
+        return { ...p, status, changelog: nextChangelog, updatedAt: now() };
+      }),
+    }));
+    log({ kind: "update", entityType: "project", entityId: id, summary: `Set status to ${status}` });
+  }, [mutate, log]);
+
+  /**
+   * Bump a project's version string. If `notes` is provided, a changelog
+   * entry is added for the new version at "in-progress" status.
+   */
+  const setProjectVersion = useCallback((id: ID, version: string, notes?: string) => {
+    mutate((s) => ({
+      ...s,
+      projects: s.projects.map((p) => {
+        if (p.id !== id) return p;
+        const entry = notes && notes.trim()
+          ? [{ id: uid(), version, status: p.status, notes, createdAt: now() }, ...p.changelog]
+          : p.changelog;
+        return { ...p, version, changelog: entry, status: "in-progress" as const, updatedAt: now() };
+      }),
+    }));
+    log({ kind: "update", entityType: "project", entityId: id, summary: `Bumped version to ${version}` });
+  }, [mutate, log]);
+
+  const addChangelogEntry = useCallback((id: ID, entry: { version?: string; status?: import("./types").ProjectStatus; notes: string }) => {
+    mutate((s) => ({
+      ...s,
+      projects: s.projects.map((p) => {
+        if (p.id !== id) return p;
+        return {
+          ...p,
+          changelog: [{
+            id: uid(),
+            version: entry.version ?? p.version,
+            status: entry.status ?? p.status,
+            notes: entry.notes,
+            createdAt: now(),
+          }, ...p.changelog],
+          updatedAt: now(),
+        };
+      }),
+    }));
+  }, [mutate]);
+
+
 
   /* ------------- Careers ------------- */
 
