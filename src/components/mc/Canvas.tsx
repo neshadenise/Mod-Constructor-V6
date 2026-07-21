@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Briefcase, Sparkles, Target, Package, Sliders, Layers } from "lucide-react";
+import { Briefcase, Sparkles, Target, Package, Sliders, Layers, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAdvanced } from "@/lib/advanced-mode";
 
 type NodeDef = {
   id: string;
@@ -20,7 +21,14 @@ const nodes: NodeDef[] = [
   { id: "pkg", label: "Package", sub: "epic_careers.package", x: 800, y: 130, icon: Package, color: "var(--green)" },
 ];
 
-const edges: [string, string][] = [
+const simpleNodes: NodeDef[] = [
+  { id: "career", label: "Career", sub: "Interstellar Navigator", x: 80, y: 170, icon: Briefcase, color: "var(--blue)" },
+  { id: "trait", label: "Traits", sub: "Bonus perks", x: 340, y: 60, icon: Sparkles, color: "var(--violet)" },
+  { id: "asp", label: "Aspiration", sub: "Life goal", x: 340, y: 280, icon: Target, color: "var(--teal)" },
+  { id: "pkg", label: "Mod File", sub: "Ready to install", x: 700, y: 170, icon: Package, color: "var(--green)" },
+];
+
+const advancedEdges: [string, string][] = [
   ["root", "trait"],
   ["root", "asp"],
   ["trait", "tune"],
@@ -28,28 +36,46 @@ const edges: [string, string][] = [
   ["tune", "pkg"],
 ];
 
+const simpleEdges: [string, string][] = [
+  ["career", "trait"],
+  ["career", "asp"],
+  ["trait", "pkg"],
+  ["asp", "pkg"],
+];
+
 export function Canvas() {
-  const [selected, setSelected] = useState("tune");
-  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+  const { advanced } = useAdvanced();
+  const activeNodes = advanced ? nodes : simpleNodes;
+  const activeEdges = advanced ? advancedEdges : simpleEdges;
+  const [selected, setSelected] = useState(advanced ? "tune" : "career");
+  const byId = Object.fromEntries(activeNodes.map((n) => [n.id, n]));
 
   return (
     <div className="relative h-[440px] overflow-hidden rounded-xl border border-border bg-muted/40 dotted-grid">
-      <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-lg border border-border bg-card/90 p-1 shadow-sm backdrop-blur">
-        {["Select", "Node", "Edge", "Group"].map((t, i) => (
-          <button
-            key={t}
-            className={cn(
-              "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-              i === 0 ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/60",
-            )}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+      {advanced ? (
+        <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-lg border border-border bg-card/90 p-1 shadow-sm backdrop-blur">
+          {["Select", "Node", "Edge", "Group"].map((t, i) => (
+            <button
+              key={t}
+              className={cn(
+                "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                i === 0 ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/60",
+              )}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-lg border border-border bg-card/90 px-2.5 py-1.5 text-[11px] text-muted-foreground shadow-sm backdrop-blur">
+          <Info className="h-3.5 w-3.5 text-[var(--blue)]" />
+          <span>Click a card to edit that part of your mod.</span>
+        </div>
+      )}
+
       <div className="absolute right-3 top-3 z-10 flex items-center gap-2 rounded-lg border border-border bg-card/90 px-2.5 py-1.5 text-[11px] font-medium shadow-sm backdrop-blur">
         <Layers className="h-3.5 w-3.5 text-[var(--blue)]" />
-        Constructor Canvas · 5 nodes · 5 edges
+        {advanced ? `Constructor Canvas · ${activeNodes.length} nodes · ${activeEdges.length} edges` : "Your Mod at a Glance"}
       </div>
 
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 960 440" preserveAspectRatio="none">
@@ -58,9 +84,10 @@ export function Canvas() {
             <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" className="text-[var(--blue)]" />
           </marker>
         </defs>
-        {edges.map(([a, b]) => {
-          const n1 = byId[a],
-            n2 = byId[b];
+        {activeEdges.map(([a, b]) => {
+          const n1 = byId[a];
+          const n2 = byId[b];
+          if (!n1 || !n2) return null;
           const x1 = n1.x + 90,
             y1 = n1.y + 32,
             x2 = n2.x,
@@ -72,14 +99,14 @@ export function Canvas() {
               d={`M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`}
               className="fill-none stroke-[var(--blue)]/50"
               strokeWidth={1.5}
-              strokeDasharray="4 4"
+              strokeDasharray={advanced ? "4 4" : "0"}
               markerEnd="url(#arrow)"
             />
           );
         })}
       </svg>
 
-      {nodes.map((n) => {
+      {activeNodes.map((n) => {
         const Icon = n.icon;
         const isSel = selected === n.id;
         return (
@@ -108,18 +135,20 @@ export function Canvas() {
         );
       })}
 
-      <div className="absolute bottom-3 right-3 h-20 w-32 rounded-md border border-border bg-card/80 p-1.5 shadow-sm backdrop-blur">
-        <div className="relative h-full w-full rounded bg-muted">
-          {nodes.map((n) => (
-            <div
-              key={n.id}
-              className="absolute h-1.5 w-3 rounded-sm"
-              style={{ left: `${(n.x / 960) * 100}%`, top: `${(n.y / 440) * 100}%`, backgroundColor: n.color }}
-            />
-          ))}
-          <div className="absolute inset-2 rounded border border-[var(--blue)]/60" />
+      {advanced && (
+        <div className="absolute bottom-3 right-3 h-20 w-32 rounded-md border border-border bg-card/80 p-1.5 shadow-sm backdrop-blur">
+          <div className="relative h-full w-full rounded bg-muted">
+            {activeNodes.map((n) => (
+              <div
+                key={n.id}
+                className="absolute h-1.5 w-3 rounded-sm"
+                style={{ left: `${(n.x / 960) * 100}%`, top: `${(n.y / 440) * 100}%`, backgroundColor: n.color }}
+              />
+            ))}
+            <div className="absolute inset-2 rounded border border-[var(--blue)]/60" />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

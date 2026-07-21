@@ -1,12 +1,15 @@
-import { Bell, HelpCircle, Search, Moon, Sun, Save, ChevronRight, Wifi, WifiOff, RefreshCw, Cloud } from "lucide-react";
+import { Bell, HelpCircle, Search, Moon, Sun, Save, ChevronRight, Wifi, WifiOff, RefreshCw, Cloud, Wrench } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTheme } from "@/lib/theme";
+import { useAdvanced } from "@/lib/advanced-mode";
 import { Input } from "@/components/ui/input";
 import { SECTION_LABEL, type SectionId } from "./sections";
+import { cn } from "@/lib/utils";
 
 export function TopBar({ active }: { active: SectionId }) {
   const { theme, toggle } = useTheme();
+  const { advanced, toggle: toggleAdvanced } = useAdvanced();
   const [online, setOnline] = useState(false);
   const [checking, setChecking] = useState(false);
 
@@ -38,11 +41,45 @@ export function TopBar({ active }: { active: SectionId }) {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        <button
+          onClick={() => {
+            toggleAdvanced();
+            toast(advanced ? "Simple mode" : "Advanced mode enabled", {
+              description: advanced
+                ? "Advanced tools and code fields are hidden."
+                : "Tuning editor, XML output, and validation are now visible.",
+            });
+          }}
+          className={cn(
+            "inline-flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-xs font-semibold transition-colors",
+            advanced
+              ? "border-[var(--orange)]/40 bg-[var(--orange)]/10 text-[var(--orange)]"
+              : "border-border bg-card text-muted-foreground hover:bg-accent",
+          )}
+          title="Toggle advanced options"
+        >
+          <Wrench className="h-3.5 w-3.5" />
+          <span className="hidden md:inline">{advanced ? "Advanced" : "Simple"}</span>
+          <span
+            className={cn(
+              "relative h-3 w-6 rounded-full transition-colors",
+              advanced ? "bg-[var(--orange)]" : "bg-muted",
+            )}
+          >
+            <span
+              className={cn(
+                "absolute top-0.5 h-2 w-2 rounded-full bg-white transition-all",
+                advanced ? "left-3.5" : "left-0.5",
+              )}
+            />
+          </span>
+        </button>
+
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search mods, traits, careers…  Ctrl+K"
-            className="h-9 w-64 pl-8 text-xs"
+            placeholder="Search mods, traits, careers…"
+            className="h-9 w-56 pl-8 text-xs"
           />
         </div>
 
@@ -56,8 +93,6 @@ export function TopBar({ active }: { active: SectionId }) {
           ) : (
             <WifiOff className="h-3.5 w-3.5 text-muted-foreground" />
           )}
-          <span className="hidden md:inline">{online ? "Online" : "Offline"}</span>
-          <span className="mx-1 h-3.5 w-px bg-border" />
           <Cloud className="h-3.5 w-3.5 text-[var(--blue)]" />
           <span className="hidden md:inline">lot51</span>
           <RefreshCw className={"h-3 w-3 text-muted-foreground " + (checking ? "animate-spin" : "")} />
