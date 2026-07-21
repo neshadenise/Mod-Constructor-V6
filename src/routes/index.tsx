@@ -16,29 +16,63 @@ import { NotificationsProvider } from "@/lib/notifications";
 import { InspectorHistoryProvider } from "@/lib/inspector-history";
 import { StoreProvider } from "@/lib/store";
 import type { SectionId } from "@/components/mc/sections";
+import { detectAppMode, type AppMode } from "@/lib/app-mode";
+import { LandingLayout } from "@/components/landing/LandingLayout";
+import { LandingHome } from "@/components/landing/Home";
 
 const ADVANCED_ONLY: SectionId[] = ["tuning", "validation"];
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Mod Constructor V6 · Desktop Studio" },
+      { title: "Mod Constructor V6 · Sims 4 Gameplay Mod Studio" },
       {
         name: "description",
         content:
-          "Mod Constructor V6 — an offline-first desktop studio for building, tuning, validating, and packaging Sims 4 mods. Optional lot51.cc sync for framework updates.",
+          "Build careers, traits, aspirations, notifications, and reusable Sims 4 gameplay mods in one guided desktop workspace by NeshaDenise Sims. Windows and macOS.",
       },
-      { property: "og:title", content: "Mod Constructor V6 · Desktop Studio" },
+      { property: "og:title", content: "Mod Constructor V6 · Sims 4 Gameplay Mod Studio" },
       {
         property: "og:description",
-        content: "Offline-first desktop app for Sims 4 mod building. Career, Trait & Aspiration builders.",
+        content:
+          "Standalone desktop app for Sims 4 gameplay mod creators. Downloads on Patreon.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,
 });
 
 function Index() {
+  // Deferred mode detection avoids SSR/hydration mismatch — SSR renders the
+  // landing shell (public-web default); after hydration we swap to the full
+  // app for dev and desktop environments.
+  const [mode, setMode] = useState<AppMode | null>(null);
+  useEffect(() => setMode(detectAppMode()), []);
+
+  if (mode === null) {
+    // SSR + first-render fallback: render the public landing so search
+    // engines / social crawlers see something sensible without a flash.
+    return (
+      <LandingLayout>
+        <LandingHome />
+      </LandingLayout>
+    );
+  }
+
+  if (mode === "public-web") {
+    return (
+      <LandingLayout>
+        <LandingHome />
+      </LandingLayout>
+    );
+  }
+
+  return <FullApp />;
+}
+
+function FullApp() {
   return (
     <AppHostProvider>
       <StoreProvider>

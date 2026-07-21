@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /features
+Allow: /credits
+Allow: /privacy
+Allow: /support
+
+# Service endpoints — not meant for indexing.
+Disallow: /mcp
+Disallow: /.mcp
+Disallow: /.well-known/
