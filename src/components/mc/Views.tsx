@@ -1289,6 +1289,7 @@ export function SectionView({
   if (active === "career") return <div className="mx-auto max-w-[1600px] p-6"><CareerBuilder /></div>;
   if (active === "trait") return <div className="mx-auto max-w-[1600px] p-6"><TraitBuilder /></div>;
   if (active === "aspiration") return <div className="mx-auto max-w-[1600px] p-6"><AspirationBuilder /></div>;
+  if (active === "notifications") return <div className="mx-auto max-w-[1600px] p-6"><NotificationLibrary /></div>;
   if (active === "tuning") return <div className="mx-auto max-w-[1600px] p-6"><TuningEditor /></div>;
   if (active === "assets") return <div className="mx-auto max-w-[1600px] p-6"><AssetsView /></div>;
   if (active === "validation") return <div className="mx-auto max-w-[1600px] p-6"><ValidationView /></div>;
