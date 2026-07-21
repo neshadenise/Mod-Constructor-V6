@@ -8,6 +8,7 @@ import { StatusBar } from "@/components/mc/StatusBar";
 import { SectionView } from "@/components/mc/Views";
 import { CommandPalette, useCommandPaletteHotkey } from "@/components/mc/CommandPalette";
 import { NotificationCenter } from "@/components/mc/NotificationCenter";
+import { ShortcutsDialog } from "@/components/mc/ShortcutsDialog";
 import { AdvancedModeProvider, useAdvanced } from "@/lib/advanced-mode";
 import { AppHostProvider } from "@/lib/app-host";
 import { AppNavigationProvider } from "@/lib/navigation";
@@ -74,6 +75,7 @@ function Shell() {
         <StatusBar active={active} />
         <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
         <NotificationCenter />
+        <ShortcutsDialog />
       </div>
     </AppNavigationProvider>
   );
