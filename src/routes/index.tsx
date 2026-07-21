@@ -7,6 +7,7 @@ import { MenuBar } from "@/components/mc/MenuBar";
 import { StatusBar } from "@/components/mc/StatusBar";
 import { SectionView } from "@/components/mc/Views";
 import { AdvancedModeProvider, useAdvanced } from "@/lib/advanced-mode";
+import { AppHostProvider } from "@/lib/app-host";
 import type { SectionId } from "@/components/mc/sections";
 
 const ADVANCED_ONLY: SectionId[] = ["tuning", "validation"];
@@ -32,9 +33,11 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   return (
-    <AdvancedModeProvider>
-      <Shell />
-    </AdvancedModeProvider>
+    <AppHostProvider>
+      <AdvancedModeProvider>
+        <Shell />
+      </AdvancedModeProvider>
+    </AppHostProvider>
   );
 }
 

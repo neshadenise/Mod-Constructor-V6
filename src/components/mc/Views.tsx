@@ -58,6 +58,15 @@ import { CareerPreview, type CareerPreviewData } from "./preview/CareerPreview";
 import { TraitPreview, type TraitPreviewData } from "./preview/TraitPreview";
 import { AspirationPreview, type AspirationPreviewData } from "./preview/AspirationPreview";
 import { NotificationLibrary } from "./preview/NotificationLibrary";
+import { ImageField } from "./ImageField";
+import {
+  useAppHost,
+  PROVIDER_LABEL,
+  PROVIDER_DESCRIPTION,
+  type ImageProvider,
+} from "@/lib/app-host";
+import { MCP_TOOL_DEFS } from "@/lib/mcp-tools";
+import { downloadBundle, loadBundle, emptyBundle } from "@/lib/project-store";
 
 /* ---------- Shared shell for builder pages ---------- */
 
@@ -784,34 +793,22 @@ function CareerBuilder() {
 
           <Card title="Icon & Image">
             <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: "Icon", value: icon, set: setIcon, hint: "Small (32×32) — sidebar / phone" },
-                { label: "Image", value: image, set: setImage, hint: "Large — join-career splash" },
-              ].map((f) => (
-                <div key={f.label}>
-                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {f.label}
-                  </label>
-                  <div className="flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/30 p-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-card">
-                      <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 text-[11px] text-muted-foreground">
-                      {f.value || "No file selected"}
-                      <div className="text-[10px]">{f.hint}</div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        f.set(`${f.label.toLowerCase()}_${Date.now()}.png`);
-                        toast.success(`${f.label} picked`);
-                      }}
-                      className="rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium hover:bg-accent"
-                    >
-                      Browse…
-                    </button>
-                  </div>
-                </div>
-              ))}
+              <ImageField
+                label="Icon"
+                value={icon}
+                onChange={setIcon}
+                slot="icon"
+                hint="Small (32×32) — sidebar / phone"
+                context={{ subject: `${name || "career"} icon`, style: "flat, game UI" }}
+              />
+              <ImageField
+                label="Image"
+                value={image}
+                onChange={setImage}
+                slot="image"
+                hint="Large — join-career splash"
+                context={{ subject: `${name || "career"} splash`, style: "cinematic" }}
+              />
             </div>
           </Card>
 
@@ -1683,7 +1680,16 @@ function TraitBuilder() {
                   </select>
                 </div>
               )}
-              {advanced && <Field label="Icon Reference" value={icon} onChange={setIcon} />}
+              <div className="col-span-2">
+                <ImageField
+                  label="Trait Icon"
+                  value={icon}
+                  onChange={setIcon}
+                  slot="icon"
+                  hint="Small square icon shown in CAS and tooltips"
+                  context={{ subject: `${name || "trait"} icon`, style: "flat, game UI" }}
+                />
+              </div>
               <div className="col-span-2">
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Description
@@ -3178,9 +3184,17 @@ function InstallPaths() {
 
 function SettingsView() {
   const { advanced, toggle: toggleAdvanced } = useAdvanced();
+  const host = useAppHost();
   return (
     <div className="space-y-4">
       <PageHeader icon={SettingsIcon} subtitle="Application" title="Settings" accent="violet" />
+
+      <HostModeCard />
+
+      <ImageProviderCard />
+
+      {host.isChatGPT && <McpToolsCard />}
+
 
       <Card
         title="Interface Mode"
@@ -3275,16 +3289,174 @@ function SettingsView() {
         <Card title="About" className="col-span-6">
           <div className="space-y-1.5 text-xs">
             <Row k="Application" v="Mod Constructor V6" />
-            <Row k="Version" v="6.0.0 (offline build)" />
-            <Row k="Runtime Mode" v="Local · no telemetry" />
+            <Row k="Version" v="6.0.0" />
+            <Row k="Host" v={host.isChatGPT ? "ChatGPT App" : "Standalone Desktop"} />
+            <Row k="Platforms" v="Windows · macOS" />
             <Row k="License" v="Personal · Non-commercial" />
-            {advanced && <Row k="Framework" v=".NET 8 · WPF portable" />}
+            {advanced && <Row k="Framework" v=".NET 8 · Tauri (planned)" />}
           </div>
         </Card>
       </div>
     </div>
   );
 }
+
+/* ---------- Host / provider / MCP cards ---------- */
+
+function HostModeCard() {
+  const host = useAppHost();
+  return (
+    <Card
+      title="Runtime Host"
+      action={
+        <span
+          className={cn(
+            "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+            host.isChatGPT
+              ? "bg-[var(--green)]/15 text-[var(--green)]"
+              : "bg-[var(--blue)]/15 text-[var(--blue)]",
+          )}
+        >
+          {host.isChatGPT ? "ChatGPT App" : "Desktop"}
+        </span>
+      }
+    >
+      <div className="grid grid-cols-2 gap-3 text-xs">
+        <div
+          className={cn(
+            "rounded-lg border p-3",
+            host.isChatGPT ? "border-[var(--green)]/50 bg-[var(--green)]/5" : "border-border bg-card",
+          )}
+        >
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <Sparkles className="h-4 w-4 text-[var(--green)]" />
+            ChatGPT App mode
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Runs embedded inside ChatGPT via the OpenAI Apps SDK. Native ChatGPT
+            assistance and image generation are available. No OpenAI API key is
+            requested or stored.
+          </p>
+        </div>
+        <div
+          className={cn(
+            "rounded-lg border p-3",
+            host.isDesktop ? "border-[var(--blue)]/50 bg-[var(--blue)]/5" : "border-border bg-card",
+          )}
+        >
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <MonitorCog className="h-4 w-4 text-[var(--blue)]" />
+            Desktop mode
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Standalone Windows/macOS build. Local tools, manual uploads, and
+            separately configured generation providers. A ChatGPT subscription
+            cannot be consumed from the desktop app.
+          </p>
+        </div>
+      </div>
+      <p className="mt-3 rounded-md bg-muted/40 px-2.5 py-2 text-[11px] text-muted-foreground">
+        Projects created in either host use the same Portable Bundle
+        (<span className="font-mono">.mcbundle.json</span>) format — export from
+        ChatGPT and open in Desktop, or vice versa.
+      </p>
+    </Card>
+  );
+}
+
+function ImageProviderCard() {
+  const host = useAppHost();
+  return (
+    <Card
+      title="Image Generation Provider"
+      action={
+        <span className="text-[11px] text-muted-foreground">
+          Powers "Generate with ChatGPT" and related image actions.
+        </span>
+      }
+    >
+      <div className="grid grid-cols-2 gap-2">
+        {host.availableImageProviders.map((p) => {
+          const active = host.imageProvider === p;
+          const disabled = p === "chatgpt" && !host.isChatGPT;
+          return (
+            <button
+              key={p}
+              disabled={disabled}
+              onClick={() => {
+                host.setImageProvider(p);
+                toast.success(`Provider · ${PROVIDER_LABEL[p]}`);
+              }}
+              className={cn(
+                "rounded-lg border p-3 text-left transition-all",
+                active
+                  ? "border-[var(--blue)] bg-[var(--blue)]/8 shadow-sm"
+                  : "border-border bg-card hover:border-foreground/20",
+                disabled && "cursor-not-allowed opacity-50",
+              )}
+            >
+              <div className="flex items-center justify-between text-sm font-semibold">
+                <span>{PROVIDER_LABEL[p]}</span>
+                {p === "chatgpt" && (
+                  <span className="rounded-full bg-[var(--green)]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--green)]">
+                    No API key
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">{PROVIDER_DESCRIPTION[p]}</p>
+              {disabled && (
+                <p className="mt-1 text-[10px] italic text-muted-foreground">
+                  Only available while running in the ChatGPT App.
+                </p>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function McpToolsCard() {
+  const groups: Record<string, typeof MCP_TOOL_DEFS[number][]> = {};
+  for (const t of MCP_TOOL_DEFS) {
+    (groups[t.category] ||= []).push(t);
+  }
+  return (
+    <Card
+      title="MCP Tools exposed to ChatGPT"
+      action={
+        <span className="rounded-full bg-[var(--green)]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--green)]">
+          {MCP_TOOL_DEFS.length} tools
+        </span>
+      }
+    >
+      <p className="mb-3 text-xs text-muted-foreground">
+        When running as a ChatGPT App, Mod Constructor publishes these tools so
+        ChatGPT can help you author projects. Authentication is inherited from
+        the ChatGPT session — this app never sees passwords or tokens.
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        {Object.entries(groups).map(([cat, tools]) => (
+          <div key={cat} className="rounded-md border border-border bg-muted/30 p-2">
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {cat}
+            </div>
+            <ul className="space-y-1 text-[11px]">
+              {tools.map((t) => (
+                <li key={t.name}>
+                  <span className="font-mono text-[10.5px] font-semibold text-foreground">{t.name}</span>
+                  <span className="ml-1 text-muted-foreground">— {t.description}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 
 function SettingToggle({ label, defaultOn }: { label: string; defaultOn?: boolean }) {
   const [on, setOn] = useState(!!defaultOn);
