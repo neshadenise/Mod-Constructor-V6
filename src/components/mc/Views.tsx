@@ -295,10 +295,41 @@ function CareerBuilder() {
   const [name, setName] = useState("Interstellar Navigator");
   const [track, setTrack] = useState("Astronaut");
   const [salary, setSalary] = useState("4280");
+  const [description, setDescription] = useState(
+    "Chart deep-space routes and command the fleet. Requires strong Logic and Fitness.",
+  );
+  const [hours, setHours] = useState("09:00 → 17:00");
+  const [days, setDays] = useState("Mon – Fri");
   const [branch, setBranch] = useState<keyof typeof CAREER_BRANCHES>("Astronaut");
   const data = CAREER_BRANCHES[branch];
 
-  return (
+  const previewData: CareerPreviewData = {
+    name,
+    description,
+    track,
+    salary,
+    hours,
+    days,
+    emoji: "🚀",
+    color: "blue",
+    activeBranch: branch as string,
+    branches: (Object.keys(CAREER_BRANCHES) as (keyof typeof CAREER_BRANCHES)[]).map((b) => ({
+      key: b as string,
+      name: b as string,
+      description: b === branch ? description : `${b} branch of ${name}.`,
+      color: b === "Astronaut" ? "blue" : "violet",
+      emoji: b === "Astronaut" ? "🚀" : "🛰️",
+      ranks: CAREER_BRANCHES[b].ranks.map((r) => ({
+        lvl: r.lvl,
+        title: r.title,
+        req: r.req,
+        pay: r.pay.replace(/[§,]/g, ""),
+      })),
+      perks: CAREER_BRANCHES[b].perks,
+    })),
+  };
+
+  const editor = (
     <div className="space-y-4">
       <PageHeader
         icon={Briefcase}
@@ -318,11 +349,10 @@ function CareerBuilder() {
 
       {!advanced && (
         <div className="rounded-lg border border-[var(--blue)]/25 bg-[var(--blue)]/5 px-3 py-2 text-[11px] text-muted-foreground">
-          Fill out the name, salary, and rank titles. Everything else is handled for you — enable Advanced mode if you want to edit IDs or raw XML.
+          Fill out the name, salary, and rank titles. The Live Preview on the right updates as you type.
         </div>
       )}
 
-      {/* Branch tab strip */}
       <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 p-1">
         {(Object.keys(CAREER_BRANCHES) as (keyof typeof CAREER_BRANCHES)[]).map((b) => (
           <button
@@ -346,100 +376,90 @@ function CareerBuilder() {
         </button>
       </div>
 
-      <div className="grid grid-cols-12 gap-4">
-        <Card title="Career Identity" className="col-span-7">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Career Name" value={name} onChange={setName} />
-            <Field label="Track" value={track} onChange={setTrack} hint="Astronaut · Business · Culinary…" />
-            {advanced && (
-              <Field label="Internal ID" value="career_interstellar_navigator" hint="Snake_case, must be unique" />
-            )}
-            <Field label="Category" value="Technical" />
-            <div>
-              <Field label="Base Salary (§)" value={salary} onChange={setSalary} />
-              <div className="mt-1 flex justify-end">
-                <CopyToMenu what="salary & hours" label="Copy salary & hours to…" />
-              </div>
-            </div>
-            <Field label="Work Hours" value="09:00 → 17:00" />
-            <div className="col-span-2">
-              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Description
-              </label>
-              <Textarea
-                defaultValue="Chart deep-space routes and command the fleet. Requires strong Logic and Fitness."
-                className="h-20 resize-none text-xs"
-              />
+      <Card title="Career Identity">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Career Name" value={name} onChange={setName} />
+          <Field label="Track" value={track} onChange={setTrack} hint="Astronaut · Business · Culinary…" />
+          {advanced && <Field label="Internal ID" value="career_interstellar_navigator" hint="Snake_case, must be unique" />}
+          <Field label="Category" value="Technical" />
+          <div>
+            <Field label="Base Salary (§)" value={salary} onChange={setSalary} />
+            <div className="mt-1 flex justify-end">
+              <CopyToMenu what="salary & hours" label="Copy salary & hours to…" />
             </div>
           </div>
-        </Card>
+          <Field label="Work Hours" value={hours} onChange={setHours} />
+          <Field label="Work Days" value={days} onChange={setDays} />
+          <div className="col-span-2">
+            <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Description
+            </label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="h-20 resize-none text-xs"
+            />
+          </div>
+        </div>
+      </Card>
 
-        <Card
-          title={`Promotion Track · ${branch}`}
-          className="col-span-5"
-          action={<CopyToMenu what={`${branch} branch`} label="Copy branch to…" />}
-        >
-          <ol className="space-y-1.5 text-xs">
-            {data.ranks.map((r) => (
-              <li
-                key={r.lvl}
-                className="group flex items-center gap-2 rounded-md border border-border bg-background/60 px-2.5 py-1.5"
-              >
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--blue)]/15 text-[10px] font-bold text-[var(--blue)]">
-                  {r.lvl}
-                </span>
-                <span className="flex-1 font-medium">{r.title}</span>
-                <span className="font-mono text-[11px] text-muted-foreground">{r.req}</span>
-                <span className="font-mono font-semibold">{r.pay}</span>
-                <span className="opacity-0 transition-opacity group-hover:opacity-100">
-                  <CopyToMenu what={`rank "${r.title}"`} compact />
-                </span>
-              </li>
-            ))}
-          </ol>
-          <button className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent">
-            <Plus className="h-3 w-3" /> Add Rank
-          </button>
-        </Card>
+      <Card
+        title={`Promotion Track · ${branch}`}
+        action={<CopyToMenu what={`${branch} branch`} label="Copy branch to…" />}
+      >
+        <ol className="space-y-1.5 text-xs">
+          {data.ranks.map((r) => (
+            <li
+              key={r.lvl}
+              className="group flex items-center gap-2 rounded-md border border-border bg-background/60 px-2.5 py-1.5"
+            >
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--blue)]/15 text-[10px] font-bold text-[var(--blue)]">
+                {r.lvl}
+              </span>
+              <span className="flex-1 font-medium">{r.title}</span>
+              <span className="font-mono text-[11px] text-muted-foreground">{r.req}</span>
+              <span className="font-mono font-semibold">{r.pay}</span>
+              <span className="opacity-0 transition-opacity group-hover:opacity-100">
+                <CopyToMenu what={`rank "${r.title}"`} compact />
+              </span>
+            </li>
+          ))}
+        </ol>
+        <button className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent">
+          <Plus className="h-3 w-3" /> Add Rank
+        </button>
+      </Card>
 
-        <Card
-          title="Perks & Rewards"
-          className={advanced ? "col-span-6" : "col-span-12"}
-          action={<CopyToMenu what="all perks" label="Copy all perks to…" />}
-        >
-          <ul className="space-y-1.5 text-xs">
-            {data.perks.map((p) => (
-              <li key={p.name} className="group flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-[var(--violet)]" />
-                <span className="flex-1">{p.name}</span>
-                <span className="rounded bg-background px-1.5 py-0.5 font-mono text-[10px]">Tier {p.tier}</span>
-                <span className="opacity-0 transition-opacity group-hover:opacity-100">
-                  <CopyToMenu what={`perk "${p.name}"`} compact />
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
+      <Card title="Perks & Rewards" action={<CopyToMenu what="all perks" label="Copy all perks to…" />}>
+        <ul className="space-y-1.5 text-xs">
+          {data.perks.map((p) => (
+            <li key={p.name} className="group flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-[var(--violet)]" />
+              <span className="flex-1">{p.name}</span>
+              <span className="rounded bg-background px-1.5 py-0.5 font-mono text-[10px]">Tier {p.tier}</span>
+              <span className="opacity-0 transition-opacity group-hover:opacity-100">
+                <CopyToMenu what={`perk "${p.name}"`} compact />
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Card>
 
-
-        {advanced && (
-          <Card title="XML Output" className="col-span-6">
-            <pre className="max-h-56 overflow-auto rounded-md border border-border bg-[color-mix(in_oklab,var(--foreground)_4%,var(--card))] p-3 font-mono text-[10.5px] leading-relaxed text-foreground/85">
+      {advanced && (
+        <Card title="XML Output">
+          <pre className="max-h-56 overflow-auto rounded-md border border-border bg-[color-mix(in_oklab,var(--foreground)_4%,var(--card))] p-3 font-mono text-[10.5px] leading-relaxed text-foreground/85">
 {`<Career id="0xA112E8" name="career_interstellar_navigator">
-  <Track>Astronaut</Track>
-  <Salary>4280</Salary>
+  <Track>${track}</Track>
+  <Salary>${salary}</Salary>
   <Hours start="09:00" end="17:00" />
-  <Ranks count="5">
-    <Rank level="1" title="Junior Cadet" pay="420" />
-    <Rank level="5" title="Admiral" pay="4280" req="Logic 9, Fitness 7" />
-  </Ranks>
 </Career>`}
-            </pre>
-          </Card>
-        )}
-      </div>
+          </pre>
+        </Card>
+      )}
     </div>
   );
+
+  return <PreviewSplit editor={editor} preview={<CareerPreview data={previewData} />} />;
 }
 
 /* ---------- Trait Builder ---------- */
