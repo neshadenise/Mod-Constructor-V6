@@ -830,6 +830,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
   }), [
     state, adapter, hydrated,
     createProject, updateProject, deleteProject, duplicateProject, setActiveProject,
+    setProjectStatus, setProjectVersion, addChangelogEntry,
     createCareer, updateCareer, deleteCareer, duplicateCareer,
     createTrait, updateTrait, deleteTrait, duplicateTrait,
     createAspiration, updateAspiration, deleteAspiration,
