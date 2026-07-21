@@ -97,10 +97,12 @@ export function MenuBar() {
         { label: "Documentation", onClick: () => fire("Docs opened") },
         { label: "Keyboard Shortcuts", shortcut: "Ctrl+/" },
         { separator: true, label: "" },
-        { label: "About Mod Constructor V6", onClick: () => fire("Mod Constructor V6 · offline build") },
+        { label: "Credits & Acknowledgements", onClick: () => { setOpen(null); setCreditsOpen(true); } },
+        { label: "About Mod Constructor V6", onClick: () => { setOpen(null); setCreditsOpen(true); } },
       ],
     },
   ];
+
 
   return (
     <div
