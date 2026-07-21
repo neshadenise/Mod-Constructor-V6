@@ -15,6 +15,12 @@ import {
   Bell,
   Package,
   BookOpen,
+  LayoutTemplate,
+  Code2,
+  Network,
+  History,
+  BarChart3,
+  Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
@@ -25,7 +31,7 @@ type Item = {
   label: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   badge?: string | null;
-  group: "workspace" | "builders" | "advanced";
+  group: "workspace" | "builders" | "insights" | "advanced";
   advanced?: boolean;
 };
 
@@ -33,6 +39,7 @@ export const SIDEBAR_ITEMS: Item[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, group: "workspace" },
   { id: "projects", label: "Projects", icon: FolderKanban, badge: "12", group: "workspace" },
   { id: "explorer", label: "Project Explorer", icon: FolderTree, group: "workspace" },
+  { id: "templates", label: "Templates", icon: LayoutTemplate, group: "workspace" },
   { id: "reference", label: "Reference", icon: BookOpen, group: "workspace" },
 
   { id: "career", label: "Career Builder", icon: Briefcase, group: "builders" },
@@ -40,9 +47,15 @@ export const SIDEBAR_ITEMS: Item[] = [
   { id: "aspiration", label: "Aspiration Builder", icon: Target, group: "builders" },
   { id: "notifications", label: "Notification Library", icon: Bell, group: "builders" },
   { id: "assets", label: "Assets", icon: Boxes, badge: "48", group: "builders" },
+  { id: "snippets", label: "Snippets", icon: Code2, group: "builders" },
   { id: "exporter", label: "Package Exporter", icon: Package, group: "builders" },
   { id: "queue", label: "Build Queue", icon: ListChecks, badge: "2", group: "builders" },
-  { id: "settings", label: "Settings", icon: Settings, group: "builders" },
+
+  { id: "graph", label: "Dependency Graph", icon: Network, group: "insights" },
+  { id: "timeline", label: "Activity", icon: History, group: "insights" },
+  { id: "analytics", label: "Build Analytics", icon: BarChart3, group: "insights" },
+  { id: "updates", label: "Update Center", icon: Radio, group: "insights" },
+  { id: "settings", label: "Settings", icon: Settings, group: "insights" },
 
   // Advanced-only
   { id: "tuning", label: "Tuning Editor", icon: Sliders, group: "advanced", advanced: true },
@@ -53,6 +66,7 @@ export const SIDEBAR_ITEMS: Item[] = [
 const groups: { key: Item["group"]; label: string; advanced?: boolean }[] = [
   { key: "workspace", label: "Workspace" },
   { key: "builders", label: "Builders" },
+  { key: "insights", label: "Insights" },
   { key: "advanced", label: "Advanced", advanced: true },
 ];
 

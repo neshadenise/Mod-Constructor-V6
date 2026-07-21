@@ -71,6 +71,12 @@ import { ProjectExplorer } from "./views/ProjectExplorer";
 import { AssetManager } from "./views/AssetManager";
 import { ReferenceViewer } from "./views/ReferenceViewer";
 import { ValidationCenter } from "./views/ValidationCenter";
+import { TemplatesGallery } from "./views/TemplatesGallery";
+import { SnippetsLibrary } from "./views/SnippetsLibrary";
+import { DependencyGraph } from "./views/DependencyGraph";
+import { ActivityTimeline } from "./views/ActivityTimeline";
+import { BuildAnalytics } from "./views/BuildAnalytics";
+import { UpdateCenter } from "./views/UpdateCenter";
 
 /* ---------- Shared shell for builder pages ---------- */
 
