@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { PREVIEW_UNLOCK_TOKEN, PREVIEW_UNLOCK_STORAGE_KEY } from "@/lib/app-mode";
 
-export const Route = createFileRoute("/_preview/$token")({
+export const Route = createFileRoute("/preview/$token")({
   component: PreviewUnlock,
 });
 
