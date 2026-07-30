@@ -10,6 +10,8 @@
  * / cloud backend.
  */
 
+import type { PackModule } from "./packs/types";
+
 export type ID = string;
 export type Timestamp = number; // ms since epoch
 export type ISODate = string;
@@ -73,6 +75,8 @@ export interface ProjectBundle {
   /** Global libraries the project depends on but doesn't own. */
   templates?: Template[];
   snippets?: Snippet[];
+  /** Pack Mechanics modules (clubs, royalty, legacy, pack-specific). */
+  packModules?: PackModule[];
 }
 
 /* -------------------------- Career ----------------------------------- */
@@ -383,6 +387,8 @@ export interface AppState {
   assets: Asset[];
   templates: Template[];
   snippets: Snippet[];
+  /** Pack Mechanics modules (clubs, royalty, legacy, pack-specific). */
+  packModules: PackModule[];
   validation: ValidationIssue[];
   builds: BuildJob[];
   appNotifications: AppNotification[];

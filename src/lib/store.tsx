@@ -30,6 +30,8 @@ import type {
   ValidationIssue,
 } from "./types";
 import { localStorageAdapter, type StorageAdapter } from "./storage-adapter";
+import type { PackModule, PackModuleData, PackModuleKind } from "./packs/types";
+import { newPackModule } from "./packs/factories";
 
 const STATE_KEY = "state";
 const SCHEMA_VERSION: AppState["version"] = 2;
@@ -89,6 +91,7 @@ export function makeDemoState(): AppState {
     assets: [],
     templates: [],
     snippets: [],
+    packModules: [],
     validation: [],
     builds: [],
     appNotifications: [],
@@ -160,6 +163,19 @@ export interface StoreAPI {
   updateSnippet: (id: ID, patch: Partial<Snippet>) => void;
   deleteSnippet: (id: ID) => void;
 
+  // Pack Mechanics modules
+  createPackModule: (kind: PackModuleKind, name: string, projectId?: ID) => PackModule;
+  updatePackModule: (id: ID, patch: Partial<Omit<PackModule, "data">>) => void;
+  /** Shallow-merge into the module's typed `data` payload. */
+  updatePackModuleData: (id: ID, patch: Partial<PackModuleData>) => void;
+  deletePackModule: (id: ID) => void;
+  duplicatePackModule: (id: ID) => PackModule | null;
+  /** Undo/redo scoped to Pack Mechanics edits. */
+  undoPackModules: () => void;
+  redoPackModules: () => void;
+  canUndoPackModules: boolean;
+  canRedoPackModules: boolean;
+
   // Validation
   addValidationIssue: (issue: Omit<ValidationIssue, "id" | "createdAt" | "dismissed">) => ValidationIssue;
   dismissValidation: (id: ID) => void;
@@ -219,7 +235,8 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       const saved = await adapter.read<AppState>(STATE_KEY);
       if (!alive) return;
       if (saved && saved.version === SCHEMA_VERSION) {
-        setState(saved);
+        // Forward-compatible hydrate: fields added after a save still resolve.
+        setState({ ...saved, packModules: saved.packModules ?? [] });
       } else if (saved) {
         // schema drift — start fresh but keep demo seed
         setState(makeDemoState());
@@ -294,6 +311,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       aspirations: s.aspirations.filter((a) => a.projectId !== id),
       notifications: s.notifications.filter((n) => n.projectId !== id),
       assets: s.assets.filter((a) => a.projectId !== id),
+      packModules: s.packModules.filter((m) => m.projectId !== id),
       activeProjectId: s.activeProjectId === id ? s.projects.find((p) => p.id !== id)?.id : s.activeProjectId,
     }));
     log({ kind: "delete", entityType: "project", entityId: id, summary: `Deleted project` });
@@ -739,6 +757,87 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
     mutate((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
   }, [mutate]);
 
+  /* ------------- Pack Mechanics ------------- */
+
+  const packUndo = useRef<PackModule[][]>([]);
+  const packRedo = useRef<PackModule[][]>([]);
+  const [packStamp, setPackStamp] = useState(0);
+
+  const pushPackHistory = useCallback(() => {
+    packUndo.current = [...packUndo.current, stateRef.current.packModules].slice(-50);
+    packRedo.current = [];
+    setPackStamp((n) => n + 1);
+  }, []);
+
+  const createPackModule: StoreAPI["createPackModule"] = useCallback((kind, name, projectId) => {
+    const pid = projectId ?? stateRef.current.activeProjectId ?? stateRef.current.projects[0]?.id;
+    const mod = newPackModule(kind, pid as ID, name);
+    pushPackHistory();
+    mutate((s) => ({ ...s, packModules: [mod, ...s.packModules] }));
+    log({ kind: "create", entityType: "project", entityId: mod.id, summary: `Created ${kind} module "${name}"` });
+    return mod;
+  }, [mutate, log, pushPackHistory]);
+
+  const updatePackModule: StoreAPI["updatePackModule"] = useCallback((id, patch) => {
+    pushPackHistory();
+    mutate((s) => ({
+      ...s,
+      packModules: s.packModules.map((m) => m.id === id ? { ...m, ...patch, updatedAt: now() } : m),
+    }));
+  }, [mutate, pushPackHistory]);
+
+  const updatePackModuleData: StoreAPI["updatePackModuleData"] = useCallback((id, patch) => {
+    pushPackHistory();
+    mutate((s) => ({
+      ...s,
+      packModules: s.packModules.map((m) =>
+        m.id === id ? { ...m, data: { ...m.data, ...patch } as PackModuleData, updatedAt: now() } : m),
+    }));
+  }, [mutate, pushPackHistory]);
+
+  const deletePackModule: StoreAPI["deletePackModule"] = useCallback((id) => {
+    pushPackHistory();
+    mutate((s) => ({ ...s, packModules: s.packModules.filter((m) => m.id !== id) }));
+    log({ kind: "delete", entityType: "project", entityId: id, summary: `Deleted pack module` });
+  }, [mutate, log, pushPackHistory]);
+
+  const duplicatePackModule: StoreAPI["duplicatePackModule"] = useCallback((id) => {
+    const src = stateRef.current.packModules.find((m) => m.id === id);
+    if (!src) return null;
+    const copy: PackModule = {
+      ...structuredClone(src),
+      id: uid(),
+      name: `${src.name} (copy)`,
+      createdAt: now(),
+      updatedAt: now(),
+    };
+    pushPackHistory();
+    mutate((s) => ({ ...s, packModules: [copy, ...s.packModules] }));
+    return copy;
+  }, [mutate, pushPackHistory]);
+
+  const undoPackModules: StoreAPI["undoPackModules"] = useCallback(() => {
+    const prev = packUndo.current.at(-1);
+    if (!prev) return;
+    packUndo.current = packUndo.current.slice(0, -1);
+    packRedo.current = [...packRedo.current, stateRef.current.packModules];
+    mutate((s) => ({ ...s, packModules: prev }));
+    setPackStamp((n) => n + 1);
+  }, [mutate]);
+
+  const redoPackModules: StoreAPI["redoPackModules"] = useCallback(() => {
+    const next = packRedo.current.at(-1);
+    if (!next) return;
+    packRedo.current = packRedo.current.slice(0, -1);
+    packUndo.current = [...packUndo.current, stateRef.current.packModules];
+    mutate((s) => ({ ...s, packModules: next }));
+    setPackStamp((n) => n + 1);
+  }, [mutate]);
+
+  const canUndoPackModules = packUndo.current.length > 0;
+  const canRedoPackModules = packRedo.current.length > 0;
+  void packStamp;
+
   /* ------------- Bundle IO ------------- */
 
   const exportBundle: StoreAPI["exportBundle"] = useCallback((projectId) => {
@@ -758,6 +857,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       assets: scope(s.assets) as Asset[],
       templates: s.templates.filter((t) => !t.builtIn && t.source === "user-created"),
       snippets: s.snippets,
+      packModules: s.packModules.filter((m) => m.projectId === project.id),
     };
     log({ kind: "export", entityType: "project", entityId: project.id, summary: `Exported bundle for "${project.name}"` });
     return bundle;
@@ -788,6 +888,11 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
     const importedAspirations = bundle.aspirations.map(cloneRow);
     const importedNotifications = bundle.notifications.map(cloneRow);
     const importedAssets = bundle.assets.map(cloneRow);
+    const importedPackModules = (bundle.packModules ?? []).map((m) => ({
+      ...structuredClone(m),
+      id: uid(),
+      projectId: newProjectId,
+    }));
     importedProject.careerIds = importedCareers.map((c) => c.id);
     importedProject.traitIds = importedTraits.map((t) => t.id);
     importedProject.aspirationIds = importedAspirations.map((a) => a.id);
@@ -802,6 +907,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       aspirations: [...importedAspirations, ...s.aspirations],
       notifications: [...importedNotifications, ...s.notifications],
       assets: [...importedAssets, ...s.assets],
+      packModules: [...importedPackModules, ...s.packModules],
       activeProjectId: newProjectId,
     }));
     log({ kind: "import", entityType: "project", entityId: newProjectId, summary: `Imported "${importedProject.name}"` });
@@ -828,6 +934,8 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
     addAsset, updateAsset, deleteAsset, moveAsset,
     saveTemplate, updateTemplate, deleteTemplate,
     saveSnippet, updateSnippet, deleteSnippet,
+    createPackModule, updatePackModule, updatePackModuleData, deletePackModule, duplicatePackModule,
+    undoPackModules, redoPackModules, canUndoPackModules, canRedoPackModules,
     addValidationIssue, dismissValidation, clearValidation,
     enqueueBuild, updateBuild, cancelBuild, retryBuild, clearBuilds,
     pushNotification, markNotificationRead, markAllNotificationsRead, dismissNotification, clearNotifications,
@@ -847,6 +955,8 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
     addAsset, updateAsset, deleteAsset, moveAsset,
     saveTemplate, updateTemplate, deleteTemplate,
     saveSnippet, updateSnippet, deleteSnippet,
+    createPackModule, updatePackModule, updatePackModuleData, deletePackModule, duplicatePackModule,
+    undoPackModules, redoPackModules, canUndoPackModules, canRedoPackModules,
     addValidationIssue, dismissValidation, clearValidation,
     enqueueBuild, updateBuild, cancelBuild, retryBuild, clearBuilds,
     pushNotification, markNotificationRead, markAllNotificationsRead, dismissNotification, clearNotifications,
