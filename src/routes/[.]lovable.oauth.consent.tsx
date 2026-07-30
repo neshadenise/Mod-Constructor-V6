@@ -3,7 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { PERMISSION_LABELS, PERMISSIONS } from "@/lib/server/mod-service";
+import { PERMISSION_LABELS, PERMISSIONS } from "@/lib/permissions";
 
 type OAuthClient = { name?: string; redirect_uri?: string };
 type Details = {
