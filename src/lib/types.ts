@@ -48,6 +48,9 @@ export interface Project {
   changelog: ChangelogEntry[];
   /** Marks this project as the built-in demo/show project. */
   isDemo?: boolean;
+  /** Account this project belongs to. Undefined = device-local (guest) project. */
+  ownerId?: string | null;
+
   createdAt: Timestamp;
   updatedAt: Timestamp;
   /** IDs of records that belong to this project. */

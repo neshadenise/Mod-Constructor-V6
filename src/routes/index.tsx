@@ -15,6 +15,9 @@ import { AppNavigationProvider } from "@/lib/navigation";
 import { NotificationsProvider } from "@/lib/notifications";
 import { InspectorHistoryProvider } from "@/lib/inspector-history";
 import { StoreProvider } from "@/lib/store";
+import { AccountProvider } from "@/lib/account";
+import { TabsProvider, useTabs } from "@/lib/tabs";
+import { TabStrip } from "@/components/mc/TabStrip";
 import type { SectionId } from "@/components/mc/sections";
 import { detectAppMode, type AppMode } from "@/lib/app-mode";
 import { LandingLayout } from "@/components/landing/LandingLayout";
@@ -75,6 +78,7 @@ function Index() {
 function FullApp() {
   return (
     <AppHostProvider>
+      <AccountProvider>
       <StoreProvider>
         <NotificationsProvider>
           <InspectorHistoryProvider>
@@ -84,29 +88,39 @@ function FullApp() {
           </InspectorHistoryProvider>
         </NotificationsProvider>
       </StoreProvider>
+      </AccountProvider>
     </AppHostProvider>
   );
 }
 
 function Shell() {
-  const [active, setActive] = useState<SectionId>("dashboard");
-  const [paletteOpen, setPaletteOpen] = useState(false);
   const { advanced } = useAdvanced();
+  const allowed = useCallback(
+    (id: SectionId) => advanced || !ADVANCED_ONLY.includes(id),
+    [advanced],
+  );
+  return (
+    <TabsProvider allowed={allowed}>
+      <ShellBody />
+    </TabsProvider>
+  );
+}
 
-  useEffect(() => {
-    if (!advanced && ADVANCED_ONLY.includes(active)) setActive("dashboard");
-  }, [advanced, active]);
+function ShellBody() {
+  const { active, open } = useTabs();
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   const togglePalette = useCallback(() => setPaletteOpen((v) => !v), []);
   useCommandPaletteHotkey(togglePalette);
 
   return (
-    <AppNavigationProvider active={active} navigate={setActive}>
+    <AppNavigationProvider active={active} navigate={open}>
       <div className="min-h-screen bg-background text-foreground">
         <MenuBar />
-        <AppSidebar active={active} onSelect={setActive} />
+        <AppSidebar active={active} onSelect={open} />
         <div className="ml-60 pb-7">
           <TopBar active={active} onOpenPalette={() => setPaletteOpen(true)} />
+          <TabStrip />
           <SectionView active={active} DashboardEl={<Dashboard />} />
         </div>
         <StatusBar active={active} />

@@ -33,6 +33,49 @@ Rules:
 
 ## Unreleased
 
+### Window tabs — multi-section switching
+- **Feature:** sections now open as tabs instead of replacing the view. Clicking a
+  sidebar item, command-palette result, or any in-app jump opens (or focuses) a
+  tab. Tabs persist across restarts, can be reordered by drag, closed with the X
+  or middle-click, and right-click gives Close tab / Close others / Close all.
+  Dashboard is pinned and cannot be closed. Shortcuts: Ctrl/Cmd+Tab and
+  Shift+Ctrl/Cmd+Tab cycle, Ctrl/Cmd+W closes, Ctrl/Cmd+1..9 jump. Tabs for
+  advanced-only sections close automatically when Advanced mode is turned off.
+- **UI:** 36px tab strip between the top bar and content, sticky under the top
+  bar, teal top-edge indicator on the active tab, horizontal overflow scroll,
+  right-side "N open · Ctrl+Tab" hint.
+- **Data:** `src/lib/tabs.tsx` (`TabsProvider`/`useTabs`, persisted to
+  `mc.tabs.v1`), `src/components/mc/TabStrip.tsx`. `AppNavigationProvider` now
+  receives the tab manager's active/open pair, so every existing navigate call
+  opens a tab with no call-site changes.
+- **Avalonia:** `TabControl` with a custom `ItemsPanel` (`ScrollViewer` +
+  `StackPanel`) and a `DataTemplate` per tab header; bind to
+  `ObservableCollection<WorkTabViewModel>` and `SelectedItem`. Use
+  `KeyBinding`s for Ctrl+W / Ctrl+Tab / Ctrl+1..9 and a `ContextFlyout` for the
+  close commands. Persist tab state to the same app-settings store.
+
+### Accounts — optional sign-in, project ownership
+- **Feature:** the app is fully usable signed out ("Guest" / offline). Signing in
+  creates an account that owns projects: `Project.ownerId` is stamped on create,
+  and any existing device-local projects are attached to the account at sign-in.
+  Signing out keeps everything working offline. Cloud sync is behind a single
+  `SYNC_CONFIGURED` flag (false in this build) so the UI states the honest
+  limitation: without sign-in/sync a build cannot be continued from another
+  machine.
+- **UI:** account button replaced the hardcoded user chip in the top bar —
+  avatar with initials (or guest glyph), name, and a cloud/cloud-off sync line.
+  The dropdown shows the guest explainer + "Sign in to attach projects", an
+  inline email/display-name form noting how many local projects will be
+  attached, or the signed-in account with sync status and Sign out.
+- **Data:** `src/lib/account.tsx` (`AccountProvider`/`useAccount`, persisted to
+  `mc.account.v1`, `SYNC_CONFIGURED`, `SYNC_LABEL`),
+  `src/components/mc/AccountMenu.tsx`, new optional `ownerId` on `Project`.
+- **Avalonia:** port the account context as an `IAccountService` singleton with
+  `CurrentAccount` and `SyncState`; the menu is a `Button` + `Flyout`. Keep
+  `SYNC_CONFIGURED` as a build/config switch so the desktop build can enable a
+  real sync backend without UI changes. Store account records in the OS-secure
+  settings location, never alongside project files.
+
 ### Dashboard — fully live, driven by the active project
 - **Feature:** the dashboard no longer shows canned numbers. Every panel reads
   the selected project from the store. Health/compatibility/completeness are
