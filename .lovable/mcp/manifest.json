@@ -3,528 +3,103 @@
   "sdk_version": "0.24.0",
   "path": "/mcp",
   "auth": {
-    "type": "none"
+    "type": "oauth",
+    "issuer": "https://sjmxzwwmrpjizgultdhx.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
   },
   "mcp": {
     "server": {
       "name": "mod-constructor-v6",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "title": "Mod Constructor V6"
     },
     "tools": [
       {
         "name": "list_projects",
         "title": "List projects",
-        "description": "List every project inside a Mod Constructor bundle. A bundle usually holds one project; returns an array either way.",
+        "description": "List the Mod Constructor projects this authorized account owns.",
         "annotations": {
           "readOnlyHint": true,
-          "idempotentHint": true,
           "openWorldHint": false
         },
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
-          "properties": {
-            "bundle": {
-              "description": "Serialized .mcbundle.json content. Omit for an empty workspace.",
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "number",
-                  "const": 2
-                },
-                "project": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                },
-                "careers": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "traits": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "aspirations": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "notifications": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "assets": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                }
-              },
-              "additionalProperties": {}
-            }
-          }
+          "properties": {}
         },
         "outputSchema": null
       },
       {
         "name": "get_project",
         "title": "Get project",
-        "description": "Get full metadata (name, author, version, status, changelog, item counts) for the project in a bundle.",
+        "description": "Read one project and its resource index.",
         "annotations": {
           "readOnlyHint": true,
-          "idempotentHint": true,
           "openWorldHint": false
         },
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
-            "bundle": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "number",
-                  "const": 2
-                },
-                "project": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                },
-                "careers": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "traits": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "aspirations": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "notifications": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "assets": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                }
-              },
-              "additionalProperties": {}
+            "project_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
-          }
+          },
+          "required": [
+            "project_id"
+          ]
         },
         "outputSchema": null
       },
       {
-        "name": "list_careers",
-        "title": "List careers",
-        "description": "List every career in the bundle with a compact summary (name, type, branch count, level count).",
+        "name": "get_active_project",
+        "title": "Get active project",
+        "description": "Read the project currently selected for this ChatGPT connection.",
         "annotations": {
           "readOnlyHint": true,
-          "idempotentHint": true,
           "openWorldHint": false
         },
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
-          "properties": {
-            "bundle": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "number",
-                  "const": 2
-                },
-                "project": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                },
-                "careers": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "traits": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "aspirations": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "notifications": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "assets": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                }
-              },
-              "additionalProperties": {}
-            }
-          }
+          "properties": {}
         },
         "outputSchema": null
       },
       {
-        "name": "list_traits",
-        "title": "List traits",
-        "description": "List every trait in the bundle with category, age gates, and buff count.",
+        "name": "set_active_project",
+        "title": "Set active project",
+        "description": "Set the active project for this authorized session, after the user chose it.",
         "annotations": {
-          "readOnlyHint": true,
-          "idempotentHint": true,
+          "readOnlyHint": false,
           "openWorldHint": false
         },
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
-            "bundle": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "number",
-                  "const": 2
-                },
-                "project": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                },
-                "careers": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "traits": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "aspirations": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "notifications": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "assets": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                }
-              },
-              "additionalProperties": {}
+            "project_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
-          }
-        },
-        "outputSchema": null
-      },
-      {
-        "name": "list_aspirations",
-        "title": "List aspirations",
-        "description": "List every aspiration in the bundle with milestone count and reward-trait reference.",
-        "annotations": {
-          "readOnlyHint": true,
-          "idempotentHint": true,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
-          "type": "object",
-          "properties": {
-            "bundle": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "number",
-                  "const": 2
-                },
-                "project": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                },
-                "careers": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "traits": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "aspirations": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "notifications": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "assets": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                }
-              },
-              "additionalProperties": {}
-            }
-          }
-        },
-        "outputSchema": null
-      },
-      {
-        "name": "list_notifications",
-        "title": "List notifications",
-        "description": "List every notification template in the bundle with visual style and title.",
-        "annotations": {
-          "readOnlyHint": true,
-          "idempotentHint": true,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
-          "type": "object",
-          "properties": {
-            "bundle": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "number",
-                  "const": 2
-                },
-                "project": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                },
-                "careers": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "traits": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "aspirations": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "notifications": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "assets": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                }
-              },
-              "additionalProperties": {}
-            }
-          }
+          },
+          "required": [
+            "project_id"
+          ]
         },
         "outputSchema": null
       },
       {
         "name": "create_project",
         "title": "Create project",
-        "description": "Create a fresh Mod Constructor project bundle. Returns an empty bundle ready for authoring tools.",
+        "description": "Create a new Mod Constructor project owned by this account.",
         "annotations": {
           "readOnlyHint": false,
-          "destructiveHint": false,
-          "idempotentHint": false,
           "openWorldHint": false
         },
         "inputSchema": {
@@ -533,18 +108,9 @@
           "properties": {
             "name": {
               "type": "string",
-              "minLength": 1,
-              "description": "Project name shown to the mod's audience."
-            },
-            "author": {
-              "description": "Creator display name.",
-              "type": "string"
+              "minLength": 1
             },
             "description": {
-              "type": "string"
-            },
-            "version": {
-              "description": "Semantic version, defaults to 0.1.0.",
               "type": "string"
             }
           },
@@ -555,316 +121,91 @@
         "outputSchema": null
       },
       {
-        "name": "add_career",
-        "title": "Add career",
-        "description": "Add a Sims 4 career (with branches, levels, salary, schedule) to a bundle. Returns the updated bundle.",
+        "name": "list_project_resources",
+        "title": "List project resources",
+        "description": "List resources in a project, optionally filtered by kind.",
         "annotations": {
-          "readOnlyHint": false,
-          "idempotentHint": false,
+          "readOnlyHint": true,
           "openWorldHint": false
         },
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
-            "bundle": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "number",
-                  "const": 2
-                },
-                "project": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                },
-                "careers": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "traits": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "aspirations": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "notifications": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "assets": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                }
-              },
-              "additionalProperties": {}
-            },
-            "name": {
+            "project_id": {
               "type": "string",
-              "minLength": 1
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             },
-            "internalId": {
-              "type": "string",
-              "description": "Snake-case identifier used in tuning (e.g. career_astronaut)."
-            },
-            "description": {
-              "default": "",
-              "type": "string"
-            },
-            "careerType": {
-              "default": "standard",
+            "kind": {
               "type": "string",
               "enum": [
-                "standard",
-                "part-time",
-                "freelance",
-                "active",
-                "military"
+                "trait",
+                "buff",
+                "interaction",
+                "notification",
+                "dialogue",
+                "career",
+                "career_level",
+                "string"
               ]
-            },
-            "ageGates": {
-              "default": [
-                "young-adult",
-                "adult"
-              ],
-              "type": "array",
-              "items": {
-                "type": "string",
-                "enum": [
-                  "teen",
-                  "young-adult",
-                  "adult",
-                  "elder"
-                ]
-              }
-            },
-            "branches": {
-              "minItems": 1,
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  },
-                  "description": {
-                    "default": "",
-                    "type": "string"
-                  },
-                  "levels": {
-                    "minItems": 1,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "rank": {
-                          "type": "integer",
-                          "minimum": 1,
-                          "maximum": 9007199254740991
-                        },
-                        "title": {
-                          "type": "string"
-                        },
-                        "salary": {
-                          "type": "number",
-                          "minimum": 0
-                        },
-                        "workStart": {
-                          "default": "09:00",
-                          "type": "string"
-                        },
-                        "workEnd": {
-                          "default": "17:00",
-                          "type": "string"
-                        },
-                        "workDays": {
-                          "default": [
-                            "mon",
-                            "tue",
-                            "wed",
-                            "thu",
-                            "fri"
-                          ],
-                          "type": "array",
-                          "items": {
-                            "type": "string",
-                            "enum": [
-                              "mon",
-                              "tue",
-                              "wed",
-                              "thu",
-                              "fri",
-                              "sat",
-                              "sun"
-                            ]
-                          }
-                        },
-                        "objectives": {
-                          "default": [],
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "perks": {
-                          "default": [],
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      },
-                      "required": [
-                        "rank",
-                        "title",
-                        "salary"
-                      ]
-                    }
-                  }
-                },
-                "required": [
-                  "name",
-                  "levels"
-                ]
-              }
             }
           },
           "required": [
-            "name",
-            "internalId",
-            "branches"
+            "project_id"
           ]
         },
         "outputSchema": null
       },
       {
-        "name": "add_trait",
-        "title": "Add trait",
-        "description": "Add a Sims 4 trait (with buffs, age gates, and category) to a bundle. Returns the updated bundle.",
+        "name": "get_resource",
+        "title": "Get resource",
+        "description": "Read one resource by its stable UUID.",
         "annotations": {
-          "readOnlyHint": false,
-          "idempotentHint": false,
+          "readOnlyHint": true,
           "openWorldHint": false
         },
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
-            "bundle": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "number",
-                  "const": 2
-                },
-                "project": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                },
-                "careers": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "traits": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "aspirations": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "notifications": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "assets": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                }
-              },
-              "additionalProperties": {}
+            "resource_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "required": [
+            "resource_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_trait",
+        "title": "Create trait",
+        "description": "Create a trait resource in a project. Text should be paired with localized strings.",
+        "annotations": {
+          "readOnlyHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "project_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             },
             "name": {
               "type": "string",
               "minLength": 1
             },
-            "internalId": {
-              "type": "string"
-            },
             "description": {
-              "default": "",
               "type": "string"
             },
-            "category": {
-              "default": "personality",
+            "trait_type": {
               "type": "string",
               "enum": [
                 "personality",
@@ -873,770 +214,707 @@
                 "bonus"
               ]
             },
-            "ageGates": {
-              "default": [
-                "young-adult",
-                "adult"
-              ],
+            "age_availability": {
               "type": "array",
               "items": {
                 "type": "string",
                 "enum": [
+                  "child",
                   "teen",
-                  "young-adult",
+                  "young_adult",
                   "adult",
                   "elder"
                 ]
               }
             },
-            "buffs": {
-              "default": [],
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  },
-                  "description": {
-                    "default": "",
-                    "type": "string"
-                  },
-                  "emotion": {
-                    "type": "string",
-                    "enum": [
-                      "flirty",
-                      "happy",
-                      "sad",
-                      "angry",
-                      "confident",
-                      "focused",
-                      "playful",
-                      "uncomfortable",
-                      "bored",
-                      "energized",
-                      "inspired",
-                      "dazed",
-                      "embarrassed",
-                      "asleep",
-                      "fine"
-                    ]
-                  },
-                  "weight": {
-                    "default": 1,
-                    "type": "number"
-                  },
-                  "durationHours": {
-                    "default": 4,
-                    "type": "number",
-                    "minimum": 0
-                  }
-                },
-                "required": [
-                  "name",
-                  "emotion"
-                ]
-              }
+            "icon_key": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
             }
           },
           "required": [
-            "name",
-            "internalId"
+            "project_id",
+            "name"
           ]
         },
         "outputSchema": null
       },
       {
-        "name": "add_aspiration",
-        "title": "Add aspiration",
-        "description": "Add a Sims 4 aspiration (with ordered milestones and optional reward trait) to a bundle.",
+        "name": "update_trait",
+        "title": "Update trait",
+        "description": "Update fields on an existing trait resource.",
         "annotations": {
           "readOnlyHint": false,
-          "idempotentHint": false,
           "openWorldHint": false
         },
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
-            "bundle": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "number",
-                  "const": 2
-                },
-                "project": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                },
-                "careers": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "traits": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "aspirations": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "notifications": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "assets": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                }
-              },
-              "additionalProperties": {}
+            "resource_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             },
             "name": {
               "type": "string",
               "minLength": 1
             },
-            "internalId": {
+            "description": {
               "type": "string"
             },
+            "trait_type": {
+              "type": "string",
+              "enum": [
+                "personality",
+                "gameplay",
+                "lifestyle",
+                "bonus"
+              ]
+            },
+            "age_availability": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "child",
+                  "teen",
+                  "young_adult",
+                  "adult",
+                  "elder"
+                ]
+              }
+            },
+            "icon_key": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "resource_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_buff",
+        "title": "Create buff",
+        "description": "Create a buff (moodlet) resource, optionally attached to a trait.",
+        "annotations": {
+          "readOnlyHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "project_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "trait_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
             "description": {
-              "default": "",
+              "type": "string"
+            },
+            "mood": {
+              "type": "string"
+            },
+            "mood_weight": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "duration_hours": {
+              "type": "number"
+            },
+            "visible": {
+              "type": "boolean"
+            },
+            "icon_key": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "project_id",
+            "name"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_buff",
+        "title": "Update buff",
+        "description": "Update fields on an existing buff resource.",
+        "annotations": {
+          "readOnlyHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "resource_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": {
+              "type": "string"
+            },
+            "mood": {
+              "type": "string"
+            },
+            "mood_weight": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "duration_hours": {
+              "type": "number"
+            },
+            "visible": {
+              "type": "boolean"
+            },
+            "icon_key": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "resource_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_interaction",
+        "title": "Create interaction",
+        "description": "Create an interaction resource in a project.",
+        "annotations": {
+          "readOnlyHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "project_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": {
+              "type": "string"
+            },
+            "interaction_type": {
+              "type": "string",
+              "enum": [
+                "social",
+                "object",
+                "terrain",
+                "phone",
+                "computer"
+              ]
+            },
+            "target": {
+              "type": "string"
+            },
+            "outcome": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "project_id",
+            "name"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_interaction",
+        "title": "Update interaction",
+        "description": "Update fields on an existing interaction resource.",
+        "annotations": {
+          "readOnlyHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "resource_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": {
+              "type": "string"
+            },
+            "interaction_type": {
+              "type": "string",
+              "enum": [
+                "social",
+                "object",
+                "terrain",
+                "phone",
+                "computer"
+              ]
+            },
+            "target": {
+              "type": "string"
+            },
+            "outcome": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "resource_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_notification",
+        "title": "Create notification",
+        "description": "Create an in-game notification resource.",
+        "annotations": {
+          "readOnlyHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "project_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1
+            },
+            "title_text": {
+              "type": "string"
+            },
+            "urgency": {
+              "type": "string",
+              "enum": [
+                "default",
+                "urgent"
+              ]
+            },
+            "icon_key": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "project_id",
+            "name",
+            "text"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_dialogue",
+        "title": "Create dialogue",
+        "description": "Create a dialogue resource (prompt shown to the player).",
+        "annotations": {
+          "readOnlyHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "project_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1
+            },
+            "title_text": {
+              "type": "string"
+            },
+            "responses": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "project_id",
+            "name",
+            "text"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_career",
+        "title": "Create career",
+        "description": "Create a career resource in a project.",
+        "annotations": {
+          "readOnlyHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "project_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": {
               "type": "string"
             },
             "category": {
-              "default": "Creativity",
               "type": "string"
             },
-            "milestones": {
-              "minItems": 1,
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  },
-                  "description": {
-                    "default": "",
-                    "type": "string"
-                  },
-                  "objectives": {
-                    "default": [],
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "required": [
-                  "name"
-                ]
-              }
+            "branch": {
+              "type": "string"
             },
-            "rewardTraitId": {
+            "icon_key": {
               "type": "string"
             }
           },
           "required": [
-            "name",
-            "internalId",
-            "milestones"
+            "project_id",
+            "name"
           ]
         },
         "outputSchema": null
       },
       {
-        "name": "add_notification",
-        "title": "Add notification template",
-        "description": "Add an in-game notification template (toast, modal, banner, milestone, or phone) to a bundle.",
+        "name": "create_career_level",
+        "title": "Create career level",
+        "description": "Create a career level attached to an existing career resource.",
         "annotations": {
           "readOnlyHint": false,
-          "idempotentHint": false,
           "openWorldHint": false
         },
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
-            "bundle": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "number",
-                  "const": 2
-                },
-                "project": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                },
-                "careers": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "traits": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "aspirations": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "notifications": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "assets": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                }
-              },
-              "additionalProperties": {}
+            "project_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "career_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             },
             "name": {
               "type": "string",
               "minLength": 1
             },
-            "title": {
+            "level": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "salary": {
+              "type": "number"
+            },
+            "work_days": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "start_hour": {
+              "type": "number"
+            },
+            "end_hour": {
+              "type": "number"
+            },
+            "promotion_notes": {
               "type": "string"
-            },
-            "body": {
-              "type": "string"
-            },
-            "visual": {
-              "default": "toast",
-              "type": "string",
-              "enum": [
-                "toast",
-                "modal",
-                "banner",
-                "milestone",
-                "phone"
-              ]
-            },
-            "previewKind": {
-              "type": "string",
-              "enum": [
-                "success",
-                "warning",
-                "error",
-                "info",
-                "promotion",
-                "reward",
-                "relationship",
-                "buff",
-                "trait",
-                "career",
-                "aging"
-              ]
             }
           },
           "required": [
+            "project_id",
+            "career_id",
             "name",
-            "title",
-            "body"
+            "level"
           ]
         },
         "outputSchema": null
       },
       {
-        "name": "set_project_status",
-        "title": "Set project status",
-        "description": "Set the project's lifecycle status. Moving to complete/tested/released auto-appends a changelog entry.",
+        "name": "add_localized_string",
+        "title": "Add localized string",
+        "description": "Add an STBL localized string to a project.",
         "annotations": {
           "readOnlyHint": false,
-          "idempotentHint": true,
           "openWorldHint": false
         },
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
-            "bundle": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "number",
-                  "const": 2
-                },
-                "project": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                },
-                "careers": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "traits": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "aspirations": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "notifications": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "assets": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                }
-              },
-              "additionalProperties": {}
-            },
-            "status": {
+            "project_id": {
               "type": "string",
-              "enum": [
-                "draft",
-                "in-progress",
-                "complete",
-                "tested",
-                "released"
-              ]
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             },
-            "notes": {
-              "description": "Changelog note appended when marking complete/tested/released.",
+            "key": {
+              "type": "string",
+              "minLength": 1
+            },
+            "value": {
+              "type": "string",
+              "minLength": 1
+            },
+            "locale": {
               "type": "string"
             }
           },
           "required": [
-            "status"
+            "project_id",
+            "key",
+            "value"
           ]
         },
         "outputSchema": null
       },
       {
-        "name": "bump_version",
-        "title": "Bump version",
-        "description": "Set a new semantic version on the project and reset status to in-progress, enforcing the release lifecycle.",
+        "name": "link_resources",
+        "title": "Link resources",
+        "description": "Create a typed link between two resources in the same project (e.g. trait → buff).",
         "annotations": {
           "readOnlyHint": false,
-          "idempotentHint": false,
           "openWorldHint": false
         },
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
-            "bundle": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "number",
-                  "const": 2
-                },
-                "project": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                },
-                "careers": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "traits": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "aspirations": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "notifications": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "assets": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                }
-              },
-              "additionalProperties": {}
+            "project_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             },
-            "version": {
+            "from_resource_id": {
               "type": "string",
-              "minLength": 1,
-              "description": "Semver-style string, e.g. \"0.2.0\" or \"1.0.0-rc.1\"."
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "to_resource_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "relation": {
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
-            "version"
+            "project_id",
+            "from_resource_id",
+            "to_resource_id",
+            "relation"
           ]
         },
         "outputSchema": null
       },
       {
-        "name": "export_bundle",
-        "title": "Export .mcbundle.json",
-        "description": "Return the bundle as a downloadable .mcbundle.json string plus a suggested filename. The user re-imports it into Mod Constructor V6 via File → Import.",
+        "name": "validate_resource",
+        "title": "Validate resource",
+        "description": "Validate one resource and return its issues.",
         "annotations": {
           "readOnlyHint": true,
-          "idempotentHint": true,
           "openWorldHint": false
         },
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
-            "bundle": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "number",
-                  "const": 2
-                },
-                "project": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                },
-                "careers": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "traits": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "aspirations": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "notifications": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "assets": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                }
-              },
-              "additionalProperties": {}
-            }
-          }
-        },
-        "outputSchema": null
-      },
-      {
-        "name": "import_bundle",
-        "title": "Import .mcbundle.json",
-        "description": "Parse and validate a .mcbundle.json string. Returns the normalized bundle if valid.",
-        "annotations": {
-          "readOnlyHint": true,
-          "idempotentHint": true,
-          "openWorldHint": false
-        },
-        "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
-          "type": "object",
-          "properties": {
-            "contents": {
+            "resource_id": {
               "type": "string",
-              "minLength": 2,
-              "description": "Raw JSON text of a .mcbundle.json file."
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
           },
           "required": [
-            "contents"
+            "resource_id"
           ]
         },
         "outputSchema": null
       },
       {
-        "name": "list_templates",
-        "title": "List built-in templates",
-        "description": "List Mod Constructor V6's built-in starter templates (careers, traits, aspirations, notifications) with metadata.",
+        "name": "validate_project",
+        "title": "Validate project",
+        "description": "Validate every resource in a project and return errors and warnings.",
         "annotations": {
           "readOnlyHint": true,
-          "idempotentHint": true,
           "openWorldHint": false
         },
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
-            "kind": {
+            "project_id": {
               "type": "string",
-              "enum": [
-                "Career",
-                "Trait",
-                "Aspiration",
-                "Notification"
-              ]
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
-          }
+          },
+          "required": [
+            "project_id"
+          ]
         },
         "outputSchema": null
       },
       {
-        "name": "use_template",
-        "title": "Scaffold from template",
-        "description": "Scaffold a built-in template's records into a bundle. Use list_templates first to get valid IDs.",
+        "name": "create_build_manifest",
+        "title": "Create build manifest",
+        "description": "Produce the build manifest for a project without compiling anything.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "project_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "required": [
+            "project_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "request_project_build",
+        "title": "Request project build",
+        "description": "Request a package build. Returns the honest state: a package is only produced when the compiler is connected.",
         "annotations": {
           "readOnlyHint": false,
-          "idempotentHint": false,
           "openWorldHint": false
         },
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
-            "bundle": {
-              "type": "object",
-              "properties": {
-                "version": {
-                  "type": "number",
-                  "const": 2
-                },
-                "project": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                },
-                "careers": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "traits": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "aspirations": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "notifications": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                },
-                "assets": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  }
-                }
-              },
-              "additionalProperties": {}
-            },
-            "templateId": {
+            "project_id": {
               "type": "string",
-              "description": "ID returned by list_templates."
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "confirm": {
+              "type": "boolean"
             }
           },
           "required": [
-            "templateId"
+            "project_id",
+            "confirm"
           ]
         },
         "outputSchema": null
       },
       {
-        "name": "list_snippets",
-        "title": "List snippets",
-        "description": "List Mod Constructor V6's built-in XML/tuning snippets (buffs, loots, tests, interactions).",
+        "name": "get_build_status",
+        "title": "Get build status",
+        "description": "Read the true status of a requested build.",
         "annotations": {
           "readOnlyHint": true,
-          "idempotentHint": true,
           "openWorldHint": false
         },
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
-          "properties": {}
+          "properties": {
+            "build_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "required": [
+            "build_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "undo_change_set",
+        "title": "Undo change set",
+        "description": "Undo a previously recorded change set. Destructive — requires explicit approval.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "change_set_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "confirm": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "change_set_id",
+            "confirm"
+          ]
         },
         "outputSchema": null
       }
