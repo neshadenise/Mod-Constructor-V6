@@ -52,6 +52,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useImportPackage } from "./ImportPackageDialog";
 import { cn } from "@/lib/utils";
 import { CompletenessTile } from "@/components/mc/HealthMetrics";
 import { useAdvanced } from "@/lib/advanced-mode";
@@ -422,24 +423,8 @@ function ProjectsView() {
     return `${Math.floor(diff / 86_400_000)}d ago`;
   };
 
-  const handleImport = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/json,.mcbundle.json,.json";
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      try {
-        const text = await file.text();
-        const parsed = JSON.parse(text);
-        const project = store.importBundle(parsed);
-        toast.success(`Imported "${project.name}"`);
-      } catch (e) {
-        toast.error(`Import failed: ${String((e as Error)?.message ?? e)}`);
-      }
-    };
-    input.click();
-  };
+  const importer = useImportPackage();
+  const handleImport = importer.openImport;
 
   const handleNew = () => {
     const p = store.createProject();
@@ -3921,24 +3906,7 @@ function DemoDataCard() {
         </GhostBtn>
         <GhostBtn
           icon={Upload}
-          onClick={() => {
-            const input = document.createElement("input");
-            input.type = "file";
-            input.accept = "application/json,.mcbundle.json";
-            input.onchange = async () => {
-              const file = input.files?.[0];
-              if (!file) return;
-              try {
-                const text = await file.text();
-                const parsed = JSON.parse(text);
-                const project = store.importBundle(parsed);
-                toast.success(`Imported "${project.name}"`);
-              } catch (e) {
-                toast.error(`Import failed: ${String((e as Error)?.message ?? e)}`);
-              }
-            };
-            input.click();
-          }}
+          onClick={settingsImporter.openImport}
         >
           Import Bundle
         </GhostBtn>

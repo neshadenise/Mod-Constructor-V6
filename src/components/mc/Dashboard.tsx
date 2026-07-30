@@ -41,6 +41,7 @@ import {
 } from "@/lib/project-analysis";
 import type { ProjectBundle, ProjectStatus } from "@/lib/types";
 import { toast } from "sonner";
+import { useImportPackage } from "./ImportPackageDialog";
 
 /* ------------------------------------------------------------------ *
  * Shared live context for the dashboard
@@ -78,24 +79,12 @@ export function Dashboard() {
   const { navigate } = useAppNavigation();
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const importer = useImportPackage();
+
   useBuildEngine();
 
   const inFlight = builds.filter((b) => b.status === "running" || b.status === "queued").length;
 
-  function importBundleFile(file: File) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const bundle = JSON.parse(String(reader.result)) as ProjectBundle;
-        const imported = store.importBundle(bundle);
-        store.setActiveProject(imported.id);
-        toast.success(`Imported "${imported.name}"`);
-      } catch {
-        toast.error("That file is not a valid .mcbundle.json");
-      }
-    };
-    reader.readAsText(file);
-  }
 
   function newMod() {
     const p = store.createProject({ name: "Untitled Mod" });
@@ -106,17 +95,7 @@ export function Dashboard() {
 
   return (
     <div className="mx-auto max-w-[1600px] space-y-5 p-6">
-      <input
-        ref={fileRef}
-        type="file"
-        accept=".json,.mcbundle.json,application/json"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) importBundleFile(f);
-          e.target.value = "";
-        }}
-      />
+      {importer.dialog}
 
       <div className="flex items-end justify-between">
         <div>
@@ -136,7 +115,7 @@ export function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => fileRef.current?.click()}
+            onClick={() => importer.openImport()}
             className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
           >
             <Upload className="h-3.5 w-3.5" /> Import
