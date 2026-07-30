@@ -14,6 +14,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as CreditsRouteImport } from './routes/credits'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
@@ -45,6 +46,11 @@ const FeaturesRoute = FeaturesRouteImport.update({
 const CreditsRoute = CreditsRouteImport.update({
   id: '/credits',
   path: '/credits',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
+  '/auth': typeof AuthRoute
   '/credits': typeof CreditsRoute
   '/features': typeof FeaturesRoute
   '/mcp': typeof McpRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
+  '/auth': typeof AuthRoute
   '/credits': typeof CreditsRoute
   '/features': typeof FeaturesRoute
   '/mcp': typeof McpRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
+  '/auth': typeof AuthRoute
   '/credits': typeof CreditsRoute
   '/features': typeof FeaturesRoute
   '/mcp': typeof McpRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/about'
+    | '/auth'
     | '/credits'
     | '/features'
     | '/mcp'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/about'
+    | '/auth'
     | '/credits'
     | '/features'
     | '/mcp'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/about'
+    | '/auth'
     | '/credits'
     | '/features'
     | '/mcp'
@@ -178,6 +190,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
   AboutRoute: typeof AboutRoute
+  AuthRoute: typeof AuthRoute
   CreditsRoute: typeof CreditsRoute
   FeaturesRoute: typeof FeaturesRoute
   McpRoute: typeof McpRoute
@@ -224,6 +237,13 @@ declare module '@tanstack/react-router' {
       path: '/credits'
       fullPath: '/credits'
       preLoaderRoute: typeof CreditsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -282,6 +302,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
   AboutRoute: AboutRoute,
+  AuthRoute: AuthRoute,
   CreditsRoute: CreditsRoute,
   FeaturesRoute: FeaturesRoute,
   McpRoute: McpRoute,
