@@ -165,6 +165,7 @@ export function MenuBar() {
           <X className="h-3 w-3" />
         </WinBtn>
       </div>
+      {importer.dialog}
       <Dialog open={creditsOpen} onOpenChange={setCreditsOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
