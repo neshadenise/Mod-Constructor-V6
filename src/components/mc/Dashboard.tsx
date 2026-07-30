@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from "react";
 import {
-  Activity,
   CheckCircle2,
   AlertTriangle,
   XCircle,
@@ -11,9 +10,7 @@ import {
   Upload,
   FileCode2,
   GitBranch,
-  Package,
   Zap,
-  Eye,
   Terminal,
   Clock,
   ArrowUpRight,
@@ -380,47 +377,6 @@ function CurrentProject() {
         </div>
       </div>
     </section>
-  );
-}
-
-function MetricCard({
-  title,
-  value,
-  accent,
-  icon: Icon,
-  sub,
-}: {
-  title: string;
-  value: number;
-  accent: "green" | "blue" | "orange";
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  sub: string;
-}) {
-  return (
-    <div className="col-span-2 rounded-xl border border-border bg-card p-4 card-elevated">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {title}
-        </span>
-        <div
-          className="flex h-6 w-6 items-center justify-center rounded-md"
-          style={{ backgroundColor: `color-mix(in oklab, var(--${accent}) 15%, transparent)` }}
-        >
-          <Icon className="h-3 w-3" style={{ color: `var(--${accent})` }} />
-        </div>
-      </div>
-      <div className="mt-3 flex items-baseline gap-1">
-        <span className="text-3xl font-bold tabular-nums tracking-tight">{value}</span>
-        <span className="text-sm font-semibold text-muted-foreground">%</span>
-      </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          className="h-full rounded-full transition-[width] duration-500"
-          style={{ width: `${value}%`, backgroundColor: `var(--${accent})` }}
-        />
-      </div>
-      <div className="mt-2 text-[11px] text-muted-foreground">{sub}</div>
-    </div>
   );
 }
 
