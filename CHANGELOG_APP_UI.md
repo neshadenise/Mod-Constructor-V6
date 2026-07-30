@@ -33,6 +33,44 @@ Rules:
 
 ## Unreleased
 
+### Dashboard — fully live, driven by the active project
+- **Feature:** the dashboard no longer shows canned numbers. Every panel reads
+  the selected project from the store. Health/compatibility/completeness are
+  computed from real records; validation runs a real rule set (duplicate
+  internal IDs, empty branches/levels, §0 salaries, missing work days, broken
+  icon references, buffless traits, milestone-less aspirations, missing
+  description/author); the dependency checker derives requirements from the
+  project's own content (XML Injector need, icon coverage, STBL string count,
+  required packs). Builds are real queue jobs advanced by a simulated engine
+  that streams log lines, progresses through six named steps, completes, and
+  pushes a notification. Import loads a `.mcbundle.json`; New Mod creates and
+  activates a project; Quick Actions create real career/trait/aspiration
+  records, queue a compile, or run validation into the Validation Center;
+  Recent Templates scaffolds from actual stored templates; Mod Metadata edits
+  write straight back to the project (name, version, author, description,
+  tags). Top bar and status bar now report the live project, version, build
+  progress, and validation counts.
+- **UI:** unchanged layout and density. Added empty states to every panel
+  ("Select a project…", "All checks passed.", "Nothing queued."), clickable
+  record-count tiles that jump to their builder, per-job cancel/retry buttons
+  in the queue, an overflow link into the Validation Center, and a live
+  preview that renders the project's first career (or trait) instead of a
+  fixed sample.
+- **Data:** new `src/lib/project-analysis.ts` (pure `scopeProject`,
+  `analyzeProject`, `computeHealth`, `computeDependencies`, `BUILD_STEPS`,
+  `stepStateFor`) and `src/lib/build-engine.ts` (`useBuildEngine` ticker over
+  `BuildJob`). `Dashboard.tsx`, `TopBar.tsx`, and `StatusBar.tsx` rewired to
+  the store; no new state containers.
+- **Avalonia:** port `project-analysis.ts` verbatim as a stateless
+  `ProjectAnalysisService` (pure C#, unit-testable) and bind panels to a
+  `DashboardViewModel` exposing `ObservableCollection<ValidationIssue>`,
+  `HealthMetrics`, and `BuildJob`. Replace the ticker with the real build
+  process reporting `IProgress<BuildProgress>` on the UI thread; keep the same
+  six step names so the step list is identical. Metric cards = `ProgressBar`
+  + `TextBlock`; build ring = a Skia-drawn arc control; log = virtualized
+  `ItemsControl` with a monospace `TextBlock` per line.
+
+
 ### Pack Mechanics — new builder category
 - **Feature:** Club Settings, Royalty & Nobility, Legacy & Dynasty, and generic
   pack-specific mechanics are authorable per project and emit structured
