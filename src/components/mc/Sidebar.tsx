@@ -153,7 +153,9 @@ export function AppSidebar({
         })}
       </nav>
 
-      <div className="m-3 rounded-lg border border-sidebar-border bg-gradient-to-br from-sidebar-accent/60 to-transparent p-3">
+      <ProjectHealthStrip onSelect={onSelect} advanced={advanced} />
+
+      <div className="m-3 mt-0 rounded-lg border border-sidebar-border bg-gradient-to-br from-sidebar-accent/60 to-transparent p-3">
         <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Engine Status
         </div>
@@ -169,3 +171,56 @@ export function AppSidebar({
     </aside>
   );
 }
+
+/**
+ * Compact project-health rail. The full metric cards now live on their related
+ * pages (Validation Center, Dependency Graph, Package Exporter); these rows are
+ * the shortcut into them.
+ */
+function ProjectHealthStrip({
+  onSelect,
+  advanced,
+}: {
+  onSelect: (id: SectionId) => void;
+  advanced: boolean;
+}) {
+  const health = useProjectHealth();
+  const rows: { label: string; value: number; color: string; to: SectionId }[] = [
+    { label: "Build health", value: health?.buildHealth ?? 0, color: "var(--green)", to: advanced ? "validation" : "queue" },
+    { label: "Compatibility", value: health?.compatibility ?? 0, color: "var(--blue)", to: "graph" },
+    { label: "Completeness", value: health?.completeness ?? 0, color: "var(--orange)", to: "exporter" },
+  ];
+  return (
+    <div className="m-3 rounded-lg border border-sidebar-border bg-sidebar-accent/30 p-3">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Project Health
+      </div>
+      <div className="mt-2 flex flex-col gap-2">
+        {rows.map((r) => (
+          <button
+            key={r.label}
+            onClick={() => onSelect(r.to)}
+            className="group text-left"
+            title={`Open in ${r.to}`}
+          >
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-muted-foreground group-hover:text-sidebar-foreground">
+                {r.label}
+              </span>
+              <span className="font-semibold tabular-nums" style={{ color: r.color }}>
+                {r.value}%
+              </span>
+            </div>
+            <div className="mt-1 h-1 overflow-hidden rounded-full bg-sidebar-border">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${r.value}%`, background: r.color }}
+              />
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
