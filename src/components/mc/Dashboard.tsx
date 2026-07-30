@@ -39,7 +39,7 @@ import {
   type ProjectScope,
   type DerivedIssue,
 } from "@/lib/project-analysis";
-import type { ProjectBundle, ProjectStatus } from "@/lib/types";
+import type { ProjectStatus } from "@/lib/types";
 import { toast } from "sonner";
 import { useImportPackage } from "./ImportPackageDialog";
 
@@ -77,7 +77,6 @@ export function Dashboard() {
   const { advanced } = useAdvanced();
   const { store, project, scope, issues, health, builds, activeBuild } = useDashboardData();
   const { navigate } = useAppNavigation();
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const importer = useImportPackage();
 
