@@ -304,7 +304,7 @@ export function computeDependencies(scope: ProjectScope): DependencyRow[] {
   });
 
   const packs = new Set<string>();
-  for (const m of packModules) if (m.pack) packs.add(m.pack);
+  for (const m of packModules) if (m.requiredPack) packs.add(m.requiredPack);
   rows.push({
     name: "Game packs",
     detail: packs.size ? [...packs].join(", ") : "base game only",
