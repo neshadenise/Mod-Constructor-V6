@@ -15,19 +15,6 @@ import type { Permission } from "@/lib/server/mod-service";
 
 const uuid = z.string().uuid();
 
-async function run<T>(
-  permission: Permission | null,
-  fn: (session: McpSession) => Promise<T>,
-) {
-  try {
-    const session = await openSession(undefined as never);
-    if (permission) requirePermission(session, permission);
-    return ok(await fn(session));
-  } catch (error) {
-    return fail(error);
-  }
-}
-
 /** Wrap a handler with session + permission handling. */
 function handler<A>(
   permission: Permission | null,
@@ -139,19 +126,19 @@ const getResource = defineTool({
 /* authoring                                                         */
 /* ---------------------------------------------------------------- */
 
-function creator<S extends z.ZodRawShape>(opts: {
+function creator(opts: {
   name: string;
   title: string;
   description: string;
   kind: svc.ResourceKind;
-  inputSchema: S;
+  inputSchema: z.ZodRawShape;
   build: (args: any) => { name: string; parentId?: string | null; data: Record<string, unknown> };
 }) {
   return defineTool({
     name: opts.name,
     title: opts.title,
     description: opts.description,
-    inputSchema: { project_id: uuid, ...opts.inputSchema },
+    inputSchema: { project_id: uuid, ...opts.inputSchema } as any,
     annotations: { readOnlyHint: false, openWorldHint: false },
     handler: handler<any>("resources.create", async (a, s) => {
       const built = opts.build(a);
@@ -185,7 +172,7 @@ function updater(opts: {
     name: opts.name,
     title: opts.title,
     description: opts.description,
-    inputSchema: { resource_id: uuid, name: z.string().min(1).optional(), ...opts.fields },
+    inputSchema: { resource_id: uuid, name: z.string().min(1).optional(), ...opts.fields } as any,
     annotations: { readOnlyHint: false, openWorldHint: false },
     handler: handler<any>("resources.update", async (a, s) => {
       const { resource_id, name, ...rest } = a;
