@@ -376,7 +376,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       if (!alive) return;
       if (saved && saved.version === SCHEMA_VERSION) {
         // Forward-compatible hydrate: fields added after a save still resolve.
-        setState({ ...saved, packModules: saved.packModules ?? [] });
+        setState(backfillDemoContent({ ...saved, packModules: saved.packModules ?? [] }));
       } else if (saved) {
         // schema drift — start fresh but keep demo seed
         setState(makeDemoState());
