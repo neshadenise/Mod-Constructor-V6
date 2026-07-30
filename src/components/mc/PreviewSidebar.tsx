@@ -8,8 +8,10 @@ import {
   RefreshCw,
   ArrowUpRight,
   Monitor,
+  Maximize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useStore, useActiveProject } from "@/lib/store";
 import { useAppNavigation } from "@/lib/navigation";
 import type { SectionId } from "./sections";
@@ -161,6 +163,7 @@ export function PreviewSidebar({
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [nonce, setNonce] = useState(0);
+  const [expanded, setExpanded] = useState(false);
   const [scene, setScene] = useState<string>(SCENES[kind][0]);
   useEffect(() => setScene(SCENES[kind][0]), [kind]);
 
@@ -294,6 +297,27 @@ export function PreviewSidebar({
           </>
         )}
       </div>
+
+      <Dialog open={expanded} onOpenChange={setExpanded}>
+        <DialogContent className="max-w-[900px]">
+          <DialogHeader>
+            <DialogTitle>Game Preview — {meta.label}</DialogTitle>
+          </DialogHeader>
+          <div
+            data-preview-theme={theme}
+            className={cn(
+              "max-h-[70vh] overflow-y-auto rounded-xl border p-5",
+              theme === "dark"
+                ? "border-white/10 bg-[oklch(0.22_0.04_260)] text-white"
+                : "border-black/10 bg-[oklch(0.98_0.01_230)] text-[oklch(0.22_0.04_260)]",
+            )}
+          >
+            <div className="mx-auto" style={{ width: GAME_WIDTH }}>
+              <Scene kind={kind} id={currentId} scene={scene} />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </aside>
   );
 }
