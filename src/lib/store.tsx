@@ -208,6 +208,11 @@ export interface StoreAPI {
   // Bundle IO
   exportBundle: (projectId?: ID) => ProjectBundle;
   importBundle: (bundle: ProjectBundle) => Project;
+  /** Merge a bundle's records INTO an existing project instead of creating a new one. */
+  mergeBundleIntoProject: (
+    bundle: ProjectBundle,
+    targetProjectId?: ID,
+  ) => { project: Project; added: Record<string, number> };
 
   // Danger zone
   resetDemoData: () => Promise<void>;
