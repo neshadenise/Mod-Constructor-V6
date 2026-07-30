@@ -3053,6 +3053,9 @@ function ExporterView() {
       {/* Package Completeness — moved here from the Dashboard */}
       <CompletenessTile />
 
+      {/* Mod Metadata — moved here from the Dashboard */}
+      <ModMetadataCard />
+
       <div className="grid grid-cols-[1fr_320px] gap-4">
         <div className="space-y-4">
           <Card
