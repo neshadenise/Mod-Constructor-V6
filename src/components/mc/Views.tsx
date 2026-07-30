@@ -92,6 +92,7 @@ import { DependencyGraph } from "./views/DependencyGraph";
 import { ActivityTimeline } from "./views/ActivityTimeline";
 import { BuildAnalytics } from "./views/BuildAnalytics";
 import { CommunityLibrary } from "./views/CommunityLibrary";
+import { ConnectChatGPT } from "@/components/mc/views/ConnectChatGPT";
 import { UpdateCenter } from "./views/UpdateCenter";
 import { CreditsContent } from "./CreditsContent";
 
@@ -4056,6 +4057,7 @@ export function SectionView({
   if (active === "timeline") return <div className="mx-auto max-w-[1600px] p-6"><ActivityTimeline /></div>;
   if (active === "analytics") return <div className="mx-auto max-w-[1600px] p-6"><BuildAnalytics /></div>;
   if (active === "updates") return <div className="mx-auto max-w-[1600px] p-6"><UpdateCenter /></div>;
+  if (active === "chatgpt") return <div className="mx-auto max-w-[1600px] p-6"><ConnectChatGPT /></div>;
   if (active === "community") return <div className="mx-auto max-w-[1600px] p-6"><CommunityLibrary /></div>;
   if (active === "settings") return <div className="mx-auto max-w-[1600px] p-6"><SettingsView /></div>;
   return null;

@@ -23,6 +23,7 @@ import {
   Radio,
   Palette,
   Globe2,
+  Bot,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -59,6 +60,7 @@ export const SIDEBAR_ITEMS: Item[] = [
   { id: "queue", label: "Build Queue", icon: ListChecks, badge: "2", group: "builders" },
 
   { id: "community", label: "Community Library", icon: Globe2, badge: "Beta", group: "library" },
+  { id: "chatgpt", label: "Connect to ChatGPT", icon: Bot, group: "library" },
 
   { id: "graph", label: "Dependency Graph", icon: Network, group: "insights" },
   { id: "timeline", label: "Activity", icon: History, group: "insights" },
