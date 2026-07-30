@@ -58,7 +58,6 @@ import { CompletenessTile } from "@/components/mc/HealthMetrics";
 import { useAdvanced } from "@/lib/advanced-mode";
 import { CopyToMenu } from "./CopyToMenu";
 import type { SectionId } from "./sections";
-import { PreviewSplit } from "./preview/PreviewShell";
 import { CareerPreview, type CareerPreviewData } from "./preview/CareerPreview";
 import { TraitPreview, type TraitPreviewData } from "./preview/TraitPreview";
 import { AspirationPreview, type AspirationPreviewData } from "./preview/AspirationPreview";
@@ -1533,7 +1532,7 @@ ${branch.ranks
     </div>
   );
 
-  return <PreviewSplit editor={editor} preview={<CareerPreview data={previewData} />} />;
+  return editor;
 }
 
 /* --- Rank editor row --- */
@@ -2380,7 +2379,7 @@ function TraitBuilder() {
     </div>
   );
 
-  return <PreviewSplit editor={editor} preview={<TraitPreview data={previewData} />} />;
+  return editor;
 }
 
 /* ---------- Trait Builder helpers ---------- */
@@ -2604,7 +2603,7 @@ function AspirationBuilder() {
     </div>
   );
 
-  return <PreviewSplit editor={editor} preview={<AspirationPreview data={previewData} />} />;
+  return editor;
 }
 
 /* ---------- Tuning Editor ---------- */
