@@ -3877,6 +3877,7 @@ function EngineCapabilitiesCard() {
 
 function DemoDataCard() {
   const store = useStore();
+  const settingsImporter = useImportPackage();
   const [confirm, setConfirm] = useState(false);
   return (
     <Card
