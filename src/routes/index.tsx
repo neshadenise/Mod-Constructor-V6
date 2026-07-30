@@ -18,6 +18,8 @@ import { StoreProvider } from "@/lib/store";
 import { AccountProvider } from "@/lib/account";
 import { TabsProvider, useTabs } from "@/lib/tabs";
 import { TabStrip } from "@/components/mc/TabStrip";
+import { PreviewSidebar, usePreviewPanel, PREVIEW_WIDTH } from "@/components/mc/PreviewSidebar";
+
 import type { SectionId } from "@/components/mc/sections";
 import { detectAppMode, type AppMode } from "@/lib/app-mode";
 import { LandingLayout } from "@/components/landing/LandingLayout";
