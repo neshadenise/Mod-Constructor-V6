@@ -279,6 +279,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       status: init.status ?? "draft",
       changelog: init.changelog ?? [],
       isDemo: false,
+      ownerId: init.ownerId ?? null,
       createdAt: now(),
       updatedAt: now(),
       careerIds: [],

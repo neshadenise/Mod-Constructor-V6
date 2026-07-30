@@ -5,6 +5,7 @@ import { useAdvanced } from "@/lib/advanced-mode";
 import { useNotifications } from "@/lib/notifications";
 import { SECTION_LABEL, type SectionId } from "./sections";
 import { cn } from "@/lib/utils";
+import { AccountMenu } from "./AccountMenu";
 import { useStore, useActiveProject } from "@/lib/store";
 
 function formatAgo(ms: number) {
@@ -165,15 +166,7 @@ export function TopBar({ active, onOpenPalette }: Props) {
         >
           {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
         </button>
-        <div className="ml-1 flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1">
-          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[var(--violet)] to-[var(--blue)] text-[10px] font-bold text-white">
-            AK
-          </div>
-          <div className="text-xs leading-tight">
-            <div className="font-semibold">Alex Kern</div>
-            <div className="text-[10px] text-muted-foreground">Lead Modder</div>
-          </div>
-        </div>
+        <AccountMenu />
       </div>
     </header>
   );
