@@ -109,6 +109,7 @@ function Shell() {
 function ShellBody() {
   const { active, open } = useTabs();
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const preview = usePreviewPanel();
 
   const togglePalette = useCallback(() => setPaletteOpen((v) => !v), []);
   useCommandPaletteHotkey(togglePalette);
@@ -118,11 +119,15 @@ function ShellBody() {
       <div className="min-h-screen bg-background text-foreground">
         <MenuBar />
         <AppSidebar active={active} onSelect={open} />
-        <div className="ml-60 pb-7">
+        <div
+          className="ml-60 pb-7 transition-[margin] duration-200"
+          style={{ marginRight: preview.open ? PREVIEW_WIDTH : 0 }}
+        >
           <TopBar active={active} onOpenPalette={() => setPaletteOpen(true)} />
           <TabStrip />
           <SectionView active={active} DashboardEl={<Dashboard />} />
         </div>
+        <PreviewSidebar active={active} open={preview.open} onOpenChange={preview.setOpen} />
         <StatusBar active={active} />
         <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
         <NotificationCenter />
@@ -131,3 +136,4 @@ function ShellBody() {
     </AppNavigationProvider>
   );
 }
+
