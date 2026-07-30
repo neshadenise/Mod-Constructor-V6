@@ -3911,6 +3911,7 @@ function DemoDataCard() {
         >
           Import Bundle
         </GhostBtn>
+        {settingsImporter.dialog}
         {!confirm ? (
           <button
             onClick={() => setConfirm(true)}
