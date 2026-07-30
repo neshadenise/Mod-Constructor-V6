@@ -210,12 +210,20 @@ export function PreviewSidebar({
         </div>
         <div className="flex items-center gap-0.5">
           <button
+            onClick={() => setExpanded(true)}
+            title="Open full-size game preview"
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <Maximize2 className="h-3.5 w-3.5" />
+          </button>
+          <button
             onClick={() => setNonce((n) => n + 1)}
             title="Replay preview"
             className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
           >
             <RefreshCw className="h-3.5 w-3.5" />
           </button>
+
           <button
             onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
             title="Toggle in-game skin"
