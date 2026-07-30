@@ -236,6 +236,42 @@ export function makeDemoContent(projectId: ID) {
   return { careers: [career], traits: [trait], aspirations: [aspiration], notifications };
 }
 
+/**
+ * Older saves created the demo project with no content, which left every
+ * builder and the Game Preview rail empty. Re-seed it once, in place.
+ */
+export function backfillDemoContent(state: AppState): AppState {
+  const demo = state.projects.find((p) => p.isDemo);
+  if (!demo) return state;
+  const hasContent =
+    state.careers.some((c) => c.projectId === demo.id) ||
+    state.traits.some((t) => t.projectId === demo.id) ||
+    state.aspirations.some((a) => a.projectId === demo.id) ||
+    state.notifications.some((n) => n.projectId === demo.id);
+  if (hasContent) return state;
+
+  const seed = makeDemoContent(demo.id);
+  return {
+    ...state,
+    projects: state.projects.map((p) =>
+      p.id === demo.id
+        ? {
+            ...p,
+            careerIds: seed.careers.map((c) => c.id),
+            traitIds: seed.traits.map((t) => t.id),
+            aspirationIds: seed.aspirations.map((a) => a.id),
+            notificationIds: seed.notifications.map((n) => n.id),
+          }
+        : p,
+    ),
+    careers: [...state.careers, ...seed.careers],
+    traits: [...state.traits, ...seed.traits],
+    aspirations: [...state.aspirations, ...seed.aspirations],
+    notifications: [...state.notifications, ...seed.notifications],
+  };
+}
+
+
 
 /* -------------------- Store API ---------------------------------------- */
 
