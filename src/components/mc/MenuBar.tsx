@@ -9,6 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { CreditsContent } from "@/components/mc/CreditsContent";
+import { useImportPackage } from "@/components/mc/ImportPackageDialog";
 
 
 type MenuDef = {
@@ -20,6 +21,7 @@ export function MenuBar() {
   const [open, setOpen] = useState<string | null>(null);
   const [creditsOpen, setCreditsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const importer = useImportPackage();
 
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export function MenuBar() {
         { label: "Save", shortcut: "Ctrl+S", onClick: () => fire("Project saved") },
         { label: "Save As…", shortcut: "Ctrl+Shift+S", onClick: () => fire("Save As dialog") },
         { separator: true, label: "" },
-        { label: "Import Package…", onClick: () => fire("Import package dialog") },
+        { label: "Import Package…", onClick: () => { setOpen(null); importer.openImport(); } },
         { label: "Export .package", onClick: () => fire("Exporting DBPF…") },
         { separator: true, label: "" },
         { label: "Exit", shortcut: "Alt+F4", onClick: () => fire("Would exit app") },
@@ -163,6 +165,7 @@ export function MenuBar() {
           <X className="h-3 w-3" />
         </WinBtn>
       </div>
+      {importer.dialog}
       <Dialog open={creditsOpen} onOpenChange={setCreditsOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
