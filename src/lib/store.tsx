@@ -61,6 +61,7 @@ const defaultSettings: AppSettings = {
 
 export function makeDemoState(): AppState {
   const projectId = uid();
+  const demo = makeDemoContent(projectId);
   const project: Project = {
     id: projectId,
     name: "Demo Project",
@@ -72,10 +73,10 @@ export function makeDemoState(): AppState {
     isDemo: true,
     createdAt: now(),
     updatedAt: now(),
-    careerIds: [],
-    traitIds: [],
-    aspirationIds: [],
-    notificationIds: [],
+    careerIds: demo.careers.map((c) => c.id),
+    traitIds: demo.traits.map((t) => t.id),
+    aspirationIds: demo.aspirations.map((a) => a.id),
+    notificationIds: demo.notifications.map((n) => n.id),
     assetIds: [],
     tags: ["demo"],
     favorite: false,
@@ -84,10 +85,10 @@ export function makeDemoState(): AppState {
     version: SCHEMA_VERSION,
     projects: [project],
     activeProjectId: projectId,
-    careers: [],
-    traits: [],
-    aspirations: [],
-    notifications: [],
+    careers: demo.careers,
+    traits: demo.traits,
+    aspirations: demo.aspirations,
+    notifications: demo.notifications,
     assets: [],
     templates: [],
     snippets: [],
@@ -101,6 +102,176 @@ export function makeDemoState(): AppState {
     favorites: [],
   };
 }
+
+/**
+ * Sample content for the demo project so every builder and the in-game
+ * Game Preview rail have something real to render out of the box.
+ */
+export function makeDemoContent(projectId: ID) {
+  const stamp = now();
+  const career: Career = {
+    id: uid(),
+    projectId,
+    name: "Fashion Critic",
+    internalId: "fashion_critic",
+    description: "Judge the runway, shape the trends, and never repeat an outfit.",
+    careerType: "standard",
+    ageGates: ["youngadult", "adult", "elder"] as Career["ageGates"],
+    branches: [
+      {
+        id: uid(),
+        name: "Runway Authority",
+        description: "Front-row seats and brutal reviews.",
+        levels: [
+          {
+            id: uid(), rank: 1, title: "Rack Sorter", salary: 128,
+            workStart: "09:00", workEnd: "16:00", workDays: ["mon", "tue", "wed", "thu", "fri"],
+            objectives: ["Sort 3 outfit racks"], perks: ["Discount at the boutique"],
+          },
+          {
+            id: uid(), rank: 2, title: "Style Blogger", salary: 214,
+            workStart: "10:00", workEnd: "18:00", workDays: ["mon", "tue", "wed", "thu", "fri"],
+            objectives: ["Post 2 style reviews", "Photograph an outfit"],
+            perks: ["Trend Radar moodlet", "Free fabric swatches"],
+          },
+          {
+            id: uid(), rank: 3, title: "Fashion Critic", salary: 386,
+            workStart: "11:00", workEnd: "19:00", workDays: ["tue", "wed", "thu", "fri", "sat"],
+            objectives: ["Review a runway show", "Interview a designer"],
+            perks: ["Invitations to private shows", "Confident on arrival"],
+          },
+        ],
+      },
+    ],
+    messageOverrides: [
+      { key: "promotion", text: "The front row just got a little closer." },
+    ],
+    workFromHomeEvents: [],
+    createdAt: stamp,
+    updatedAt: stamp,
+  };
+
+  const trait: Trait = {
+    id: uid(),
+    projectId,
+    name: "Trendsetter",
+    internalId: "trendsetter",
+    description: "Trendsetters feel Confident in a fresh outfit and Uncomfortable repeating one.",
+    category: "personality",
+    ageGates: ["teen", "youngadult", "adult", "elder"] as Trait["ageGates"],
+    buffs: [
+      {
+        id: uid(),
+        name: "Head-Turning Look",
+        description: "Everyone noticed the new fit.",
+        emotion: "confident",
+        weight: 2,
+        durationHours: 4,
+      },
+      {
+        id: uid(),
+        name: "Seen In That Already",
+        description: "Wearing yesterday's outfit again is a crisis.",
+        emotion: "uncomfortable",
+        weight: 1,
+        durationHours: 2,
+      },
+    ],
+    socialInteractions: ["Critique Outfit", "Gush About Fabric"],
+    buffReplacements: [],
+    commodityWeights: [],
+    blockedAges: [],
+    blockedEmotions: [],
+    createdAt: stamp,
+    updatedAt: stamp,
+  };
+
+  const aspiration: Aspiration = {
+    id: uid(),
+    projectId,
+    name: "Icon of the Season",
+    internalId: "icon_of_the_season",
+    description: "Become the name every stylist drops.",
+    category: "Fame",
+    milestones: [
+      {
+        id: uid(), order: 1, name: "Local Darling",
+        description: "Get noticed around town.",
+        objectives: ["Wear 5 different outfits", "Compliment 3 Sims' style"],
+      },
+      {
+        id: uid(), order: 2, name: "Front Row",
+        description: "Earn a seat at the shows.",
+        objectives: ["Reach level 3 in Fashion Critic", "Attend a runway event"],
+      },
+      {
+        id: uid(), order: 3, name: "Icon of the Season",
+        description: "Define the look everyone copies.",
+        objectives: ["Publish 10 style reviews", "Be Confident for 12 hours"],
+      },
+    ],
+    createdAt: stamp,
+    updatedAt: stamp,
+  };
+
+  const notifications: NotificationTemplate[] = [
+    {
+      id: uid(), projectId, name: "Promotion — Fashion Critic", visual: "modal",
+      title: "You've been promoted!",
+      body: "The magazine loved your last review. Welcome to the front row.",
+      previewKind: "promotion",
+      actions: [{ label: "Nice!", kind: "primary" }],
+      createdAt: stamp, updatedAt: stamp,
+    },
+    {
+      id: uid(), projectId, name: "Trait Unlocked — Trendsetter", visual: "toast",
+      title: "Trendsetter unlocked",
+      body: "This Sim now feels Confident in a brand new outfit.",
+      previewKind: "trait",
+      actions: [{ label: "Dismiss", kind: "dismiss" }],
+      createdAt: stamp, updatedAt: stamp,
+    },
+  ];
+
+  return { careers: [career], traits: [trait], aspirations: [aspiration], notifications };
+}
+
+/**
+ * Older saves created the demo project with no content, which left every
+ * builder and the Game Preview rail empty. Re-seed it once, in place.
+ */
+export function backfillDemoContent(state: AppState): AppState {
+  const demo = state.projects.find((p) => p.isDemo);
+  if (!demo) return state;
+  const hasContent =
+    state.careers.some((c) => c.projectId === demo.id) ||
+    state.traits.some((t) => t.projectId === demo.id) ||
+    state.aspirations.some((a) => a.projectId === demo.id) ||
+    state.notifications.some((n) => n.projectId === demo.id);
+  if (hasContent) return state;
+
+  const seed = makeDemoContent(demo.id);
+  return {
+    ...state,
+    projects: state.projects.map((p) =>
+      p.id === demo.id
+        ? {
+            ...p,
+            careerIds: seed.careers.map((c) => c.id),
+            traitIds: seed.traits.map((t) => t.id),
+            aspirationIds: seed.aspirations.map((a) => a.id),
+            notificationIds: seed.notifications.map((n) => n.id),
+          }
+        : p,
+    ),
+    careers: [...state.careers, ...seed.careers],
+    traits: [...state.traits, ...seed.traits],
+    aspirations: [...state.aspirations, ...seed.aspirations],
+    notifications: [...state.notifications, ...seed.notifications],
+  };
+}
+
+
 
 /* -------------------- Store API ---------------------------------------- */
 
@@ -241,7 +412,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       if (!alive) return;
       if (saved && saved.version === SCHEMA_VERSION) {
         // Forward-compatible hydrate: fields added after a save still resolve.
-        setState({ ...saved, packModules: saved.packModules ?? [] });
+        setState(backfillDemoContent({ ...saved, packModules: saved.packModules ?? [] }));
       } else if (saved) {
         // schema drift — start fresh but keep demo seed
         setState(makeDemoState());
