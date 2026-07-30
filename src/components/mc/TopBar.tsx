@@ -15,8 +15,16 @@ export function TopBar({ active, onOpenPalette }: Props) {
   const { theme, toggle } = useTheme();
   const { advanced, toggle: toggleAdvanced } = useAdvanced();
   const { unread, setDrawerOpen, push } = useNotifications();
+  const store = useStore();
+  const project = useActiveProject();
   const [online, setOnline] = useState(false);
   const [checking, setChecking] = useState(false);
+
+  const busy = store.state.builds.some((b) => b.status === "running" || b.status === "queued");
+  const savedAgo = project
+    ? formatAgo(Date.now() - project.updatedAt)
+    : "—";
+
 
   const checkUpdates = () => {
     if (checking) return;
