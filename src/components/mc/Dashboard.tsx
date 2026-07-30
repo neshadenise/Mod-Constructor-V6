@@ -155,28 +155,8 @@ export function Dashboard() {
 
       <div className="grid grid-cols-12 gap-4">
         <CurrentProject />
-        <MetricCard
-          title="Build Health"
-          value={health?.buildHealth ?? 0}
-          accent="green"
-          icon={Activity}
-          sub={health ? `${health.errors} errors · ${health.warnings} warnings` : "No project"}
-        />
-        <MetricCard
-          title="Compatibility"
-          value={health?.compatibility ?? 0}
-          accent="blue"
-          icon={GitBranch}
-          sub={health ? `${health.missingAssetRefs} broken asset refs` : "No project"}
-        />
-        <MetricCard
-          title="Package Completeness"
-          value={health?.completeness ?? 0}
-          accent="orange"
-          icon={Package}
-          sub={health ? `${health.recordCount} records scanned` : "No project"}
-        />
       </div>
+
 
       <div className="grid grid-cols-12 gap-4">
         <QuickActions />
