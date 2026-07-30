@@ -12,15 +12,27 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAdvanced } from "@/lib/advanced-mode";
 import { useAppHost, PROVIDER_LABEL } from "@/lib/app-host";
 import { SECTION_LABEL, type SectionId } from "./sections";
 import { cn } from "@/lib/utils";
+import { useStore, useActiveProject } from "@/lib/store";
+import { scopeProject, analyzeProject } from "@/lib/project-analysis";
 
 export function StatusBar({ active }: { active: SectionId }) {
   const { advanced } = useAdvanced();
   const { imageProvider } = useAppHost();
+  const store = useStore();
+  const project = useActiveProject();
+  const issues = useMemo(() => {
+    const scope = scopeProject(store.state, project?.id);
+    return scope ? analyzeProject(scope) : [];
+  }, [store.state, project?.id]);
+  const errors = issues.filter((i) => i.severity === "error").length;
+  const warnings = issues.filter((i) => i.severity === "warning").length;
+  const running = store.state.builds.find((b) => b.status === "running");
+  const queued = store.state.builds.filter((b) => b.status === "queued").length;
   const [online, setOnline] = useState<boolean>(typeof navigator !== "undefined" ? navigator.onLine : true);
   const [savedAgo, setSavedAgo] = useState(12);
 
@@ -49,12 +61,12 @@ export function StatusBar({ active }: { active: SectionId }) {
 
       <StatusChip>
         <ShieldCheck className="h-3 w-3 text-[var(--green)]" />
-        <span>Validation: <span className="text-foreground/80">0 errors · 3 warnings</span></span>
+        <span>Validation: <span className="text-foreground/80">{errors} errors · {warnings} warnings</span></span>
       </StatusChip>
 
       <StatusChip>
         <PackageIcon className="h-3 w-3 text-[var(--blue)]" />
-        <span>Build: <span className="text-foreground/80">idle</span></span>
+        <span>Build: <span className="text-foreground/80">{running ? `${running.label} · ${Math.round(running.progress)}%` : queued ? `${queued} queued` : "idle"}</span></span>
       </StatusChip>
 
       <StatusChip>

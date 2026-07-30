@@ -5,6 +5,15 @@ import { useAdvanced } from "@/lib/advanced-mode";
 import { useNotifications } from "@/lib/notifications";
 import { SECTION_LABEL, type SectionId } from "./sections";
 import { cn } from "@/lib/utils";
+import { useStore, useActiveProject } from "@/lib/store";
+
+function formatAgo(ms: number) {
+  const s = Math.max(0, Math.round(ms / 1000));
+  if (s < 60) return `${s}s ago`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m ago`;
+  return `${Math.round(m / 60)}h ago`;
+}
 
 type Props = {
   active: SectionId;
@@ -15,8 +24,16 @@ export function TopBar({ active, onOpenPalette }: Props) {
   const { theme, toggle } = useTheme();
   const { advanced, toggle: toggleAdvanced } = useAdvanced();
   const { unread, setDrawerOpen, push } = useNotifications();
+  const store = useStore();
+  const project = useActiveProject();
   const [online, setOnline] = useState(false);
   const [checking, setChecking] = useState(false);
+
+  const busy = store.state.builds.some((b) => b.status === "running" || b.status === "queued");
+  const savedAgo = project
+    ? formatAgo(Date.now() - project.updatedAt)
+    : "—";
+
 
   const checkUpdates = () => {
     if (checking) return;
@@ -38,14 +55,26 @@ export function TopBar({ active, onOpenPalette }: Props) {
       <div className="flex items-center gap-2 text-sm">
         <span className="text-muted-foreground">{SECTION_LABEL[active]}</span>
         <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="font-semibold">Epic Careers Overhaul</span>
-        <span className="ml-2 inline-flex items-center gap-1.5 rounded-full border border-[var(--green)]/30 bg-[var(--green)]/10 px-2 py-0.5 text-[11px] font-medium text-[var(--green)]">
-          <span className="h-1.5 w-1.5 rounded-full bg-[var(--green)]" /> Building
+        <span className="font-semibold">{project?.name ?? "No project"}</span>
+        <span
+          className="ml-2 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium"
+          style={{
+            color: `var(--${busy ? "orange" : "green"})`,
+            backgroundColor: `color-mix(in oklab, var(--${busy ? "orange" : "green"}) 12%, transparent)`,
+            border: `1px solid color-mix(in oklab, var(--${busy ? "orange" : "green"}) 30%, transparent)`,
+          }}
+        >
+          <span
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ backgroundColor: `var(--${busy ? "orange" : "green"})` }}
+          />
+          {busy ? "Building" : project ? `v${project.version}` : "Idle"}
         </span>
         <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-          <Save className="h-3 w-3" /> Autosaved · 12s ago
+          <Save className="h-3 w-3" /> Saved · {savedAgo}
         </span>
       </div>
+
 
       <div className="ml-auto flex items-center gap-2">
         <button
