@@ -1,56 +1,25 @@
-import { defineMcp } from "@lovable.dev/mcp-js";
+import { auth, defineMcp } from "@lovable.dev/mcp-js";
+import { tools } from "./tools";
 
-import listProjects from "./tools/list-projects";
-import getProject from "./tools/get-project";
-import listCareers from "./tools/list-careers";
-import listTraits from "./tools/list-traits";
-import listAspirations from "./tools/list-aspirations";
-import listNotifications from "./tools/list-notifications";
-
-import createProject from "./tools/create-project";
-import addCareer from "./tools/add-career";
-import addTrait from "./tools/add-trait";
-import addAspiration from "./tools/add-aspiration";
-import addNotification from "./tools/add-notification";
-import setProjectStatus from "./tools/set-project-status";
-import bumpVersion from "./tools/bump-version";
-
-import exportBundle from "./tools/export-bundle";
-import importBundle from "./tools/import-bundle";
-
-import listTemplates from "./tools/list-templates";
-import useTemplate from "./tools/use-template";
-import listSnippets from "./tools/list-snippets";
+// Direct Supabase auth issuer — the project ref is inlined at build time.
+const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID ?? "project-ref-unset";
 
 export default defineMcp({
   name: "mod-constructor-v6",
   title: "Mod Constructor V6",
-  version: "0.1.0",
+  version: "1.0.0",
   instructions: [
-    "Author The Sims 4 mods conversationally.",
-    "Every tool takes an optional `bundle` (a .mcbundle.json object) and returns the updated bundle.",
-    "Typical flow: create_project → add_career/add_trait/add_aspiration/add_notification (or use_template) → export_bundle.",
-    "Hand the exported .mcbundle.json back to the user; they import it into Mod Constructor V6 via File → Import.",
-    "This server is stateless — always pass the latest bundle you received back into the next call.",
+    "Author Sims 4 gameplay mods inside the user's own Mod Constructor account.",
+    "Authentication is the user's Mod Constructor account (OAuth). Never ask for passwords or API keys.",
+    "Project selection: call list_projects and get_active_project. If more than one project exists and none is active, ask the user which project to use, then call set_active_project. Never guess.",
+    "All modification tools require an explicit project_id or resource_id (stable UUIDs).",
+    "Authoring flow: inspect existing resources → propose traits/buffs/interactions/strings → get user approval → call the create/update tools → validate_project → report exactly what was created.",
+    "Build truthfulness: creating project data is NOT a compiled package. request_project_build returns the real state; only report a package when the compiler produced it.",
+    "Destructive actions (undo_change_set, request_project_build) require confirm: true after the user explicitly approves.",
   ].join(" "),
-  tools: [
-    listProjects,
-    getProject,
-    listCareers,
-    listTraits,
-    listAspirations,
-    listNotifications,
-    createProject,
-    addCareer,
-    addTrait,
-    addAspiration,
-    addNotification,
-    setProjectStatus,
-    bumpVersion,
-    exportBundle,
-    importBundle,
-    listTemplates,
-    useTemplate,
-    listSnippets,
-  ],
+  auth: auth.oauth.issuer({
+    issuer: `https://${projectRef}.supabase.co/auth/v1`,
+    acceptedAudiences: "authenticated",
+  }),
+  tools,
 });
