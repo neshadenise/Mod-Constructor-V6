@@ -33,6 +33,20 @@ Rules:
 
 ## Unreleased
 
+### Import package into an existing project
+- `ImportPackageDialog.tsx` + `useImportPackage()` hook: pick a
+  `.mcbundle.json`, see its contents (careers / traits / aspirations /
+  notifications / assets / pack modules), then choose **Add to an existing
+  project** (with a project selector, defaults to the active project) or
+  **Create a new project**.
+- Store gains `mergeBundleIntoProject(bundle, targetProjectId?)`: re-ids every
+  record onto the target project, de-duplicates names by appending "(2)", merges
+  pack modules and the project's id arrays, and logs an import activity event.
+- Shared by all import entry points: Dashboard Quick Action, Projects toolbar,
+  Settings > Import Bundle, and File > Import Package.
+- **Avalonia:** one `ImportPackageWindow` over an `IProjectStore.MergeBundle`
+  service call; file pick via `StorageProvider.OpenFilePickerAsync`.
+
 ### Right sidebar is now a true in-game preview
 - The rail no longer shows a field/data readout. It renders the actual game-skin
   cards from `src/components/mc/preview/GameUI.tsx` (CareerCard, PromotionWindow,
