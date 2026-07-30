@@ -118,7 +118,10 @@ function ShellBody() {
 
   return (
     <AppNavigationProvider active={active} navigate={open}>
-      <div className="min-h-screen bg-background text-foreground">
+      <div
+        className="min-h-screen bg-background text-foreground"
+        style={{ "--preview-w": preview.open ? `${PREVIEW_WIDTH}px` : "0px" } as React.CSSProperties}
+      >
         <MenuBar />
         <AppSidebar active={active} onSelect={open} />
         <div

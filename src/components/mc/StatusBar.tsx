@@ -53,7 +53,7 @@ export function StatusBar({ active }: { active: SectionId }) {
   }, []);
 
   return (
-    <footer className="fixed bottom-0 left-60 right-0 z-30 flex h-7 items-center gap-4 border-t border-border bg-card/95 px-4 text-[10.5px] text-muted-foreground backdrop-blur">
+    <footer className="fixed bottom-0 left-60 right-[var(--preview-w,0px)] z-30 flex h-7 items-center gap-4 border-t border-border bg-card/95 px-4 text-[10.5px] text-muted-foreground backdrop-blur">
       <StatusChip>
         <Circle className="h-2 w-2 fill-[var(--green)] text-[var(--green)]" />
         <span>Ready · {SECTION_LABEL[active]}</span>
