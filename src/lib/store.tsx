@@ -920,6 +920,79 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
     return importedProject;
   }, [mutate, log]);
 
+  const mergeBundleIntoProject: StoreAPI["mergeBundleIntoProject"] = useCallback((bundle, targetProjectId) => {
+    const s = stateRef.current;
+    const pid = targetProjectId ?? s.activeProjectId ?? s.projects[0]?.id;
+    const target = s.projects.find((p) => p.id === pid);
+    if (!target) throw new Error("No project selected to import into.");
+
+    const nameOf = (n: string, taken: Set<string>) => {
+      if (!taken.has(n.toLowerCase())) return n;
+      let i = 2;
+      while (taken.has(`${n} (${i})`.toLowerCase())) i++;
+      return `${n} (${i})`;
+    };
+    const clone = <T extends { id: ID; projectId?: ID; name?: string }>(rows: T[], existing: T[]): T[] => {
+      const taken = new Set(existing.filter((r) => r.projectId === target.id).map((r) => String(r.name ?? "").toLowerCase()));
+      return rows.map((r) => {
+        const name = typeof r.name === "string" ? nameOf(r.name, taken) : r.name;
+        if (typeof name === "string") taken.add(name.toLowerCase());
+        return { ...structuredClone(r), id: uid(), projectId: target.id, name } as T;
+      });
+    };
+
+    const careers = clone(bundle.careers ?? [], s.careers) as Career[];
+    const traits = clone(bundle.traits ?? [], s.traits) as Trait[];
+    const aspirations = clone(bundle.aspirations ?? [], s.aspirations) as Aspiration[];
+    const notifications = clone(bundle.notifications ?? [], s.notifications) as NotificationTemplate[];
+    const assets = clone(bundle.assets ?? [], s.assets) as Asset[];
+    const packModules = (bundle.packModules ?? []).map((m) => ({
+      ...structuredClone(m),
+      id: uid(),
+      projectId: target.id,
+    }));
+
+    const merged: Project = {
+      ...target,
+      careerIds: [...(target.careerIds ?? []), ...careers.map((c) => c.id)],
+      traitIds: [...(target.traitIds ?? []), ...traits.map((t) => t.id)],
+      aspirationIds: [...(target.aspirationIds ?? []), ...aspirations.map((a) => a.id)],
+      notificationIds: [...(target.notificationIds ?? []), ...notifications.map((n) => n.id)],
+      assetIds: [...(target.assetIds ?? []), ...assets.map((a) => a.id)],
+      updatedAt: now(),
+    };
+
+    mutate((prev) => ({
+      ...prev,
+      projects: prev.projects.map((p) => (p.id === target.id ? merged : p)),
+      careers: [...careers, ...prev.careers],
+      traits: [...traits, ...prev.traits],
+      aspirations: [...aspirations, ...prev.aspirations],
+      notifications: [...notifications, ...prev.notifications],
+      assets: [...assets, ...prev.assets],
+      packModules: [...packModules, ...prev.packModules],
+      activeProjectId: target.id,
+    }));
+
+    const added = {
+      careers: careers.length,
+      traits: traits.length,
+      aspirations: aspirations.length,
+      notifications: notifications.length,
+      assets: assets.length,
+      packModules: packModules.length,
+    };
+    log({
+      kind: "import",
+      entityType: "project",
+      entityId: target.id,
+      summary: `Imported package contents into "${target.name}"`,
+    });
+    return { project: merged, added };
+  }, [mutate, log]);
+
+
+
   /* ------------- Reset ------------- */
 
   const resetDemoData: StoreAPI["resetDemoData"] = useCallback(async () => {
