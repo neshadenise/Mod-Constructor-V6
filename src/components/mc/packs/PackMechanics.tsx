@@ -336,7 +336,7 @@ function ClubEditor({ data, setData, issues }: EditorProps<ClubModuleData>) {
       <PackSection title="Uniforms & gatherings" defaultOpen={false}>
         <ListEditor
           label="Uniforms" items={data.uniforms} onChange={(v) => setData({ uniforms: v })} addLabel="Add uniform"
-          create={() => ({ id: rid(), slot: "everyday", frame: "any", ageGates: [], outfitTags: [], casPartRefs: [], outfitTuningRef: emptyRef("outfit") })}
+          create={() => ({ id: rid(), slot: "everyday" as const, frame: "any" as const, ageGates: [], outfitTags: [], casPartRefs: [], outfitTuningRef: emptyRef("outfit") })}
           renderTitle={(u) => `${u.slot} · ${u.frame}`}
           renderBody={(u, up) => (
             <>
