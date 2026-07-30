@@ -107,7 +107,7 @@ export function MenuBar() {
   return (
     <div
       ref={ref}
-      className="flex h-8 select-none items-center border-b border-border bg-card/80 pl-2 pr-3 text-[12px]"
+      className="flex h-8 select-none items-center border-b border-border bg-card/80 pl-2 pr-3 text-[12px] mr-[var(--preview-w,0px)] transition-[margin] duration-200"
     >
       <div className="mr-3 flex items-center gap-1.5">
         <Circle className="h-2.5 w-2.5 fill-[var(--destructive,#ef4444)] text-[var(--destructive,#ef4444)]" />

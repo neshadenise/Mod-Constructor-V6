@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { BuildHealthTile } from "@/components/mc/HealthMetrics";
 import { toast } from "sonner";
 
 type Severity = "error" | "warning" | "info" | "ok";
@@ -215,6 +216,9 @@ export function ValidationCenter() {
           </button>
         </div>
       </div>
+
+      {/* Build Health — moved here from the Dashboard */}
+      <BuildHealthTile />
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">

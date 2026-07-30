@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from "react";
 import {
-  Activity,
   CheckCircle2,
   AlertTriangle,
   XCircle,
@@ -11,9 +10,7 @@ import {
   Upload,
   FileCode2,
   GitBranch,
-  Package,
   Zap,
-  Eye,
   Terminal,
   Clock,
   ArrowUpRight,
@@ -155,28 +152,8 @@ export function Dashboard() {
 
       <div className="grid grid-cols-12 gap-4">
         <CurrentProject />
-        <MetricCard
-          title="Build Health"
-          value={health?.buildHealth ?? 0}
-          accent="green"
-          icon={Activity}
-          sub={health ? `${health.errors} errors · ${health.warnings} warnings` : "No project"}
-        />
-        <MetricCard
-          title="Compatibility"
-          value={health?.compatibility ?? 0}
-          accent="blue"
-          icon={GitBranch}
-          sub={health ? `${health.missingAssetRefs} broken asset refs` : "No project"}
-        />
-        <MetricCard
-          title="Package Completeness"
-          value={health?.completeness ?? 0}
-          accent="orange"
-          icon={Package}
-          sub={health ? `${health.recordCount} records scanned` : "No project"}
-        />
       </div>
+
 
       <div className="grid grid-cols-12 gap-4">
         <QuickActions />
@@ -216,7 +193,6 @@ export function Dashboard() {
           <ProgressRing />
           <BuildSteps progress={activeBuild?.progress ?? 0} status={activeBuild?.status} />
           <ModMetadata />
-          <LivePreview />
         </div>
       </div>
 
@@ -401,47 +377,6 @@ function CurrentProject() {
         </div>
       </div>
     </section>
-  );
-}
-
-function MetricCard({
-  title,
-  value,
-  accent,
-  icon: Icon,
-  sub,
-}: {
-  title: string;
-  value: number;
-  accent: "green" | "blue" | "orange";
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  sub: string;
-}) {
-  return (
-    <div className="col-span-2 rounded-xl border border-border bg-card p-4 card-elevated">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {title}
-        </span>
-        <div
-          className="flex h-6 w-6 items-center justify-center rounded-md"
-          style={{ backgroundColor: `color-mix(in oklab, var(--${accent}) 15%, transparent)` }}
-        >
-          <Icon className="h-3 w-3" style={{ color: `var(--${accent})` }} />
-        </div>
-      </div>
-      <div className="mt-3 flex items-baseline gap-1">
-        <span className="text-3xl font-bold tabular-nums tracking-tight">{value}</span>
-        <span className="text-sm font-semibold text-muted-foreground">%</span>
-      </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          className="h-full rounded-full transition-[width] duration-500"
-          style={{ width: `${value}%`, backgroundColor: `var(--${accent})` }}
-        />
-      </div>
-      <div className="mt-2 text-[11px] text-muted-foreground">{sub}</div>
-    </div>
   );
 }
 
@@ -1066,95 +1001,6 @@ function Field({
   );
 }
 
-function LivePreview() {
-  const { scope } = useDashboardData();
-  const { navigate } = useAppNavigation();
-
-  const career = scope?.careers[0];
-  const branch = career?.branches[0];
-  const level = branch?.levels[0];
-  const trait = scope?.traits[0];
-
-  if (!career && !trait) {
-    return (
-      <SectionCard title="Live Preview" icon={Eye} accent="blue">
-        <Empty text="Add a career or trait to see an in-game preview." />
-      </SectionCard>
-    );
-  }
-
-  if (career) {
-    return (
-      <SectionCard
-        title="Live Preview"
-        subtitle={`${career.name}${branch ? ` · ${branch.name}` : ""}`}
-        icon={Eye}
-        accent="blue"
-        action="Open"
-        onAction={() => navigate("career")}
-      >
-        <div className="overflow-hidden rounded-lg border border-border bg-gradient-to-br from-[color-mix(in_oklab,var(--blue)_10%,var(--card))] to-[color-mix(in_oklab,var(--violet)_10%,var(--card))] p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--blue)] text-white shadow-md">
-              <Briefcase className="h-6 w-6" />
-            </div>
-            <div className="min-w-0">
-              <div className="truncate text-sm font-bold">{level?.title || career.name}</div>
-              <div className="truncate text-[11px] text-muted-foreground">
-                {career.careerType} career{branch ? ` · ${branch.name} branch` : ""}
-              </div>
-            </div>
-          </div>
-          <div className="mt-3 space-y-1.5 text-[11px]">
-            <PreviewLine label="Salary" val={level ? `§${level.salary.toLocaleString()} / day` : "—"} />
-            <PreviewLine label="Hours" val={level ? `${level.workStart} → ${level.workEnd}` : "—"} />
-            <PreviewLine label="Ranks" val={branch ? `${branch.levels.length}` : "0"} />
-            <PreviewLine label="Ages" val={career.ageGates.length ? career.ageGates.join(", ") : "none set"} />
-          </div>
-        </div>
-      </SectionCard>
-    );
-  }
-
-  const buff = trait!.buffs[0];
-  return (
-    <SectionCard
-      title="Live Preview"
-      subtitle={trait!.name}
-      icon={Eye}
-      accent="blue"
-      action="Open"
-      onAction={() => navigate("trait")}
-    >
-      <div className="overflow-hidden rounded-lg border border-border bg-gradient-to-br from-[color-mix(in_oklab,var(--violet)_10%,var(--card))] to-[color-mix(in_oklab,var(--teal)_10%,var(--card))] p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--violet)] text-white shadow-md">
-            <Sparkles className="h-6 w-6" />
-          </div>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-bold">{trait!.name}</div>
-            <div className="truncate text-[11px] text-muted-foreground">{trait!.category} trait</div>
-          </div>
-        </div>
-        <div className="mt-3 space-y-1.5 text-[11px]">
-          <PreviewLine label="Buffs" val={String(trait!.buffs.length)} />
-          <PreviewLine label="Emotion" val={buff?.emotion ?? "—"} />
-          <PreviewLine label="Duration" val={buff ? `${buff.durationHours}h` : "—"} />
-          <PreviewLine label="Ages" val={trait!.ageGates.length ? trait!.ageGates.join(", ") : "none set"} />
-        </div>
-      </div>
-    </SectionCard>
-  );
-}
-
-function PreviewLine({ label, val }: { label: string; val: string }) {
-  return (
-    <div className="flex items-center justify-between gap-2 rounded-md bg-background/60 px-2 py-1">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="truncate font-mono font-semibold">{val}</span>
-    </div>
-  );
-}
 
 function Empty({ text }: { text: string }) {
   return (

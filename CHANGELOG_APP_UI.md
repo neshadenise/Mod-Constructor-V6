@@ -33,6 +33,37 @@ Rules:
 
 ## Unreleased
 
+### Dashboard slimmed — metrics moved to their related pages
+- **Removed from Dashboard:** the Build Health, Compatibility, and Package
+  Completeness metric cards, and the Live Preview card in the right column.
+- **New homes:** Build Health -> Validation Center, Compatibility -> Dependency
+  Graph, Package Completeness -> Package Exporter. All three render the shared
+  `MetricTile` from `src/components/mc/HealthMetrics.tsx`, which exposes
+  `useProjectHealth()` over `computeHealth()` so every surface reads one source.
+- **Left sidebar:** new "Project Health" rail above Engine Status with three
+  compact percentage bars; each row navigates to the page that now owns that
+  metric (validation / graph / exporter).
+- **Avalonia:** one `ProjectHealthService` with observable BuildHealth /
+  Compatibility / Completeness; the tile is a reusable `UserControl` bound to it,
+  the sidebar rail a `ItemsControl` of `ProgressBar` + `Button` rows.
+
+### Live Preview promoted to a global right sidebar
+- **Feature:** a persistent 320px right sidebar rendered by the shell on every
+  page. Its content follows the active section: Career/Trait/Aspiration/
+  Notification/Asset previews on those builders, and a project snapshot
+  (record counts, errors, warnings) everywhere else. A record picker appears
+  when the active project has more than one item of the section's kind, plus an
+  "Open <kind> Builder" jump.
+- **UI:** collapsible via the header button; when collapsed a vertical
+  "Live Preview" tab pins to the right edge. Open/closed state persists in
+  `mc.preview.panel`. The shell publishes `--preview-w` so the menu bar, content
+  column, and status bar all inset by the panel width.
+- **Files:** `src/components/mc/PreviewSidebar.tsx`,
+  `src/components/mc/HealthMetrics.tsx`; shell wiring in `src/routes/index.tsx`.
+- **Avalonia:** use a `SplitView`/`Grid` third column with a `ContentControl`
+  whose `DataTemplates` key off the active section id; persist the open flag in
+  app settings and bind the other regions' margins to the same width value.
+
 ### Window tabs — multi-section switching
 - **Feature:** sections now open as tabs instead of replacing the view. Clicking a
   sidebar item, command-palette result, or any in-app jump opens (or focuses) a

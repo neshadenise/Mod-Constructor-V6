@@ -53,6 +53,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CompletenessTile } from "@/components/mc/HealthMetrics";
 import { useAdvanced } from "@/lib/advanced-mode";
 import { CopyToMenu } from "./CopyToMenu";
 import type { SectionId } from "./sections";
@@ -3062,6 +3063,9 @@ function ExporterView() {
           No project selected. Open Projects to create or activate one.
         </div>
       )}
+
+      {/* Package Completeness — moved here from the Dashboard */}
+      <CompletenessTile />
 
       <div className="grid grid-cols-[1fr_320px] gap-4">
         <div className="space-y-4">

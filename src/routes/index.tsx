@@ -18,6 +18,8 @@ import { StoreProvider } from "@/lib/store";
 import { AccountProvider } from "@/lib/account";
 import { TabsProvider, useTabs } from "@/lib/tabs";
 import { TabStrip } from "@/components/mc/TabStrip";
+import { PreviewSidebar, usePreviewPanel, PREVIEW_WIDTH } from "@/components/mc/PreviewSidebar";
+
 import type { SectionId } from "@/components/mc/sections";
 import { detectAppMode, type AppMode } from "@/lib/app-mode";
 import { LandingLayout } from "@/components/landing/LandingLayout";
@@ -109,20 +111,28 @@ function Shell() {
 function ShellBody() {
   const { active, open } = useTabs();
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const preview = usePreviewPanel();
 
   const togglePalette = useCallback(() => setPaletteOpen((v) => !v), []);
   useCommandPaletteHotkey(togglePalette);
 
   return (
     <AppNavigationProvider active={active} navigate={open}>
-      <div className="min-h-screen bg-background text-foreground">
+      <div
+        className="min-h-screen bg-background text-foreground"
+        style={{ "--preview-w": preview.open ? `${PREVIEW_WIDTH}px` : "0px" } as React.CSSProperties}
+      >
         <MenuBar />
         <AppSidebar active={active} onSelect={open} />
-        <div className="ml-60 pb-7">
+        <div
+          className="ml-60 pb-7 transition-[margin] duration-200"
+          style={{ marginRight: preview.open ? PREVIEW_WIDTH : 0 }}
+        >
           <TopBar active={active} onOpenPalette={() => setPaletteOpen(true)} />
           <TabStrip />
           <SectionView active={active} DashboardEl={<Dashboard />} />
         </div>
+        <PreviewSidebar active={active} open={preview.open} onOpenChange={preview.setOpen} />
         <StatusBar active={active} />
         <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
         <NotificationCenter />
@@ -131,3 +141,4 @@ function ShellBody() {
     </AppNavigationProvider>
   );
 }
+

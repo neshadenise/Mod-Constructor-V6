@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Network, Briefcase, Sparkles, Target, Bell, Package, Boxes } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CompatibilityTile } from "@/components/mc/HealthMetrics";
 
 type NodeKind = "career" | "trait" | "aspiration" | "notification" | "asset" | "package";
 
@@ -94,6 +95,9 @@ export function DependencyGraph() {
           })}
         </div>
       </div>
+
+      {/* Compatibility — moved here from the Dashboard */}
+      <CompatibilityTile />
 
       <div className="grid grid-cols-12 gap-4">
         <section className="col-span-12 rounded-xl border border-border bg-card p-2 card-elevated lg:col-span-9">
