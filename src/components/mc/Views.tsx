@@ -53,6 +53,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useImportPackage } from "./ImportPackageDialog";
+import { BuildProgressCard, BuildLog, ModMetadataCard } from "./Dashboard";
 import { cn } from "@/lib/utils";
 import { CompletenessTile } from "@/components/mc/HealthMetrics";
 import { useAdvanced } from "@/lib/advanced-mode";
@@ -3052,6 +3053,9 @@ function ExporterView() {
       {/* Package Completeness — moved here from the Dashboard */}
       <CompletenessTile />
 
+      {/* Mod Metadata — moved here from the Dashboard */}
+      <ModMetadataCard />
+
       <div className="grid grid-cols-[1fr_320px] gap-4">
         <div className="space-y-4">
           <Card
@@ -3337,6 +3341,8 @@ function QueueView() {
           </>
         }
       />
+      <BuildProgressCard />
+      <BuildLog />
       <Card>
         <ul className="space-y-2.5">
           {rows.map((r) => (
