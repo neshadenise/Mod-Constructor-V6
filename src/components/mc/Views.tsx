@@ -438,6 +438,7 @@ function ProjectsView() {
 
   return (
     <div className="space-y-4">
+      {importer.dialog}
       <PageHeader
         icon={FolderKanban}
         subtitle="Local Workspace"
