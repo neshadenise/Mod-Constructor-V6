@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { PERMISSIONS, PERMISSION_LABELS, type Permission } from "@/lib/server/mod-service";
+import { PERMISSIONS, PERMISSION_LABELS, type Permission } from "@/lib/permissions";
 import {
   listMyProjects,
   listMyConnections,

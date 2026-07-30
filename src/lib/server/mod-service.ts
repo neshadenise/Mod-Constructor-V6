@@ -43,24 +43,8 @@ export const RESOURCE_KINDS = [
 ] as const;
 export type ResourceKind = (typeof RESOURCE_KINDS)[number];
 
-export const PERMISSIONS = [
-  "projects.read",
-  "resources.create",
-  "resources.update",
-  "projects.validate",
-  "builds.request",
-  "builds.read",
-] as const;
-export type Permission = (typeof PERMISSIONS)[number];
-
-export const PERMISSION_LABELS: Record<Permission, string> = {
-  "projects.read": "View authorized projects",
-  "resources.create": "Create project resources",
-  "resources.update": "Edit project resources",
-  "projects.validate": "Validate projects",
-  "builds.request": "Request package builds",
-  "builds.read": "Read build results",
-};
+export { PERMISSIONS, PERMISSION_LABELS } from "@/lib/permissions";
+export type { Permission } from "@/lib/permissions";
 
 /* ------------------------------------------------------------------ */
 /* helpers                                                             */
