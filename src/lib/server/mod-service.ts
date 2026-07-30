@@ -45,6 +45,7 @@ export type ResourceKind = (typeof RESOURCE_KINDS)[number];
 
 export { PERMISSIONS, PERMISSION_LABELS } from "@/lib/permissions";
 export type { Permission } from "@/lib/permissions";
+import type { Permission } from "@/lib/permissions";
 
 /* ------------------------------------------------------------------ */
 /* helpers                                                             */
