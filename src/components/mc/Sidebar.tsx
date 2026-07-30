@@ -28,6 +28,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
 import type { SectionId } from "./sections";
+import { useProjectHealth } from "./HealthMetrics";
+
 
 type Item = {
   id: SectionId;
