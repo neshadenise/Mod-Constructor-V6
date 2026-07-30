@@ -33,6 +33,21 @@ Rules:
 
 ## Unreleased
 
+### Right sidebar is now a true in-game preview
+- The rail no longer shows a field/data readout. It renders the actual game-skin
+  cards from `src/components/mc/preview/GameUI.tsx` (CareerCard, PromotionWindow,
+  BranchWindow, TraitCard, BuffCard, AspirationCard, NotificationPopup,
+  TooltipPreview, IconFrame) scaled into 320px via a `GameSurface` wrapper
+  (460px design width, CSS transform scale, ResizeObserver-measured height).
+- Per-section scene chips: Career (Panel / Promotion / Branches / Notification),
+  Trait (CAS Card / Moodlet / Tooltip / Notification), Aspiration (Panel /
+  Milestone / Tooltip), Notification (Popup / Compact), Asset, Project summary.
+- Header controls: replay (remount), in-game light/dark skin toggle (independent
+  of app theme), collapse.
+- **Avalonia:** host a `Viewbox` (Stretch=Uniform) around the game-card
+  `UserControl`s; skin toggle swaps a ResourceDictionary, scene chips are a
+  `RadioButton` ItemsControl bound to a SelectedScene enum.
+
 ### Dashboard slimmed — metrics moved to their related pages
 - **Removed from Dashboard:** the Build Health, Compatibility, and Package
   Completeness metric cards, and the Live Preview card in the right column.
