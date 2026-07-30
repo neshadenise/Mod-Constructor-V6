@@ -1021,7 +1021,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
     logActivity: log,
     toggleFavorite, markRecent,
     updateSettings,
-    exportBundle, importBundle,
+    exportBundle, importBundle, mergeBundleIntoProject,
     resetDemoData,
   }), [
     state, adapter, hydrated,
@@ -1042,7 +1042,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
     log,
     toggleFavorite, markRecent,
     updateSettings,
-    exportBundle, importBundle,
+    exportBundle, importBundle, mergeBundleIntoProject,
     resetDemoData,
   ]);
 
