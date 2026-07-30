@@ -5,6 +5,15 @@ import { useAdvanced } from "@/lib/advanced-mode";
 import { useNotifications } from "@/lib/notifications";
 import { SECTION_LABEL, type SectionId } from "./sections";
 import { cn } from "@/lib/utils";
+import { useStore, useActiveProject } from "@/lib/store";
+
+function formatAgo(ms: number) {
+  const s = Math.max(0, Math.round(ms / 1000));
+  if (s < 60) return `${s}s ago`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m ago`;
+  return `${Math.round(m / 60)}h ago`;
+}
 
 type Props = {
   active: SectionId;
