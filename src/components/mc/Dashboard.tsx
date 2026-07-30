@@ -140,7 +140,7 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-cols-12 gap-4">
-        <div className="col-span-8 space-y-4">
+        <div className="col-span-12">
           <SectionCard
             title="Constructor Canvas"
             subtitle={
@@ -153,24 +153,6 @@ export function Dashboard() {
           >
             <Canvas />
           </SectionCard>
-
-          {advanced ? (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <ValidationResults issues={issues} />
-                <DependencyChecker scope={scope} />
-              </div>
-              <BuildLog />
-            </>
-          ) : (
-            <ValidationResults issues={issues} />
-          )}
-        </div>
-
-        <div className="col-span-4 space-y-4">
-          <ProgressRing />
-          <BuildSteps progress={activeBuild?.progress ?? 0} status={activeBuild?.status} />
-          <ModMetadata />
         </div>
       </div>
 
@@ -624,7 +606,7 @@ const SEV_META = {
   info: { icon: Info, c: "blue" },
 } as const;
 
-function ValidationResults({ issues }: { issues: DerivedIssue[] }) {
+export function ValidationResults({ issues }: { issues: DerivedIssue[] }) {
   const store = useStore();
   const project = useActiveProject();
   const { navigate } = useAppNavigation();
@@ -682,7 +664,7 @@ function ValidationResults({ issues }: { issues: DerivedIssue[] }) {
   );
 }
 
-function DependencyChecker({ scope }: { scope: ProjectScope | null }) {
+export function DependencyChecker({ scope }: { scope: ProjectScope | null }) {
   const deps = useMemo(() => (scope ? computeDependencies(scope) : []), [scope]);
 
   return (
@@ -724,7 +706,7 @@ function DependencyChecker({ scope }: { scope: ProjectScope | null }) {
   );
 }
 
-function BuildLog() {
+export function BuildLog() {
   const { store, activeBuild } = useDashboardData();
   const lines = activeBuild?.log ?? [];
 
@@ -767,7 +749,7 @@ function LogLine({ line }: { line: string }) {
   );
 }
 
-function ProgressRing() {
+export function ProgressRing() {
   const { store, project, activeBuild } = useDashboardData();
   const pct = activeBuild?.progress ?? 0;
   const r = 52;
@@ -848,7 +830,7 @@ function MiniStat({ label, val }: { label: string; val: string }) {
   );
 }
 
-function BuildSteps({ progress, status }: { progress: number; status?: string }) {
+export function BuildSteps({ progress, status }: { progress: number; status?: string }) {
   return (
     <SectionCard title="Build Steps" icon={PlayCircle} accent="teal">
       <ol className="space-y-1">
@@ -880,7 +862,7 @@ function BuildSteps({ progress, status }: { progress: number; status?: string })
   );
 }
 
-function ModMetadata() {
+export function ModMetadata() {
   const store = useStore();
   const project = useActiveProject();
   const { navigate } = useAppNavigation();
@@ -990,4 +972,33 @@ function Empty({ text }: { text: string }) {
 
 function slug(s: string) {
   return s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "project";
+}
+
+
+/* ------------------------------------------------------------------ *
+ * Self-contained cards for the related pages (moved off the Dashboard)
+ * ------------------------------------------------------------------ */
+
+export function ValidationResultsCard() {
+  const { issues } = useDashboardData();
+  return <ValidationResults issues={issues} />;
+}
+
+export function DependencyCheckerCard() {
+  const { scope } = useDashboardData();
+  return <DependencyChecker scope={scope} />;
+}
+
+export function BuildProgressCard() {
+  const { activeBuild } = useDashboardData();
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <ProgressRing />
+      <BuildSteps progress={activeBuild?.progress ?? 0} status={activeBuild?.status} />
+    </div>
+  );
+}
+
+export function ModMetadataCard() {
+  return <ModMetadata />;
 }
