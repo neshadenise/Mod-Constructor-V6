@@ -274,6 +274,24 @@ export function backfillDemoContent(state: AppState): AppState {
   };
 }
 
+/** Existing demo projects predate the Dancer career — add it once. */
+function backfillDancerCareer(state: AppState, demoId: ID): AppState {
+  const exists = state.careers.some(
+    (c) => c.projectId === demoId && c.internalId === "dancer",
+  );
+  if (exists) return state;
+  const dancer = makeDancerCareer({ projectId: demoId, uid, stamp: now() });
+  return {
+    ...state,
+    projects: state.projects.map((p) =>
+      p.id === demoId
+        ? { ...p, careerIds: [...(p.careerIds ?? []), dancer.id] }
+        : p,
+    ),
+    careers: [...state.careers, dancer],
+  };
+}
+
 
 
 /* -------------------- Store API ---------------------------------------- */
