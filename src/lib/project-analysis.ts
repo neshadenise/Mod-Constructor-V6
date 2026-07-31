@@ -38,14 +38,14 @@ export function analyzeProject(scope: ProjectScope): DerivedIssue[] {
   const out: DerivedIssue[] = [];
   const { project, careers, traits, aspirations, assets } = scope;
 
-  if (!project.description.trim()) {
+  if (!(project.description ?? "").trim()) {
     out.push({
       severity: "warning", scope: "project", recordId: project.id, field: "description",
       message: "Project has no description",
       suggestion: "Add a short summary — it ships in the package manifest.",
     });
   }
-  if (!project.author.trim()) {
+  if (!(project.author ?? "").trim()) {
     out.push({
       severity: "warning", scope: "project", recordId: project.id, field: "author",
       message: "Project has no author set",
@@ -92,36 +92,38 @@ export function analyzeProject(scope: ProjectScope): DerivedIssue[] {
   const assetIds = new Set(assets.map((a) => a.id));
 
   for (const c of careers) {
-    if (c.branches.length === 0) {
+    const branches = c.branches ?? [];
+    if (branches.length === 0) {
       out.push({
         severity: "error", scope: "career", recordId: c.id, field: "branches",
         message: `Career "${c.name}" has no branches`,
         suggestion: "Every career needs at least one branch with levels.",
       });
     }
-    for (const b of c.branches) {
-      if (b.levels.length === 0) {
+    for (const b of branches) {
+      const levels = b.levels ?? [];
+      if (levels.length === 0) {
         out.push({
           severity: "error", scope: "career", recordId: c.id, field: "levels",
           message: `Branch "${b.name}" in "${c.name}" has no levels`,
           suggestion: "Add promotion levels with salary and hours.",
         });
       }
-      for (const l of b.levels) {
-        if (!l.title.trim()) {
+      for (const l of levels) {
+        if (!(l.title ?? '').trim()) {
           out.push({
             severity: "warning", scope: "career", recordId: c.id, field: "title",
             message: `Rank ${l.rank} in "${b.name}" has no title`,
           });
         }
-        if (l.salary <= 0) {
+        if ((l.salary ?? 0) <= 0) {
           out.push({
             severity: "warning", scope: "career", recordId: c.id, field: "salary",
             message: `Rank ${l.rank} "${l.title || "untitled"}" pays §0`,
             suggestion: "Set a daily salary for this rank.",
           });
         }
-        if (l.workDays.length === 0) {
+        if ((l.workDays ?? []).length === 0) {
           out.push({
             severity: "warning", scope: "career", recordId: c.id, field: "workDays",
             message: `Rank ${l.rank} in "${b.name}" has no work days`,
@@ -129,7 +131,7 @@ export function analyzeProject(scope: ProjectScope): DerivedIssue[] {
         }
       }
     }
-    if (c.ageGates.length === 0) {
+    if ((c.ageGates ?? []).length === 0) {
       out.push({
         severity: "warning", scope: "career", recordId: c.id, field: "ageGates",
         message: `Career "${c.name}" is not available to any age`,
@@ -153,7 +155,7 @@ export function analyzeProject(scope: ProjectScope): DerivedIssue[] {
         suggestion: "In-game trait tooltips read this string.",
       });
     }
-    if (t.buffs.length === 0) {
+    if ((t.buffs ?? []).length === 0) {
       out.push({
         severity: "info", scope: "trait", recordId: t.id, field: "buffs",
         message: `Trait "${t.name}" has no buffs`,
@@ -177,7 +179,7 @@ export function analyzeProject(scope: ProjectScope): DerivedIssue[] {
   }
 
   for (const a of aspirations) {
-    if (a.milestones.length === 0) {
+    if ((a.milestones ?? []).length === 0) {
       out.push({
         severity: "error", scope: "aspiration", recordId: a.id, field: "milestones",
         message: `Aspiration "${a.name}" has no milestones`,
@@ -185,7 +187,7 @@ export function analyzeProject(scope: ProjectScope): DerivedIssue[] {
       });
     }
     for (const m of a.milestones) {
-      if (m.objectives.length === 0) {
+      if ((m.objectives ?? []).length === 0) {
         out.push({
           severity: "warning", scope: "aspiration", recordId: a.id, field: "objectives",
           message: `Milestone "${m.name}" in "${a.name}" has no objectives`,
@@ -228,7 +230,7 @@ export function computeHealth(scope: ProjectScope, issues: DerivedIssue[]): Heal
   const refs = records.map((r) => r.iconAssetId).filter(Boolean) as string[];
   const missingAssetRefs = refs.filter((id) => !assetIds.has(id)).length;
 
-  const gated = [...careers, ...traits].filter((r) => r.ageGates.length > 0).length;
+  const gated = [...careers, ...traits].filter((r) => (r.ageGates ?? []).length > 0).length;
   const gateable = careers.length + traits.length;
   const compatibility = gateable === 0
     ? 100
@@ -238,21 +240,21 @@ export function computeHealth(scope: ProjectScope, issues: DerivedIssue[]): Heal
   let total = 0;
   for (const r of records) {
     total += 3;
-    if (r.name.trim()) filled++;
-    if (r.description.trim()) filled++;
+    if ((r.name ?? "").trim()) filled++;
+    if ((r.description ?? "").trim()) filled++;
     if (r.iconAssetId && assetIds.has(r.iconAssetId)) filled++;
   }
   for (const c of careers) {
     total += 1;
-    if (c.branches.some((b) => b.levels.length > 0)) filled++;
+    if ((c.branches ?? []).some((b) => (b.levels ?? []).length > 0)) filled++;
   }
   for (const t of traits) {
     total += 1;
-    if (t.buffs.length > 0) filled++;
+    if ((t.buffs ?? []).length > 0) filled++;
   }
   for (const a of aspirations) {
     total += 1;
-    if (a.milestones.length > 0) filled++;
+    if ((a.milestones ?? []).length > 0) filled++;
   }
   const completeness = total === 0 ? 0 : clamp(Math.round((filled / total) * 100));
 
@@ -294,9 +296,9 @@ export function computeDependencies(scope: ProjectScope): DependencyRow[] {
     status: iconRefs === 0 ? "missing" : iconRefs <= iconAssets ? "ok" : "warn",
   });
 
-  const stblStrings = careers.reduce((n, c) => n + c.messageOverrides.length, 0)
-    + traits.reduce((n, t) => n + t.buffs.length, 0)
-    + aspirations.reduce((n, a) => n + a.milestones.length, 0);
+  const stblStrings = careers.reduce((n, c) => n + (c.messageOverrides ?? []).length, 0)
+    + traits.reduce((n, t) => n + (t.buffs ?? []).length, 0)
+    + aspirations.reduce((n, a) => n + (a.milestones ?? []).length, 0);
   rows.push({
     name: "String table (STBL)",
     detail: `${stblStrings} localized strings`,
