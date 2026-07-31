@@ -92,29 +92,31 @@ export function analyzeProject(scope: ProjectScope): DerivedIssue[] {
   const assetIds = new Set(assets.map((a) => a.id));
 
   for (const c of careers) {
-    if (c.branches.length === 0) {
+    const branches = c.branches ?? [];
+    if (branches.length === 0) {
       out.push({
         severity: "error", scope: "career", recordId: c.id, field: "branches",
         message: `Career "${c.name}" has no branches`,
         suggestion: "Every career needs at least one branch with levels.",
       });
     }
-    for (const b of c.branches) {
-      if (b.levels.length === 0) {
+    for (const b of branches) {
+      const levels = b.levels ?? [];
+      if (levels.length === 0) {
         out.push({
           severity: "error", scope: "career", recordId: c.id, field: "levels",
           message: `Branch "${b.name}" in "${c.name}" has no levels`,
           suggestion: "Add promotion levels with salary and hours.",
         });
       }
-      for (const l of b.levels) {
-        if (!l.title.trim()) {
+      for (const l of levels) {
+        if (!(l.title ?? '').trim()) {
           out.push({
             severity: "warning", scope: "career", recordId: c.id, field: "title",
             message: `Rank ${l.rank} in "${b.name}" has no title`,
           });
         }
-        if (l.salary <= 0) {
+        if ((l.salary ?? 0) <= 0) {
           out.push({
             severity: "warning", scope: "career", recordId: c.id, field: "salary",
             message: `Rank ${l.rank} "${l.title || "untitled"}" pays §0`,
