@@ -297,8 +297,8 @@ export function computeDependencies(scope: ProjectScope): DependencyRow[] {
   });
 
   const stblStrings = careers.reduce((n, c) => n + (c.messageOverrides ?? []).length, 0)
-    + traits.reduce((n, t) => n + t.buffs.length, 0)
-    + aspirations.reduce((n, a) => n + a.milestones.length, 0);
+    + traits.reduce((n, t) => n + (t.buffs ?? []).length, 0)
+    + aspirations.reduce((n, a) => n + (a.milestones ?? []).length, 0);
   rows.push({
     name: "String table (STBL)",
     detail: `${stblStrings} localized strings`,
