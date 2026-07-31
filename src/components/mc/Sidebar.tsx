@@ -14,6 +14,7 @@ import {
   Wrench,
   Bell,
   Package,
+  Import,
   BookOpen,
   LayoutTemplate,
   Code2,
@@ -57,6 +58,7 @@ export const SIDEBAR_ITEMS: Item[] = [
   { id: "snippets", label: "Snippets", icon: Code2, group: "builders" },
 
   { id: "exporter", label: "Package Exporter", icon: Package, group: "builders" },
+  { id: "importer", label: "Package Importer", icon: Import, group: "builders" },
   { id: "queue", label: "Build Queue", icon: ListChecks, badge: "2", group: "builders" },
 
   { id: "community", label: "Community Library", icon: Globe2, badge: "Beta", group: "library" },

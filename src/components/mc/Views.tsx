@@ -53,6 +53,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useImportPackage } from "./ImportPackageDialog";
+import { PackageImporter } from "./views/PackageImporter";
 import { BuildProgressCard, BuildLog, ModMetadataCard } from "./Dashboard";
 import { cn } from "@/lib/utils";
 import { CompletenessTile } from "@/components/mc/HealthMetrics";
@@ -4047,6 +4048,7 @@ export function SectionView({
   if (active === "tuning") return <div className="mx-auto max-w-[1600px] p-6"><TuningEditor /></div>;
   if (active === "icons") return <div className="mx-auto max-w-[1600px] p-6"><IconLibraryView /></div>;
   if (active === "assets") return <div className="mx-auto max-w-[1600px] p-6"><AssetManager /></div>;
+  if (active === "importer") return <div className="mx-auto max-w-[1600px] p-6"><PackageImporter /></div>;
   if (active === "exporter") return <div className="mx-auto max-w-[1600px] p-6"><ExporterView /></div>;
 
   if (active === "validation") return <div className="mx-auto max-w-[1600px] p-6"><ValidationCenter /></div>;

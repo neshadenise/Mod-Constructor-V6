@@ -11,6 +11,7 @@ export type SectionId =
   | "assets"
   | "reference"
   | "exporter"
+  | "importer"
   | "validation"
   | "queue"
   | "templates"
@@ -36,6 +37,7 @@ export const SECTION_LABEL: Record<SectionId, string> = {
   assets: "Project Assets",
   reference: "Reference Viewer",
   exporter: "Package Exporter",
+  importer: "Package Importer",
   validation: "Validation Center",
   queue: "Build Queue",
   templates: "Templates",
