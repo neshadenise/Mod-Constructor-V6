@@ -38,14 +38,14 @@ export function analyzeProject(scope: ProjectScope): DerivedIssue[] {
   const out: DerivedIssue[] = [];
   const { project, careers, traits, aspirations, assets } = scope;
 
-  if (!project.description.trim()) {
+  if (!(project.description ?? "").trim()) {
     out.push({
       severity: "warning", scope: "project", recordId: project.id, field: "description",
       message: "Project has no description",
       suggestion: "Add a short summary — it ships in the package manifest.",
     });
   }
-  if (!project.author.trim()) {
+  if (!(project.author ?? "").trim()) {
     out.push({
       severity: "warning", scope: "project", recordId: project.id, field: "author",
       message: "Project has no author set",
@@ -240,8 +240,8 @@ export function computeHealth(scope: ProjectScope, issues: DerivedIssue[]): Heal
   let total = 0;
   for (const r of records) {
     total += 3;
-    if (r.name.trim()) filled++;
-    if (r.description.trim()) filled++;
+    if ((r.name ?? "").trim()) filled++;
+    if ((r.description ?? "").trim()) filled++;
     if (r.iconAssetId && assetIds.has(r.iconAssetId)) filled++;
   }
   for (const c of careers) {

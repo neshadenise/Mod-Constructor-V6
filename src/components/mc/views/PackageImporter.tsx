@@ -34,6 +34,38 @@ function countOf(b: ProjectBundle, k: Kind) {
   return ((b as unknown as Record<string, unknown[]>)[k] ?? []).length;
 }
 
+const BASE = { name: "Untitled", description: "", internalId: "" };
+
+/** Fill required collections/strings that a partial bundle may omit. */
+function normalize(kind: Kind, row: unknown): unknown {
+  const r = { ...(row as Record<string, unknown>) };
+  if (kind === "assets" || kind === "packModules") return r;
+  for (const [k, v] of Object.entries(BASE)) if (typeof r[k] !== "string") r[k] = v;
+  const arrays: Record<string, string[]> = {
+    careers: ["branches", "ageGates", "messageOverrides", "workFromHomeEvents"],
+    traits: ["buffs", "ageGates", "blockedAges", "blockedEmotions", "buffReplacements", "commodityWeights", "socialInteractions"],
+    aspirations: ["milestones"],
+    notifications: [],
+  };
+  for (const key of arrays[kind] ?? []) if (!Array.isArray(r[key])) r[key] = [];
+  if (kind === "careers") {
+    r.branches = (r.branches as Record<string, unknown>[]).map((b) => ({
+      ...b,
+      name: typeof b.name === "string" ? b.name : "Branch",
+      levels: (Array.isArray(b.levels) ? b.levels : []).map((l) => {
+        const lv = l as Record<string, unknown>;
+        return {
+          ...lv,
+          title: typeof lv.title === "string" ? lv.title : "",
+          salary: typeof lv.salary === "number" ? lv.salary : 0,
+          workDays: Array.isArray(lv.workDays) ? lv.workDays : [],
+        };
+      }),
+    }));
+  }
+  return r;
+}
+
 export function PackageImporter() {
   const store = useStore();
   const { navigate } = useAppNavigation();
@@ -83,10 +115,16 @@ export function PackageImporter() {
 
   const selectedTotal = KINDS.reduce((a, k) => a + (selected[k.key] ? totals[k.key] : 0), 0);
 
-  /** Strip out the categories the user unchecked. */
+  /**
+   * Strip out the categories the user unchecked and fill in any fields a
+   * hand-edited bundle may be missing, so partial files can never break the
+   * workspace after import.
+   */
   const filtered = (b: ProjectBundle): ProjectBundle => {
-    const out = { ...b } as unknown as Record<string, unknown>;
-    KINDS.forEach(({ key }) => { if (!selected[key]) out[key] = []; });
+    const out = { ...b } as unknown as Record<string, unknown[]>;
+    KINDS.forEach(({ key }) => {
+      out[key] = selected[key] ? (out[key] ?? []).map((r) => normalize(key, r)) : [];
+    });
     return out as unknown as ProjectBundle;
   };
 
