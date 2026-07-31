@@ -32,6 +32,7 @@ import type {
 import { localStorageAdapter, type StorageAdapter } from "./storage-adapter";
 import type { PackModule, PackModuleData, PackModuleKind } from "./packs/types";
 import { newPackModule } from "./packs/factories";
+import { makeDancerCareer } from "./careers/dancer";
 
 const STATE_KEY = "state";
 const SCHEMA_VERSION: AppState["version"] = 2;
@@ -233,7 +234,9 @@ export function makeDemoContent(projectId: ID) {
     },
   ];
 
-  return { careers: [career], traits: [trait], aspirations: [aspiration], notifications };
+  const dancer = makeDancerCareer({ projectId, uid, stamp });
+
+  return { careers: [career, dancer], traits: [trait], aspirations: [aspiration], notifications };
 }
 
 /**
@@ -248,7 +251,7 @@ export function backfillDemoContent(state: AppState): AppState {
     state.traits.some((t) => t.projectId === demo.id) ||
     state.aspirations.some((a) => a.projectId === demo.id) ||
     state.notifications.some((n) => n.projectId === demo.id);
-  if (hasContent) return state;
+  if (hasContent) return backfillDancerCareer(state, demo.id);
 
   const seed = makeDemoContent(demo.id);
   return {
@@ -268,6 +271,24 @@ export function backfillDemoContent(state: AppState): AppState {
     traits: [...state.traits, ...seed.traits],
     aspirations: [...state.aspirations, ...seed.aspirations],
     notifications: [...state.notifications, ...seed.notifications],
+  };
+}
+
+/** Existing demo projects predate the Dancer career — add it once. */
+function backfillDancerCareer(state: AppState, demoId: ID): AppState {
+  const exists = state.careers.some(
+    (c) => c.projectId === demoId && c.internalId === "dancer",
+  );
+  if (exists) return state;
+  const dancer = makeDancerCareer({ projectId: demoId, uid, stamp: now() });
+  return {
+    ...state,
+    projects: state.projects.map((p) =>
+      p.id === demoId
+        ? { ...p, careerIds: [...(p.careerIds ?? []), dancer.id] }
+        : p,
+    ),
+    careers: [...state.careers, dancer],
   };
 }
 
