@@ -251,7 +251,7 @@ export function backfillDemoContent(state: AppState): AppState {
     state.traits.some((t) => t.projectId === demo.id) ||
     state.aspirations.some((a) => a.projectId === demo.id) ||
     state.notifications.some((n) => n.projectId === demo.id);
-  if (hasContent) return state;
+  if (hasContent) return backfillDancerCareer(state, demo.id);
 
   const seed = makeDemoContent(demo.id);
   return {
