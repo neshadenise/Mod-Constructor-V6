@@ -234,7 +234,9 @@ export function makeDemoContent(projectId: ID) {
     },
   ];
 
-  return { careers: [career], traits: [trait], aspirations: [aspiration], notifications };
+  const dancer = makeDancerCareer({ projectId, uid, stamp });
+
+  return { careers: [career, dancer], traits: [trait], aspirations: [aspiration], notifications };
 }
 
 /**
