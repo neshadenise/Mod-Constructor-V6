@@ -29,6 +29,8 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
+import { useAppNavigation } from "@/lib/navigation";
+import { setBuilderSeed } from "@/lib/builder-seed";
 import {
   BUILT_IN_TEMPLATES,
   BUILT_IN_UPDATED_AT,
@@ -80,6 +82,7 @@ const now = () => Date.now();
 
 export function TemplatesGallery() {
   const store = useStore();
+  const { navigate } = useAppNavigation();
   const { state } = store;
   const activeProjectId = state.activeProjectId;
 
@@ -162,25 +165,33 @@ export function TemplatesGallery() {
         case "Career": {
           const p = t.payload as CareerPayload;
           const rec = store.createCareer({ ...p, projectId: activeProjectId, name: p.name });
-          toast.success(`Added career "${rec.name}" to project`);
+          setBuilderSeed("career", p, rec.id);
+          navigate("career");
+          toast.success(`Opened "${rec.name}" in the Career Builder`);
           break;
         }
         case "Trait": {
           const p = t.payload as TraitPayload;
           const rec = store.createTrait({ ...p, projectId: activeProjectId, name: p.name });
-          toast.success(`Added trait "${rec.name}" to project`);
+          setBuilderSeed("trait", p, rec.id);
+          navigate("trait");
+          toast.success(`Opened "${rec.name}" in the Trait Builder`);
           break;
         }
         case "Aspiration": {
           const p = t.payload as AspirationPayload;
           const rec = store.createAspiration({ ...p, projectId: activeProjectId, name: p.name });
-          toast.success(`Added aspiration "${rec.name}" to project`);
+          setBuilderSeed("aspiration", p, rec.id);
+          navigate("aspiration");
+          toast.success(`Opened "${rec.name}" in the Aspiration Builder`);
           break;
         }
         case "Notification": {
           const p = t.payload as NotificationPayload;
           const rec = store.createNotificationTemplate({ ...p, projectId: activeProjectId, name: p.name });
-          toast.success(`Added notification "${rec.name}" to project`);
+          setBuilderSeed("notification", p, rec.id);
+          navigate("notifications");
+          toast.success(`Opened "${rec.name}" in the Notification Library`);
           break;
         }
       }
