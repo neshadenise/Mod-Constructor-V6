@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ID } from "@/lib/types";
+import { useBuilderSeed } from "@/lib/builder-seed";
+import type {
+  CareerPayload,
+  TraitPayload,
+  AspirationPayload,
+} from "@/lib/builtin-templates";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -740,6 +746,73 @@ const INITIAL_BRANCHES: Branch[] = [
   },
 ];
 
+/* --- template payload → builder state mapping --- */
+
+const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const BRANCH_COLORS: Branch["color"][] = ["blue", "violet", "teal", "green", "orange"];
+const BRANCH_EMOJI = ["💼", "✨", "🎯", "🌟", "🔥"];
+
+function parseHour(t?: string): { h: number; m: number } {
+  const [h, m] = String(t ?? "09:00").split(":");
+  return { h: Number(h) || 0, m: Number(m) || 0 };
+}
+
+function careerPayloadToBranches(p: CareerPayload): Branch[] {
+  return (p.branches ?? []).map((b, bi) => ({
+    id: b.id || `b_${bi}`,
+    name: b.name,
+    description: b.description ?? "",
+    icon: "",
+    color: BRANCH_COLORS[bi % BRANCH_COLORS.length],
+    emoji: BRANCH_EMOJI[bi % BRANCH_EMOJI.length],
+    ranks: (b.levels ?? []).map((l, li) => {
+      const start = parseHour(l.workStart);
+      const end = parseHour(l.workEnd);
+      const duration = ((end.h - start.h + 24) % 24) || 8;
+      const workDays = (l.workDays ?? []) as string[];
+      const days = DAY_KEYS.map((d) => workDays.includes(d));
+      return {
+        ...mkRank(l.rank ?? li + 1, l.title, l.salary ?? 0),
+        description: (l.objectives ?? []).join(" · ") || "—",
+        beginHour: start.h,
+        beginMinute: start.m,
+        durationHours: duration,
+        days: days.some(Boolean) ? days : [false, true, true, true, true, true, false],
+        promotionReward: (l.perks ?? [])[0] ?? "",
+      } as Rank;
+    }),
+    assignments: (p.workFromHomeEvents ?? []).map((e, ei) => ({
+      id: e.id || `wfh_${ei}`,
+      name: e.name,
+      levelMin: 1,
+      levelMax: (b.levels ?? []).length || 10,
+      weight: e.weight ?? 1,
+      isFirst: ei === 0,
+      conditions: (e.outcomes ?? []).join(" / "),
+    })),
+    events: [],
+    children: [],
+  }));
+}
+
+const AGE_GATE_TO_CAREER: Record<string, Age> = {
+  child: "Child",
+  teen: "Teen",
+  "young-adult": "YoungAdult",
+  adult: "Adult",
+  elder: "Elder",
+};
+
+const AGE_GATE_TO_TRAIT: Record<string, AgeId> = {
+  infant: "infant",
+  toddler: "toddler",
+  child: "child",
+  teen: "teen",
+  "young-adult": "youngAdult",
+  adult: "adult",
+  elder: "elder",
+};
+
 /* --- small helpers used by builder --- */
 
 function NumField({
@@ -892,6 +965,42 @@ function CareerBuilder() {
   const [tab, setTab] = useState<
     "identity" | "levels" | "assignments" | "events" | "messages" | "advanced"
   >("identity");
+
+  // Hydrate the builder when a template is opened here.
+  useBuilderSeed<CareerPayload>("career", (p) => {
+    setName(p.name);
+    setDescription(p.description ?? "");
+    setCareerType(p.careerType === "freelance" ? "PartTime" : "FullTime");
+    setCategory(p.careerType === "active" ? "Active" : "Technical");
+    setAges({
+      Child: false,
+      Teen: false,
+      YoungAdult: false,
+      Adult: false,
+      Elder: false,
+      ...Object.fromEntries(
+        (p.ageGates ?? [])
+          .map((g) => AGE_GATE_TO_CAREER[g])
+          .filter(Boolean)
+          .map((a) => [a, true]),
+      ),
+    } as Record<Age, boolean>);
+    const next = careerPayloadToBranches(p);
+    setBranches(next.length ? next : INITIAL_BRANCHES);
+    setBranchId((next.length ? next : INITIAL_BRANCHES)[0].id);
+    setMessages(
+      Object.fromEntries(
+        MESSAGE_KEYS.map((k) => {
+          const found = (p.messageOverrides ?? []).find(
+            (m: { key?: string; text?: string }) => m.key === k,
+          );
+          return [k, { enabled: !!found, text: found?.text ?? "" }];
+        }),
+      ) as Record<string, { enabled: boolean; text: string }>,
+    );
+    setTab("identity");
+  });
+
 
   const updateBranch = (id: string, patch: Partial<Branch>) =>
     setBranches((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
@@ -1862,6 +1971,54 @@ function TraitBuilder() {
   const [blacklist, setBlacklist] = useState(["Insomniac", "Hot-Headed"]);
   const [whitelist, setWhitelist] = useState<string[]>([]);
 
+  // Hydrate the builder when a template is opened here.
+  useBuilderSeed<TraitPayload>("trait", (p) => {
+    setName(p.name);
+    setDescription(p.description ?? "");
+    setTraitType(
+      p.category === "personality"
+        ? "Personality"
+        : p.category === "bonus"
+          ? "Aspiration"
+          : "Gameplay",
+    );
+    setCategory("Emotional");
+    setAges({
+      infant: false, toddler: false, child: false, teen: false,
+      youngAdult: false, adult: false, elder: false,
+      ...Object.fromEntries(
+        (p.ageGates ?? [])
+          .map((g) => AGE_GATE_TO_TRAIT[g])
+          .filter(Boolean)
+          .map((a) => [a, true]),
+      ),
+    } as Record<AgeId, boolean>);
+    const nextBuffs: TraitBuff[] = (p.buffs ?? []).map((b, i) => {
+      const emo = String(b.emotion ?? "fine");
+      const label = (emo.charAt(0).toUpperCase() + emo.slice(1)) as EmotionV5;
+      return {
+        id: b.id || `b${i + 1}`,
+        name: b.name,
+        description: b.description ?? "",
+        emotion: EMOTIONS_V5.includes(label) ? label : "Fine",
+        weight: b.weight ?? 1,
+        duration: (b.durationHours ?? 0) >= 1000 ? "Permanent" : `${b.durationHours ?? 1}h`,
+        hasEmotion: true,
+        color: "violet",
+        icon: "",
+      };
+    });
+    setBuffs(nextBuffs);
+    setSelectedBuffId(nextBuffs[0]?.id ?? "");
+    setCommodities(
+      (p.commodityWeights ?? []).map((c) => ({ commodity: c.commodity, weight: c.weight })),
+    );
+    setSocialInteractions((p.socialInteractions ?? []).map((s) => String(s)));
+    setTraitOrigin(p.description ?? "");
+    setTab("identity");
+  });
+
+
   const previewData: TraitPreviewData = {
     name,
     description,
@@ -2526,6 +2683,24 @@ function AspirationBuilder() {
     { t: "III", title: "Named Explorer", goals: ["Discover secret area", "Level Fitness to 6"], done: false },
     { t: "IV", title: "Legendary Trailblazer", goals: ["Complete 3 expeditions"], done: false },
   ]);
+
+  const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+
+  // Hydrate the builder when a template is opened here.
+  useBuilderSeed<AspirationPayload>("aspiration", (p) => {
+    setName(p.name);
+    setCategory(p.category ?? "Adventure");
+    setDescription(p.description ?? "");
+    setTiers(
+      (p.milestones ?? []).map((m, i) => ({
+        t: ROMAN[i] ?? String(i + 1),
+        title: m.name,
+        goals: (m.objectives ?? []).map((o) => String(o)),
+        done: false,
+      })),
+    );
+  });
+
 
   const previewData: AspirationPreviewData = {
     name,

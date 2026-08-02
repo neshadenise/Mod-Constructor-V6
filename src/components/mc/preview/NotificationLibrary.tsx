@@ -4,6 +4,7 @@ import { NotificationPopup, type NotificationKind } from "./GameUI";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
+import { useBuilderSeed } from "@/lib/builder-seed";
 import type { NotificationTemplate } from "@/lib/types";
 
 type DefaultSample = {
@@ -51,6 +52,13 @@ export function NotificationLibrary() {
   const [copied, setCopied] = useState<string | null>(null);
   const [editing, setEditing] = useState<NotificationTemplate | null>(null);
   const [creating, setCreating] = useState(false);
+
+  // Open a freshly scaffolded template straight from the Templates gallery.
+  useBuilderSeed<unknown>("notification", (_payload, recordId) => {
+    setTab("project");
+    const rec = store.state.notifications.find((n) => n.id === recordId);
+    if (rec) setEditing(rec);
+  });
 
   const filteredDefaults = DEFAULTS.filter(
     (s) =>
