@@ -966,6 +966,42 @@ function CareerBuilder() {
     "identity" | "levels" | "assignments" | "events" | "messages" | "advanced"
   >("identity");
 
+  // Hydrate the builder when a template is opened here.
+  useBuilderSeed<CareerPayload>("career", (p) => {
+    setName(p.name);
+    setDescription(p.description ?? "");
+    setCareerType(p.careerType === "freelance" ? "PartTime" : "FullTime");
+    setCategory(p.careerType === "active" ? "Active" : "Technical");
+    setAges({
+      Child: false,
+      Teen: false,
+      YoungAdult: false,
+      Adult: false,
+      Elder: false,
+      ...Object.fromEntries(
+        (p.ageGates ?? [])
+          .map((g) => AGE_GATE_TO_CAREER[g])
+          .filter(Boolean)
+          .map((a) => [a, true]),
+      ),
+    } as Record<Age, boolean>);
+    const next = careerPayloadToBranches(p);
+    setBranches(next.length ? next : INITIAL_BRANCHES);
+    setBranchId((next.length ? next : INITIAL_BRANCHES)[0].id);
+    setMessages(
+      Object.fromEntries(
+        MESSAGE_KEYS.map((k) => {
+          const found = (p.messageOverrides ?? []).find(
+            (m: { key?: string; text?: string }) => m.key === k,
+          );
+          return [k, { enabled: !!found, text: found?.text ?? "" }];
+        }),
+      ) as Record<string, { enabled: boolean; text: string }>,
+    );
+    setTab("identity");
+  });
+
+
   const updateBranch = (id: string, patch: Partial<Branch>) =>
     setBranches((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
 
