@@ -2684,6 +2684,24 @@ function AspirationBuilder() {
     { t: "IV", title: "Legendary Trailblazer", goals: ["Complete 3 expeditions"], done: false },
   ]);
 
+  const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+
+  // Hydrate the builder when a template is opened here.
+  useBuilderSeed<AspirationPayload>("aspiration", (p) => {
+    setName(p.name);
+    setCategory(p.category ?? "Adventure");
+    setDescription(p.description ?? "");
+    setTiers(
+      (p.milestones ?? []).map((m, i) => ({
+        t: ROMAN[i] ?? String(i + 1),
+        title: m.name,
+        goals: (m.objectives ?? []).map((o) => String(o)),
+        done: false,
+      })),
+    );
+  });
+
+
   const previewData: AspirationPreviewData = {
     name,
     category,
