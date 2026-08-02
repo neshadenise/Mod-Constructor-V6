@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ID } from "@/lib/types";
+import { useBuilderSeed } from "@/lib/builder-seed";
+import type {
+  CareerPayload,
+  TraitPayload,
+  AspirationPayload,
+} from "@/lib/builtin-templates";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
