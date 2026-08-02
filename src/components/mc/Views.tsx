@@ -769,7 +769,8 @@ function careerPayloadToBranches(p: CareerPayload): Branch[] {
       const start = parseHour(l.workStart);
       const end = parseHour(l.workEnd);
       const duration = ((end.h - start.h + 24) % 24) || 8;
-      const days = DAY_KEYS.map((d) => (l.workDays ?? []).includes(d));
+      const workDays = (l.workDays ?? []) as string[];
+      const days = DAY_KEYS.map((d) => workDays.includes(d));
       return {
         ...mkRank(l.rank ?? li + 1, l.title, l.salary ?? 0),
         description: (l.objectives ?? []).join(" · ") || "—",
