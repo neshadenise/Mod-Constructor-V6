@@ -740,6 +740,72 @@ const INITIAL_BRANCHES: Branch[] = [
   },
 ];
 
+/* --- template payload → builder state mapping --- */
+
+const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const BRANCH_COLORS: Branch["color"][] = ["blue", "violet", "teal", "green", "orange"];
+const BRANCH_EMOJI = ["💼", "✨", "🎯", "🌟", "🔥"];
+
+function parseHour(t?: string): { h: number; m: number } {
+  const [h, m] = String(t ?? "09:00").split(":");
+  return { h: Number(h) || 0, m: Number(m) || 0 };
+}
+
+function careerPayloadToBranches(p: CareerPayload): Branch[] {
+  return (p.branches ?? []).map((b, bi) => ({
+    id: b.id || `b_${bi}`,
+    name: b.name,
+    description: b.description ?? "",
+    icon: "",
+    color: BRANCH_COLORS[bi % BRANCH_COLORS.length],
+    emoji: BRANCH_EMOJI[bi % BRANCH_EMOJI.length],
+    ranks: (b.levels ?? []).map((l, li) => {
+      const start = parseHour(l.workStart);
+      const end = parseHour(l.workEnd);
+      const duration = ((end.h - start.h + 24) % 24) || 8;
+      const days = DAY_KEYS.map((d) => (l.workDays ?? []).includes(d));
+      return {
+        ...mkRank(l.rank ?? li + 1, l.title, l.salary ?? 0),
+        description: (l.objectives ?? []).join(" · ") || "—",
+        beginHour: start.h,
+        beginMinute: start.m,
+        durationHours: duration,
+        days: days.some(Boolean) ? days : [false, true, true, true, true, true, false],
+        promotionReward: (l.perks ?? [])[0] ?? "",
+      } as Rank;
+    }),
+    assignments: (p.workFromHomeEvents ?? []).map((e, ei) => ({
+      id: e.id || `wfh_${ei}`,
+      name: e.name,
+      levelMin: 1,
+      levelMax: (b.levels ?? []).length || 10,
+      weight: e.weight ?? 1,
+      isFirst: ei === 0,
+      conditions: (e.outcomes ?? []).join(" / "),
+    })),
+    events: [],
+    children: [],
+  }));
+}
+
+const AGE_GATE_TO_CAREER: Record<string, Age> = {
+  child: "Child",
+  teen: "Teen",
+  "young-adult": "YoungAdult",
+  adult: "Adult",
+  elder: "Elder",
+};
+
+const AGE_GATE_TO_TRAIT: Record<string, AgeId> = {
+  infant: "infant",
+  toddler: "toddler",
+  child: "child",
+  teen: "teen",
+  "young-adult": "youngAdult",
+  adult: "adult",
+  elder: "elder",
+};
+
 /* --- small helpers used by builder --- */
 
 function NumField({
