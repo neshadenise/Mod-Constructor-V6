@@ -1971,6 +1971,54 @@ function TraitBuilder() {
   const [blacklist, setBlacklist] = useState(["Insomniac", "Hot-Headed"]);
   const [whitelist, setWhitelist] = useState<string[]>([]);
 
+  // Hydrate the builder when a template is opened here.
+  useBuilderSeed<TraitPayload>("trait", (p) => {
+    setName(p.name);
+    setDescription(p.description ?? "");
+    setTraitType(
+      p.category === "personality"
+        ? "Personality"
+        : p.category === "bonus"
+          ? "Aspiration"
+          : "Gameplay",
+    );
+    setCategory("Emotional");
+    setAges({
+      infant: false, toddler: false, child: false, teen: false,
+      youngAdult: false, adult: false, elder: false,
+      ...Object.fromEntries(
+        (p.ageGates ?? [])
+          .map((g) => AGE_GATE_TO_TRAIT[g])
+          .filter(Boolean)
+          .map((a) => [a, true]),
+      ),
+    } as Record<AgeId, boolean>);
+    const nextBuffs: TraitBuff[] = (p.buffs ?? []).map((b, i) => {
+      const emo = String(b.emotion ?? "fine");
+      const label = (emo.charAt(0).toUpperCase() + emo.slice(1)) as EmotionV5;
+      return {
+        id: b.id || `b${i + 1}`,
+        name: b.name,
+        description: b.description ?? "",
+        emotion: EMOTIONS_V5.includes(label) ? label : "Fine",
+        weight: b.weight ?? 1,
+        duration: (b.durationHours ?? 0) >= 1000 ? "Permanent" : `${b.durationHours ?? 1}h`,
+        hasEmotion: true,
+        color: "violet",
+        icon: "",
+      };
+    });
+    setBuffs(nextBuffs);
+    setSelectedBuffId(nextBuffs[0]?.id ?? "");
+    setCommodities(
+      (p.commodityWeights ?? []).map((c) => ({ commodity: c.commodity, weight: c.weight })),
+    );
+    setSocialInteractions((p.socialInteractions ?? []).map((s) => String(s)));
+    setTraitOrigin(p.description ?? "");
+    setTab("identity");
+  });
+
+
   const previewData: TraitPreviewData = {
     name,
     description,
