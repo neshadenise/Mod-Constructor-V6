@@ -82,9 +82,28 @@ export function TabsProvider({
   }, [tabs, active, hydrated]);
 
   const open = useCallback((id: SectionId) => {
-    setTabs((prev) => (prev.some((t) => t.id === id) ? prev : [...prev, { id, title: SECTION_LABEL[id] }]));
+    setTabs((prev) => {
+      if (prev.some((t) => t.id === id)) return prev;
+      const cur = activeRef.current;
+      const curIdx = prev.findIndex((t) => t.id === cur);
+      const curTab = prev[curIdx];
+      // Transient behaviour: an unpinned active tab is replaced, not stacked.
+      if (curTab && !curTab.pinned) {
+        const next = [...prev];
+        next[curIdx] = { id, title: SECTION_LABEL[id] };
+        return next;
+      }
+      return [...prev, { id, title: SECTION_LABEL[id] }];
+    });
     setActive(id);
   }, []);
+
+  const togglePin = useCallback((id: SectionId) => {
+    setTabs((prev) =>
+      prev.map((t) => (t.id === id && t.id !== "dashboard" ? { ...t, pinned: !t.pinned } : t)),
+    );
+  }, []);
+
 
   const close = useCallback((id: SectionId) => {
     setTabs((prev) => {
