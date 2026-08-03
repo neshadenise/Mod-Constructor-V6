@@ -1902,7 +1902,7 @@ const VOICE_EFFECTS = ["None", "Robotic", "Ghost", "Alien", "Muffled", "Underwat
  */
 type BuffRuleRow = {
   id: string;
-  trigger: BuffTrigger;
+  trigger: import("@/lib/types").BuffTrigger;
   condition: string;
   chance: number;
   cooldownHours: number;
@@ -2042,6 +2042,14 @@ function TraitBuilder() {
         hasEmotion: true,
         color: "violet",
         icon: "",
+        rules: (b.rules ?? []).map((r, ri) => ({
+          id: r.id || `r${ri + 1}`,
+          trigger: r.trigger,
+          condition: r.condition ?? "",
+          chance: r.chance ?? 100,
+          cooldownHours: r.cooldownHours ?? 0,
+        })),
+
       };
     });
     setBuffs(nextBuffs);
