@@ -96,7 +96,17 @@ export function TabStrip() {
             className="fixed z-50 min-w-40 rounded-md border border-border bg-popover p-1 text-xs shadow-lg"
             style={{ left: menu.x, top: menu.y }}
           >
+            {menu.id !== "dashboard" && (
+              <MenuItem
+                label={menuTab?.pinned ? "Unpin tab" : "Pin tab"}
+                onClick={() => {
+                  togglePin(menu.id as never);
+                  setMenu(null);
+                }}
+              />
+            )}
             <MenuItem
+
               label="Close tab"
               onClick={() => {
                 close(menu.id as never);
