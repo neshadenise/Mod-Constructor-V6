@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -12,7 +13,11 @@ import { SECTION_LABEL, type SectionId } from "@/components/mc/sections";
 export type WorkTab = {
   id: SectionId;
   title: string;
-  /** Pinned tabs cannot be closed (Dashboard by default). */
+  /**
+   * Pinned tabs stick around. Unpinned tabs are transient: opening a new
+   * section replaces the current unpinned tab instead of stacking up.
+   * Dashboard is always pinned.
+   */
   pinned?: boolean;
 };
 
@@ -25,11 +30,13 @@ type TabsCtx = {
   closeAll: () => void;
   cycle: (dir: 1 | -1) => void;
   move: (from: number, to: number) => void;
+  togglePin: (id: SectionId) => void;
 };
 
 const Ctx = createContext<TabsCtx | null>(null);
 const KEY = "mc.tabs.v1";
 const DEFAULT: WorkTab[] = [{ id: "dashboard", title: SECTION_LABEL.dashboard, pinned: true }];
+
 
 export function TabsProvider({
   children,
