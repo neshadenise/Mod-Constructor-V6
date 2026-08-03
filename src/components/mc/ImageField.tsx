@@ -11,12 +11,13 @@
  * else in the codebase still reads a plain string.
  */
 import { useState } from "react";
-import { Image as ImageIcon, Sparkles } from "lucide-react";
+import { Image as ImageIcon, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { IconPicker } from "./icons/IconPicker";
 import { IconArt } from "./icons/IconArt";
 import { findBuiltin, type IconRef } from "@/lib/icon-library";
+import { findCustomIcon } from "@/lib/custom-icons";
 
 export interface ImageFieldProps {
   label: string;
@@ -31,6 +32,7 @@ export interface ImageFieldProps {
 function parseRef(v: string): IconRef | null {
   if (!v) return null;
   if (v.startsWith("def:")) return { kind: "builtin", id: v.slice(4) };
+  if (v.startsWith("gen:")) return { kind: "generated", id: v.slice(4) };
   if (v.startsWith("proj:")) return { kind: "project", id: v.slice(5) };
   if (v.startsWith("upload:")) return { kind: "project", id: v.slice(7) };
   return null;
@@ -38,13 +40,29 @@ function parseRef(v: string): IconRef | null {
 
 function serialize(ref: IconRef): string {
   if (ref.kind === "builtin") return `def:${ref.id}`;
+  if (ref.kind === "generated") return `gen:${ref.id}`;
   return `proj:${ref.id}`;
 }
 
-export function ImageField({ label, value, onChange, hint, slot = "image" }: ImageFieldProps) {
+export function ImageField({
+  label,
+  value,
+  onChange,
+  hint,
+  slot = "image",
+  context,
+}: ImageFieldProps) {
   const [open, setOpen] = useState(false);
+  const [aiTab, setAiTab] = useState(false);
   const ref = parseRef(value);
   const builtin = ref?.kind === "builtin" ? findBuiltin(ref.id) : undefined;
+  const custom = ref?.kind === "generated" ? findCustomIcon(ref.id) : undefined;
+  const hasArt = Boolean(builtin || custom);
+
+  const openPicker = (ai: boolean) => {
+    setAiTab(ai);
+    setOpen(true);
+  };
 
   return (
     <div>
@@ -57,7 +75,9 @@ export function ImageField({ label, value, onChange, hint, slot = "image" }: Ima
             "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-card",
           )}
         >
-          {builtin ? (
+          {custom ? (
+            <img src={custom.dataUrl} alt={custom.name} className="h-full w-full object-contain" />
+          ) : builtin ? (
             <IconArt icon={builtin} size={40} />
           ) : (
             <ImageIcon className="h-4 w-4 text-muted-foreground" />
@@ -65,7 +85,7 @@ export function ImageField({ label, value, onChange, hint, slot = "image" }: Ima
         </div>
         <div className="min-w-0 flex-1 text-[11px] text-muted-foreground">
           <div className="truncate font-medium text-foreground">
-            {builtin ? builtin.name : value || "No icon selected"}
+            {custom?.name ?? builtin?.name ?? value ?? "No icon selected"}
           </div>
           {hint && <div className="truncate text-[10px]">{hint}</div>}
           {builtin && (
@@ -73,15 +93,28 @@ export function ImageField({ label, value, onChange, hint, slot = "image" }: Ima
               Default Library · <span className="font-mono">{builtin.id}</span>
             </div>
           )}
+          {custom && (
+            <div className="text-[10px] text-muted-foreground">
+              {custom.source === "ai" ? "AI generated" : "Uploaded"} · My Icons
+            </div>
+          )}
         </div>
         <button
-          onClick={() => setOpen(true)}
+          onClick={() => openPicker(true)}
+          title="Generate this icon with AI"
+          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--teal)]/40 bg-[var(--teal)]/10 px-2.5 py-1.5 text-[11px] font-semibold text-[var(--teal)] hover:bg-[var(--teal)]/20"
+        >
+          <Wand2 className="h-3 w-3" />
+          AI
+        </button>
+        <button
+          onClick={() => openPicker(false)}
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-[11px] font-semibold hover:bg-accent"
         >
           <Sparkles className="h-3 w-3 text-[var(--teal)]" />
-          {builtin || value ? "Change" : "Choose icon"}
+          {hasArt || value ? "Change" : "Choose icon"}
         </button>
-        {(builtin || value) && (
+        {(hasArt || value) && (
           <button
             onClick={() => {
               onChange("");
@@ -98,9 +131,12 @@ export function ImageField({ label, value, onChange, hint, slot = "image" }: Ima
         open={open}
         onClose={() => setOpen(false)}
         value={ref ?? undefined}
+        initialTab={aiTab ? "ai" : "library"}
+        suggestion={context?.subject}
         title={`Choose ${slot === "icon" ? "icon" : "image"} for ${label}`}
         onPick={(next) => onChange(serialize(next))}
       />
     </div>
   );
 }
+

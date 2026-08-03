@@ -22,6 +22,9 @@ import {
   FolderOpen,
   Layers,
   Sparkles,
+  Wand2,
+  Loader2,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -34,9 +37,17 @@ import {
   type IconCategory,
   type IconRef,
 } from "@/lib/icon-library";
+import {
+  addCustomIcon,
+  findCustomIcon,
+  removeCustomIcon,
+  toIconAsset,
+  useCustomIcons,
+} from "@/lib/custom-icons";
+import { cropToAspect, generateArt, iconPrompt } from "@/lib/ai-art";
 import { IconArt } from "./IconArt";
 
-type Tab = "library" | "assets" | "upload";
+type Tab = "library" | "ai" | "assets" | "upload";
 
 const CATS: (IconCategory | "all")[] = [
   "all",
@@ -51,34 +62,57 @@ const CATS: (IconCategory | "all")[] = [
   "notifications",
 ];
 
+
 export function IconPicker({
   open,
   onClose,
   onPick,
   value,
   title = "Choose Icon",
+  initialTab = "library",
+  suggestion,
 }: {
   open: boolean;
   onClose: () => void;
   onPick: (ref: IconRef, resolved: { name: string }) => void;
   value?: IconRef;
   title?: string;
+  /** Open straight onto a tab (used by the "AI icon" buttons). */
+  initialTab?: Tab;
+  /** Prefilled AI subject, e.g. the career name. */
+  suggestion?: string;
 }) {
-  const [tab, setTab] = useState<Tab>("library");
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState<IconCategory | "all">("all");
   const [favs, setFavs] = useState<string[]>(() => iconLibraryState.getFavorites());
   const [recent, setRecent] = useState<string[]>(() => iconLibraryState.getRecent());
-  const [selected, setSelected] = useState<IconAsset | null>(
-    value?.kind === "builtin" ? findBuiltin(value.id) ?? null : null,
-  );
+  const custom = useCustomIcons();
+  const [selected, setSelected] = useState<IconAsset | null>(null);
+
+  // AI generator state
+  const [aiSubject, setAiSubject] = useState(suggestion ?? "");
+  const [aiCategory, setAiCategory] = useState<IconCategory>("careers");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiPreview, setAiPreview] = useState<string | null>(null);
+
+  const resolveRef = (v?: IconRef): IconAsset | null => {
+    if (!v) return null;
+    if (v.kind === "builtin") return findBuiltin(v.id) ?? null;
+    const c = findCustomIcon(v.id);
+    return c ? toIconAsset(c) : null;
+  };
 
   useEffect(() => {
     if (!open) return;
-    setSelected(value?.kind === "builtin" ? findBuiltin(value.id) ?? null : null);
+    setTab(initialTab);
+    setAiSubject(suggestion ?? "");
+    setAiPreview(null);
+    setSelected(resolveRef(value));
     setFavs(iconLibraryState.getFavorites());
     setRecent(iconLibraryState.getRecent());
-  }, [open, value]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, value, initialTab, suggestion]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -110,10 +144,39 @@ export function IconPicker({
   const commit = (asset: IconAsset) => {
     iconLibraryState.pushRecent(asset.id);
     setRecent(iconLibraryState.getRecent());
-    onPick({ kind: "builtin", id: asset.id }, { name: asset.name });
+    onPick(
+      { kind: asset.kind === "builtin" ? "builtin" : "generated", id: asset.id },
+      { name: asset.name },
+    );
     toast.success(`Icon · ${asset.name}`);
     onClose();
   };
+
+  const runGenerate = async () => {
+    if (aiBusy) return;
+    setAiBusy(true);
+    setAiPreview(null);
+    try {
+      const dataUrl = await generateArt(iconPrompt(aiSubject));
+      setAiPreview(dataUrl);
+      const icon = addCustomIcon({
+        name: aiSubject.trim() || "AI Icon",
+        category: aiCategory,
+        dataUrl,
+        prompt: aiSubject,
+        source: "ai",
+      });
+      setSelected(toIconAsset(icon));
+      toast.success("Icon generated and added to your library");
+    } catch (err) {
+      toast.error("Couldn't generate that icon", {
+        description: err instanceof Error ? err.message : "Try a simpler subject.",
+      });
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70 backdrop-blur-sm">
@@ -137,8 +200,10 @@ export function IconPicker({
           {(
             [
               { id: "library", label: "Default Library", icon: Layers },
-              { id: "assets", label: "Project Assets", icon: FolderOpen },
+              { id: "ai", label: "Generate with AI", icon: Wand2 },
+              { id: "assets", label: "My Icons", icon: FolderOpen },
               { id: "upload", label: "Upload Image", icon: Upload },
+
             ] as const
           ).map((t) => {
             const Icon = t.icon;
@@ -395,22 +460,145 @@ export function IconPicker({
             </>
           )}
 
-          {tab === "assets" && (
-            <div className="flex flex-1 items-center justify-center p-10 text-center">
-              <div className="max-w-md">
-                <FolderOpen className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-                <div className="text-sm font-semibold">Project Assets</div>
-                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                  Icons you've copied from the Default Library or (later)
-                  generated via AI live here. They use the exact same
-                  metadata model as the Default Library, so they show up in
-                  every picker automatically. This preview build ships with
-                  no project assets yet — open <span className="font-semibold">Assets</span>{" "}
-                  in the sidebar to add one.
+          {tab === "ai" && (
+            <div className="flex flex-1 overflow-hidden">
+              <div className="w-[360px] shrink-0 space-y-3 overflow-y-auto border-r border-border bg-muted/20 p-4">
+                <div className="text-sm font-semibold">Generate a Sims-style icon</div>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  Describe the subject only — the studio applies the shared Sims 4
+                  aspiration/icon art style (glossy vector, soft glow, centered subject,
+                  no text) so every generated icon matches the pack.
                 </p>
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Subject
+                  </label>
+                  <input
+                    value={aiSubject}
+                    onChange={(e) => setAiSubject(e.target.value)}
+                    placeholder="e.g. ballet slippers, ring light, chef's knife"
+                    className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs outline-none focus:border-[var(--teal)]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Library category
+                  </label>
+                  <select
+                    value={aiCategory}
+                    onChange={(e) => setAiCategory(e.target.value as IconCategory)}
+                    className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs outline-none focus:border-[var(--teal)]"
+                  >
+                    {CATS.filter((c) => c !== "all").map((c) => (
+                      <option key={c} value={c}>
+                        {CATEGORY_LABEL[c as IconCategory]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={runGenerate}
+                  disabled={aiBusy}
+                  className="flex w-full items-center justify-center gap-2 rounded-md bg-[var(--teal)] px-3 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                >
+                  {aiBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+                  {aiBusy ? "Generating…" : "Generate icon"}
+                </button>
+                <div className="rounded-md border border-dashed border-border bg-background/60 p-3 text-[10.5px] text-muted-foreground">
+                  Generated icons are saved to <span className="font-semibold">My Icons</span>{" "}
+                  automatically and become available in every icon field.
+                </div>
+              </div>
+
+              <div className="flex flex-1 flex-col items-center justify-center p-8">
+                {aiBusy ? (
+                  <div className="flex flex-col items-center gap-3 text-xs text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin text-[var(--teal)]" />
+                    Painting your icon…
+                  </div>
+                ) : aiPreview ? (
+                  <>
+                    <img
+                      src={aiPreview}
+                      alt="Generated icon"
+                      className="h-56 w-56 rounded-2xl border border-border bg-background object-contain shadow-lg"
+                    />
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        onClick={() => selected && commit(selected)}
+                        className="rounded-md bg-[var(--teal)] px-3 py-2 text-xs font-semibold text-white hover:opacity-90"
+                      >
+                        Use this icon
+                      </button>
+                      <button
+                        onClick={runGenerate}
+                        className="rounded-md border border-border px-3 py-2 text-xs font-semibold hover:bg-accent"
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="max-w-sm text-center text-xs text-muted-foreground">
+                    <Wand2 className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+                    Your generated icon will appear here.
+                  </div>
+                )}
               </div>
             </div>
           )}
+
+          {tab === "assets" && (
+            <div className="flex-1 overflow-y-auto p-4">
+              {custom.length === 0 ? (
+                <div className="flex h-full items-center justify-center p-10 text-center">
+                  <div className="max-w-md">
+                    <FolderOpen className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+                    <div className="text-sm font-semibold">No custom icons yet</div>
+                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                      Use <span className="font-semibold">Generate with AI</span> or{" "}
+                      <span className="font-semibold">Upload Image</span> — everything you add
+                      lands here and is reusable in every icon field.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-3">
+                  {custom.map((c) => {
+                    const asset = toIconAsset(c);
+                    return (
+                      <div
+                        key={c.id}
+                        className="group relative flex flex-col items-center gap-1 rounded-lg border border-border p-2 hover:border-[var(--teal)]"
+                      >
+                        <button onClick={() => commit(asset)} className="w-full">
+                          <img
+                            src={c.dataUrl}
+                            alt={c.name}
+                            className="mx-auto h-16 w-16 rounded-md object-contain"
+                          />
+                          <div className="mt-1 line-clamp-1 text-center text-[10px] font-medium text-muted-foreground">
+                            {c.name}
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => {
+                            removeCustomIcon(c.id);
+                            toast.message(`Removed "${c.name}"`);
+                          }}
+                          aria-label={`Delete ${c.name}`}
+                          className="absolute right-1 top-1 rounded p-0.5 opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
+                        >
+                          <Trash2 className="h-3 w-3 text-muted-foreground" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
 
           {tab === "upload" && (
             <div className="flex flex-1 items-center justify-center p-10 text-center">
@@ -419,28 +607,33 @@ export function IconPicker({
                 <div className="text-sm font-semibold">Upload custom image</div>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                   Bring your own PNG (128×128 recommended, transparent
-                  background). In the desktop build this opens the OS file
-                  picker and copies the file into Project Assets.
+                  background). It's cropped square, saved to{" "}
+                  <span className="font-semibold">My Icons</span>, and reusable everywhere.
                 </p>
                 <button
                   onClick={() => {
                     const input = document.createElement("input");
                     input.type = "file";
                     input.accept = "image/*";
-                    input.onchange = () => {
+                    input.onchange = async () => {
                       const f = input.files?.[0];
                       if (!f) return;
-                      // Preview-only: we surface a filename ref. The real
-                      // engine wires this into the project assets store.
-                      onPick(
-                        { kind: "project", id: `upload_${Date.now()}_${f.name}` },
-                        { name: f.name },
-                      );
-                      toast.success(`Imported ${f.name}`);
-                      onClose();
+                      const dataUrl = await cropToAspect(f, 1, 256);
+                      if (!dataUrl) {
+                        toast.error("Couldn't read that image");
+                        return;
+                      }
+                      const icon = addCustomIcon({
+                        name: f.name.replace(/\.[^.]+$/, ""),
+                        category: "objects",
+                        dataUrl,
+                        source: "upload",
+                      });
+                      commit(toIconAsset(icon));
                     };
                     input.click();
                   }}
+
                   className="mt-4 rounded-md bg-[var(--teal)] px-3 py-2 text-xs font-semibold text-white hover:opacity-90"
                 >
                   Choose file…
