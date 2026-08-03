@@ -49,6 +49,9 @@ export function TabsProvider({
   const [tabs, setTabs] = useState<WorkTab[]>(DEFAULT);
   const [active, setActive] = useState<SectionId>("dashboard");
   const [hydrated, setHydrated] = useState(false);
+  const activeRef = useRef<SectionId>("dashboard");
+  activeRef.current = active;
+
 
   // Restore after mount so SSR and first client render match.
   useEffect(() => {
