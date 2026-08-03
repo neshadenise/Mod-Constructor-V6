@@ -168,11 +168,7 @@ export interface Trait {
 }
 
 export interface Buff {
-  id: ID;
-  name: string;
-  description: string;
-  emotion: EmotionalWeight;
-export interface Buff {
+
   id: ID;
   name: string;
   description: string;
@@ -234,7 +230,12 @@ export const BUFF_TRIGGER_LABEL: Record<BuffTrigger, string> = {
   "on-career-promotion": "On career promotion",
 };
 
+/* -------------------------- Aspiration ------------------------------- */
+
+export interface Aspiration {
+  id: ID;
   projectId: ID;
+
   name: string;
   internalId: string;
   description: string;
