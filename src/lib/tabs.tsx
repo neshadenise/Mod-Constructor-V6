@@ -108,7 +108,8 @@ export function TabsProvider({
   const close = useCallback((id: SectionId) => {
     setTabs((prev) => {
       const target = prev.find((t) => t.id === id);
-      if (!target || target.pinned) return prev;
+      if (!target || target.id === "dashboard") return prev;
+
       const idx = prev.findIndex((t) => t.id === id);
       const next = prev.filter((t) => t.id !== id);
       setActive((cur) => (cur === id ? (next[idx] ?? next[idx - 1] ?? next[0]).id : cur));
@@ -118,7 +119,7 @@ export function TabsProvider({
 
   const closeOthers = useCallback((id: SectionId) => {
     setTabs((prev) => {
-      const next = prev.filter((t) => t.id === id || t.pinned);
+      const next = prev.filter((t) => t.id === id || t.pinned || t.id === "dashboard");
       setActive(id);
       return next;
     });
@@ -154,7 +155,7 @@ export function TabsProvider({
   useEffect(() => {
     if (!allowed) return;
     setTabs((prev) => {
-      const next = prev.filter((t) => t.pinned || allowed(t.id));
+      const next = prev.filter((t) => t.id === "dashboard" || allowed(t.id));
       if (next.length === prev.length) return prev;
       setActive((cur) => (next.some((t) => t.id === cur) ? cur : next[0].id));
       return next.length ? next : DEFAULT;
