@@ -95,6 +95,12 @@ export interface Career {
   careerType: "standard" | "part-time" | "freelance" | "active" | "military";
   ageGates: AgeGate[];
   iconAssetId?: ID;
+  /**
+   * 16:9 career cover art shown on the "Select a Career" panel.
+   * Stored as a PNG data URL (uploaded + auto-cropped, or AI generated).
+   */
+  coverImage?: string;
+
   branches: CareerBranch[];
   messageOverrides: CareerMessage[];
   workFromHomeEvents: WFHEvent[];
@@ -166,15 +172,68 @@ export interface Buff {
   name: string;
   description: string;
   emotion: EmotionalWeight;
+export interface Buff {
+  id: ID;
+  name: string;
+  description: string;
+  emotion: EmotionalWeight;
   weight: number;
   durationHours: number;
   iconAssetId?: ID;
+  /** Why / when this moodlet is applied. Empty = always active with the trait. */
+  rules?: BuffRule[];
 }
 
-/* -------------------------- Aspiration ------------------------------- */
-
-export interface Aspiration {
+/**
+ * A buff rule answers "why and when does this moodlet appear?".
+ * `trigger` is the event that evaluates the rule, `condition` narrows it,
+ * and `cooldownHours` prevents re-firing.
+ */
+export interface BuffRule {
   id: ID;
+  trigger: BuffTrigger;
+  /** Free-text or preset condition, e.g. "Fun need below 30%". */
+  condition: string;
+  /** 0-100 chance the buff applies when the rule matches. */
+  chance: number;
+  cooldownHours: number;
+  /** Optional note surfaced in the tuning export. */
+  note?: string;
+}
+
+export type BuffTrigger =
+  | "always"
+  | "on-wake"
+  | "on-work-start"
+  | "on-work-end"
+  | "on-social"
+  | "on-skill-gain"
+  | "on-need-low"
+  | "on-need-full"
+  | "on-location"
+  | "on-weather"
+  | "on-time-of-day"
+  | "on-romance"
+  | "on-death-nearby"
+  | "on-career-promotion";
+
+export const BUFF_TRIGGER_LABEL: Record<BuffTrigger, string> = {
+  always: "Always while trait is active",
+  "on-wake": "When the Sim wakes up",
+  "on-work-start": "When the work shift starts",
+  "on-work-end": "When the work shift ends",
+  "on-social": "After a social interaction",
+  "on-skill-gain": "After gaining a skill level",
+  "on-need-low": "When a need drops low",
+  "on-need-full": "When a need is satisfied",
+  "on-location": "On entering a location type",
+  "on-weather": "On a weather change",
+  "on-time-of-day": "At a time of day",
+  "on-romance": "After a romantic interaction",
+  "on-death-nearby": "When a Sim nearby dies",
+  "on-career-promotion": "On career promotion",
+};
+
   projectId: ID;
   name: string;
   internalId: string;
