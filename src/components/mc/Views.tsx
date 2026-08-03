@@ -2260,7 +2260,7 @@ function TraitBuilder() {
                 const id = `b${Date.now()}`;
                 setBuffs((p) => [
                   ...p,
-                  { id, name: "New Buff", description: "", emotion: "Happy", weight: 1, duration: "2h", hasEmotion: true, color: "green", icon: "🙂" },
+                  { id, name: "New Buff", description: "", emotion: "Happy", weight: 1, duration: "2h", hasEmotion: true, color: "green", icon: "🙂", rules: [newRule()] },
                 ]);
                 setSelectedBuffId(id);
               }}
