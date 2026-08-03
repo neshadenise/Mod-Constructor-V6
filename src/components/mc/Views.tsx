@@ -71,6 +71,8 @@ import { TraitPreview, type TraitPreviewData } from "./preview/TraitPreview";
 import { AspirationPreview, type AspirationPreviewData } from "./preview/AspirationPreview";
 import { NotificationLibrary } from "./preview/NotificationLibrary";
 import { ImageField } from "./ImageField";
+import { CoverImageField } from "./CoverImageField";
+
 import {
   useAppHost,
   PROVIDER_LABEL,
@@ -929,6 +931,8 @@ function CareerBuilder() {
   const [careerType, setCareerType] = useState("FullTime");
   const [icon, setIcon] = useState("");
   const [image, setImage] = useState("");
+  const [coverImage, setCoverImage] = useState<string | undefined>(undefined);
+
   const [ages, setAges] = useState<Record<Age, boolean>>({
     Child: false, Teen: false, YoungAdult: true, Adult: true, Elder: true,
   });
