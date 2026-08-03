@@ -1969,9 +1969,10 @@ function TraitBuilder() {
   });
 
   const [buffs, setBuffs] = useState<TraitBuff[]>([
-    { id: "b1", name: "Well-Rested Focus", description: "Sharp after a good dream.", emotion: "Focused", weight: 2, duration: "6h", hasEmotion: true, color: "blue", icon: "🎯" },
-    { id: "b2", name: "Dream Recall", description: "Struck by a vivid memory.", emotion: "Inspired", weight: 1, duration: "3h", hasEmotion: true, color: "violet", icon: "💭" },
-    { id: "b3", name: "Foggy Morning", description: "Slow to shake the dream.", emotion: "Uncomfortable", weight: 1, duration: "2h", hasEmotion: true, color: "gray", icon: "🌫️" },
+    { id: "b1", name: "Well-Rested Focus", description: "Sharp after a good dream.", emotion: "Focused", weight: 2, duration: "6h", hasEmotion: true, color: "blue", icon: "🎯", rules: [{ id: "r1", trigger: "on-wake", condition: "Energy need above 70%", chance: 100, cooldownHours: 12 }] },
+    { id: "b2", name: "Dream Recall", description: "Struck by a vivid memory.", emotion: "Inspired", weight: 1, duration: "3h", hasEmotion: true, color: "violet", icon: "💭", rules: [{ id: "r2", trigger: "on-wake", condition: "Random chance after sleeping 6+ hours", chance: 35, cooldownHours: 24 }] },
+    { id: "b3", name: "Foggy Morning", description: "Slow to shake the dream.", emotion: "Uncomfortable", weight: 1, duration: "2h", hasEmotion: true, color: "gray", icon: "🌫️", rules: [{ id: "r3", trigger: "on-wake", condition: "Energy need below 40%", chance: 80, cooldownHours: 12 }] },
+
   ]);
   const [selectedBuffId, setSelectedBuffId] = useState<string>("b1");
   const selectedBuff = buffs.find((b) => b.id === selectedBuffId) ?? buffs[0];
