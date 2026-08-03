@@ -185,9 +185,10 @@ export function TabsProvider({
   }, [active, close, cycle, tabs]);
 
   const value = useMemo(
-    () => ({ tabs, active, open, close, closeOthers, closeAll, cycle, move }),
-    [tabs, active, open, close, closeOthers, closeAll, cycle, move],
+    () => ({ tabs, active, open, close, closeOthers, closeAll, cycle, move, togglePin }),
+    [tabs, active, open, close, closeOthers, closeAll, cycle, move, togglePin],
   );
+
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
