@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { X, Layers } from "lucide-react";
+import { X, Layers, Pin, PinOff } from "lucide-react";
 import { useTabs } from "@/lib/tabs";
 import { SECTION_LABEL } from "./sections";
 import { cn } from "@/lib/utils";
 
 export function TabStrip() {
-  const { tabs, active, open, close, closeOthers, closeAll } = useTabs();
+  const { tabs, active, open, close, closeOthers, closeAll, togglePin } = useTabs();
   const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const { move } = useTabs();
+  const menuTab = tabs.find((t) => t.id === menu?.id);
+
 
   return (
     <div className="sticky top-14 z-20 flex h-9 items-stretch border-b border-border bg-card/80 backdrop-blur">
