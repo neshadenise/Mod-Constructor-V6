@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { X, Layers } from "lucide-react";
+import { X, Layers, Pin, PinOff } from "lucide-react";
 import { useTabs } from "@/lib/tabs";
 import { SECTION_LABEL } from "./sections";
 import { cn } from "@/lib/utils";
 
 export function TabStrip() {
-  const { tabs, active, open, close, closeOthers, closeAll } = useTabs();
+  const { tabs, active, open, close, closeOthers, closeAll, togglePin } = useTabs();
   const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const { move } = useTabs();
+  const menuTab = tabs.find((t) => t.id === menu?.id);
+
 
   return (
     <div className="sticky top-14 z-20 flex h-9 items-stretch border-b border-border bg-card/80 backdrop-blur">
@@ -35,20 +37,36 @@ export function TabStrip() {
                   ? "bg-background font-semibold text-foreground"
                   : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
               )}
-              title={`${SECTION_LABEL[t.id]}${i < 9 ? ` · Ctrl+${i + 1}` : ""}`}
+              title={`${SECTION_LABEL[t.id]}${t.pinned ? " · pinned" : " · preview tab (pin to keep)"}${i < 9 ? ` · Ctrl+${i + 1}` : ""}`}
             >
               {isActive && <span className="absolute inset-x-0 top-0 h-0.5 bg-[var(--teal)]" />}
+              {t.pinned && <Pin className="h-2.5 w-2.5 shrink-0 text-[var(--teal)]" />}
               <button
                 type="button"
                 onClick={() => open(t.id)}
+                onDoubleClick={() => togglePin(t.id)}
                 onAuxClick={(e) => {
                   if (e.button === 1) close(t.id);
                 }}
-                className="max-w-44 truncate py-1.5"
+                className={cn("max-w-44 truncate py-1.5", !t.pinned && "italic")}
               >
                 {t.title}
               </button>
-              {t.pinned ? null : (
+              {t.id !== "dashboard" && (
+                <button
+                  type="button"
+                  onClick={() => togglePin(t.id)}
+                  aria-label={t.pinned ? `Unpin ${t.title}` : `Pin ${t.title}`}
+                  title={t.pinned ? "Unpin tab" : "Pin tab"}
+                  className={cn(
+                    "rounded p-0.5 text-muted-foreground transition-opacity hover:bg-muted hover:text-foreground",
+                    t.pinned ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+                  )}
+                >
+                  {t.pinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+                </button>
+              )}
+              {t.id !== "dashboard" && (
                 <button
                   type="button"
                   onClick={() => close(t.id)}
@@ -58,6 +76,7 @@ export function TabStrip() {
                   <X className="h-3 w-3" />
                 </button>
               )}
+
             </div>
           );
         })}
@@ -77,7 +96,17 @@ export function TabStrip() {
             className="fixed z-50 min-w-40 rounded-md border border-border bg-popover p-1 text-xs shadow-lg"
             style={{ left: menu.x, top: menu.y }}
           >
+            {menu.id !== "dashboard" && (
+              <MenuItem
+                label={menuTab?.pinned ? "Unpin tab" : "Pin tab"}
+                onClick={() => {
+                  togglePin(menu.id as never);
+                  setMenu(null);
+                }}
+              />
+            )}
             <MenuItem
+
               label="Close tab"
               onClick={() => {
                 close(menu.id as never);

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ID } from "@/lib/types";
+import { BUFF_TRIGGER_LABEL } from "@/lib/types";
+
 import { useBuilderSeed } from "@/lib/builder-seed";
 import type {
   CareerPayload,
@@ -71,6 +73,8 @@ import { TraitPreview, type TraitPreviewData } from "./preview/TraitPreview";
 import { AspirationPreview, type AspirationPreviewData } from "./preview/AspirationPreview";
 import { NotificationLibrary } from "./preview/NotificationLibrary";
 import { ImageField } from "./ImageField";
+import { CoverImageField } from "./CoverImageField";
+
 import {
   useAppHost,
   PROVIDER_LABEL,
@@ -929,6 +933,8 @@ function CareerBuilder() {
   const [careerType, setCareerType] = useState("FullTime");
   const [icon, setIcon] = useState("");
   const [image, setImage] = useState("");
+  const [coverImage, setCoverImage] = useState<string | undefined>(undefined);
+
   const [ages, setAges] = useState<Record<Age, boolean>>({
     Child: false, Teen: false, YoungAdult: true, Adult: true, Elder: true,
   });
@@ -1207,7 +1213,7 @@ function CareerBuilder() {
             </div>
           </Card>
 
-          <Card title="Icon & Image">
+          <Card title="Icon & Cover Art">
             <div className="grid grid-cols-2 gap-3">
               <ImageField
                 label="Icon"
@@ -1218,15 +1224,24 @@ function CareerBuilder() {
                 context={{ subject: `${name || "career"} icon`, style: "flat, game UI" }}
               />
               <ImageField
-                label="Image"
+                label="Small Image"
                 value={image}
                 onChange={setImage}
                 slot="image"
-                hint="Large — join-career splash"
+                hint="Used in list rows"
                 context={{ subject: `${name || "career"} splash`, style: "cinematic" }}
               />
             </div>
+            <div className="mt-3">
+              <CoverImageField
+                label="Career Cover Image"
+                value={coverImage}
+                onChange={setCoverImage}
+                subject={name || "career"}
+              />
+            </div>
           </Card>
+
 
           <Card title="Age Availability" action={
             <CopyToMenu what="age availability" label="Copy to…" />
@@ -1883,6 +1898,18 @@ type EmotionV5 = (typeof EMOTIONS_V5)[number];
 
 const VOICE_EFFECTS = ["None", "Robotic", "Ghost", "Alien", "Muffled", "Underwater", "Whisper"];
 
+/**
+ * A rule answers "why and when is this moodlet applied?".
+ * Every buff needs at least one, otherwise it silently sits on the Sim.
+ */
+type BuffRuleRow = {
+  id: string;
+  trigger: import("@/lib/types").BuffTrigger;
+  condition: string;
+  chance: number;
+  cooldownHours: number;
+};
+
 type TraitBuff = {
   id: string;
   name: string;
@@ -1893,7 +1920,17 @@ type TraitBuff = {
   hasEmotion: boolean;
   color: string;
   icon: string;
+  rules: BuffRuleRow[];
 };
+
+const newRule = (): BuffRuleRow => ({
+  id: `rule_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+  trigger: "on-social",
+  condition: "",
+  chance: 100,
+  cooldownHours: 4,
+});
+
 
 type TraitTab =
   | "identity"
@@ -1934,9 +1971,10 @@ function TraitBuilder() {
   });
 
   const [buffs, setBuffs] = useState<TraitBuff[]>([
-    { id: "b1", name: "Well-Rested Focus", description: "Sharp after a good dream.", emotion: "Focused", weight: 2, duration: "6h", hasEmotion: true, color: "blue", icon: "🎯" },
-    { id: "b2", name: "Dream Recall", description: "Struck by a vivid memory.", emotion: "Inspired", weight: 1, duration: "3h", hasEmotion: true, color: "violet", icon: "💭" },
-    { id: "b3", name: "Foggy Morning", description: "Slow to shake the dream.", emotion: "Uncomfortable", weight: 1, duration: "2h", hasEmotion: true, color: "gray", icon: "🌫️" },
+    { id: "b1", name: "Well-Rested Focus", description: "Sharp after a good dream.", emotion: "Focused", weight: 2, duration: "6h", hasEmotion: true, color: "blue", icon: "🎯", rules: [{ id: "r1", trigger: "on-wake", condition: "Energy need above 70%", chance: 100, cooldownHours: 12 }] },
+    { id: "b2", name: "Dream Recall", description: "Struck by a vivid memory.", emotion: "Inspired", weight: 1, duration: "3h", hasEmotion: true, color: "violet", icon: "💭", rules: [{ id: "r2", trigger: "on-wake", condition: "Random chance after sleeping 6+ hours", chance: 35, cooldownHours: 24 }] },
+    { id: "b3", name: "Foggy Morning", description: "Slow to shake the dream.", emotion: "Uncomfortable", weight: 1, duration: "2h", hasEmotion: true, color: "gray", icon: "🌫️", rules: [{ id: "r3", trigger: "on-wake", condition: "Energy need below 40%", chance: 80, cooldownHours: 12 }] },
+
   ]);
   const [selectedBuffId, setSelectedBuffId] = useState<string>("b1");
   const selectedBuff = buffs.find((b) => b.id === selectedBuffId) ?? buffs[0];
@@ -2006,6 +2044,14 @@ function TraitBuilder() {
         hasEmotion: true,
         color: "violet",
         icon: "",
+        rules: (b.rules ?? []).map((r, ri) => ({
+          id: r.id || `r${ri + 1}`,
+          trigger: r.trigger,
+          condition: r.condition ?? "",
+          chance: r.chance ?? 100,
+          cooldownHours: r.cooldownHours ?? 0,
+        })),
+
       };
     });
     setBuffs(nextBuffs);
@@ -2216,7 +2262,7 @@ function TraitBuilder() {
                 const id = `b${Date.now()}`;
                 setBuffs((p) => [
                   ...p,
-                  { id, name: "New Buff", description: "", emotion: "Happy", weight: 1, duration: "2h", hasEmotion: true, color: "green", icon: "🙂" },
+                  { id, name: "New Buff", description: "", emotion: "Happy", weight: 1, duration: "2h", hasEmotion: true, color: "green", icon: "🙂", rules: [newRule()] },
                 ]);
                 setSelectedBuffId(id);
               }}
@@ -2287,6 +2333,138 @@ function TraitBuilder() {
                   <span className="text-muted-foreground">(uncheck for silent buffs)</span>
                 </label>
               </div>
+
+              {/* Why & when this moodlet applies */}
+              <div className="rounded-lg border border-border bg-muted/20 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <div>
+                    <div className="text-[11.5px] font-semibold">Application Rules</div>
+                    <div className="text-[10.5px] text-muted-foreground">
+                      Why and when this moodlet is applied. No rules = always active while the Sim has the trait.
+                    </div>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setBuffs((p) =>
+                        p.map((b) =>
+                          b.id === selectedBuff.id ? { ...b, rules: [...b.rules, newRule()] } : b,
+                        ),
+                      )
+                    }
+                    className="rounded-md border border-border bg-card px-2 py-1 text-[11px] font-semibold hover:bg-accent"
+                  >
+                    <Plus className="mr-1 inline h-3 w-3" /> Add rule
+                  </button>
+                </div>
+
+                {selectedBuff.rules.length === 0 ? (
+                  <div className="rounded-md border border-dashed border-border p-3 text-center text-[11px] text-muted-foreground">
+                    No rules yet — this buff is applied permanently with the trait.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedBuff.rules.map((r) => {
+                      const patch = (next: Partial<BuffRuleRow>) =>
+                        setBuffs((p) =>
+                          p.map((b) =>
+                            b.id === selectedBuff.id
+                              ? {
+                                  ...b,
+                                  rules: b.rules.map((x) => (x.id === r.id ? { ...x, ...next } : x)),
+                                }
+                              : b,
+                          ),
+                        );
+                      return (
+                        <div key={r.id} className="rounded-md border border-border bg-card p-2.5">
+                          <div className="grid grid-cols-12 gap-2">
+                            <div className="col-span-5">
+                              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                When (trigger)
+                              </label>
+                              <select
+                                value={r.trigger}
+                                onChange={(e) =>
+                                  patch({ trigger: e.target.value as BuffRuleRow["trigger"] })
+                                }
+                                className="h-7 w-full rounded-md border border-border bg-background px-1.5 text-[11px]"
+                              >
+                                {Object.entries(BUFF_TRIGGER_LABEL).map(([k, label]) => (
+                                  <option key={k} value={k}>
+                                    {label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="col-span-7">
+                              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                Only if (condition)
+                              </label>
+                              <input
+                                value={r.condition}
+                                onChange={(e) => patch({ condition: e.target.value })}
+                                placeholder="e.g. Fun need below 30%, at a nightclub, raining"
+                                className="h-7 w-full rounded-md border border-border bg-background px-2 text-[11px]"
+                              />
+                            </div>
+                            <div className="col-span-4">
+                              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                Chance %
+                              </label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={100}
+                                value={r.chance}
+                                onChange={(e) =>
+                                  patch({ chance: Math.min(100, Math.max(1, Number(e.target.value) || 1)) })
+                                }
+                                className="h-7 w-full rounded-md border border-border bg-background px-2 text-[11px]"
+                              />
+                            </div>
+                            <div className="col-span-4">
+                              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                Cooldown (h)
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={r.cooldownHours}
+                                onChange={(e) =>
+                                  patch({ cooldownHours: Math.max(0, Number(e.target.value) || 0) })
+                                }
+                                className="h-7 w-full rounded-md border border-border bg-background px-2 text-[11px]"
+                              />
+                            </div>
+                            <div className="col-span-4 flex items-end justify-end">
+                              <button
+                                onClick={() =>
+                                  setBuffs((p) =>
+                                    p.map((b) =>
+                                      b.id === selectedBuff.id
+                                        ? { ...b, rules: b.rules.filter((x) => x.id !== r.id) }
+                                        : b,
+                                    ),
+                                  )
+                                }
+                                className="rounded-md border border-border px-2 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-accent"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                          <div className="mt-2 rounded bg-muted/40 px-2 py-1 text-[10.5px] text-muted-foreground">
+                            {BUFF_TRIGGER_LABEL[r.trigger]}
+                            {r.condition ? ` — only if ${r.condition}` : ""} · {r.chance}% chance ·{" "}
+                            {r.cooldownHours}h cooldown
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-end">
                 <button
                   onClick={() => {

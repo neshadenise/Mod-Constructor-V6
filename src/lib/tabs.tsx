@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -12,7 +13,11 @@ import { SECTION_LABEL, type SectionId } from "@/components/mc/sections";
 export type WorkTab = {
   id: SectionId;
   title: string;
-  /** Pinned tabs cannot be closed (Dashboard by default). */
+  /**
+   * Pinned tabs stick around. Unpinned tabs are transient: opening a new
+   * section replaces the current unpinned tab instead of stacking up.
+   * Dashboard is always pinned.
+   */
   pinned?: boolean;
 };
 
@@ -25,11 +30,13 @@ type TabsCtx = {
   closeAll: () => void;
   cycle: (dir: 1 | -1) => void;
   move: (from: number, to: number) => void;
+  togglePin: (id: SectionId) => void;
 };
 
 const Ctx = createContext<TabsCtx | null>(null);
 const KEY = "mc.tabs.v1";
 const DEFAULT: WorkTab[] = [{ id: "dashboard", title: SECTION_LABEL.dashboard, pinned: true }];
+
 
 export function TabsProvider({
   children,
@@ -42,6 +49,9 @@ export function TabsProvider({
   const [tabs, setTabs] = useState<WorkTab[]>(DEFAULT);
   const [active, setActive] = useState<SectionId>("dashboard");
   const [hydrated, setHydrated] = useState(false);
+  const activeRef = useRef<SectionId>("dashboard");
+  activeRef.current = active;
+
 
   // Restore after mount so SSR and first client render match.
   useEffect(() => {
@@ -72,14 +82,34 @@ export function TabsProvider({
   }, [tabs, active, hydrated]);
 
   const open = useCallback((id: SectionId) => {
-    setTabs((prev) => (prev.some((t) => t.id === id) ? prev : [...prev, { id, title: SECTION_LABEL[id] }]));
+    setTabs((prev) => {
+      if (prev.some((t) => t.id === id)) return prev;
+      const cur = activeRef.current;
+      const curIdx = prev.findIndex((t) => t.id === cur);
+      const curTab = prev[curIdx];
+      // Transient behaviour: an unpinned active tab is replaced, not stacked.
+      if (curTab && !curTab.pinned) {
+        const next = [...prev];
+        next[curIdx] = { id, title: SECTION_LABEL[id] };
+        return next;
+      }
+      return [...prev, { id, title: SECTION_LABEL[id] }];
+    });
     setActive(id);
   }, []);
+
+  const togglePin = useCallback((id: SectionId) => {
+    setTabs((prev) =>
+      prev.map((t) => (t.id === id && t.id !== "dashboard" ? { ...t, pinned: !t.pinned } : t)),
+    );
+  }, []);
+
 
   const close = useCallback((id: SectionId) => {
     setTabs((prev) => {
       const target = prev.find((t) => t.id === id);
-      if (!target || target.pinned) return prev;
+      if (!target || target.id === "dashboard") return prev;
+
       const idx = prev.findIndex((t) => t.id === id);
       const next = prev.filter((t) => t.id !== id);
       setActive((cur) => (cur === id ? (next[idx] ?? next[idx - 1] ?? next[0]).id : cur));
@@ -89,7 +119,7 @@ export function TabsProvider({
 
   const closeOthers = useCallback((id: SectionId) => {
     setTabs((prev) => {
-      const next = prev.filter((t) => t.id === id || t.pinned);
+      const next = prev.filter((t) => t.id === id || t.pinned || t.id === "dashboard");
       setActive(id);
       return next;
     });
@@ -125,7 +155,7 @@ export function TabsProvider({
   useEffect(() => {
     if (!allowed) return;
     setTabs((prev) => {
-      const next = prev.filter((t) => t.pinned || allowed(t.id));
+      const next = prev.filter((t) => t.id === "dashboard" || allowed(t.id));
       if (next.length === prev.length) return prev;
       setActive((cur) => (next.some((t) => t.id === cur) ? cur : next[0].id));
       return next.length ? next : DEFAULT;
@@ -156,9 +186,10 @@ export function TabsProvider({
   }, [active, close, cycle, tabs]);
 
   const value = useMemo(
-    () => ({ tabs, active, open, close, closeOthers, closeAll, cycle, move }),
-    [tabs, active, open, close, closeOthers, closeAll, cycle, move],
+    () => ({ tabs, active, open, close, closeOthers, closeAll, cycle, move, togglePin }),
+    [tabs, active, open, close, closeOthers, closeAll, cycle, move, togglePin],
   );
+
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
