@@ -2331,6 +2331,138 @@ function TraitBuilder() {
                   <span className="text-muted-foreground">(uncheck for silent buffs)</span>
                 </label>
               </div>
+
+              {/* Why & when this moodlet applies */}
+              <div className="rounded-lg border border-border bg-muted/20 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <div>
+                    <div className="text-[11.5px] font-semibold">Application Rules</div>
+                    <div className="text-[10.5px] text-muted-foreground">
+                      Why and when this moodlet is applied. No rules = always active while the Sim has the trait.
+                    </div>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setBuffs((p) =>
+                        p.map((b) =>
+                          b.id === selectedBuff.id ? { ...b, rules: [...b.rules, newRule()] } : b,
+                        ),
+                      )
+                    }
+                    className="rounded-md border border-border bg-card px-2 py-1 text-[11px] font-semibold hover:bg-accent"
+                  >
+                    <Plus className="mr-1 inline h-3 w-3" /> Add rule
+                  </button>
+                </div>
+
+                {selectedBuff.rules.length === 0 ? (
+                  <div className="rounded-md border border-dashed border-border p-3 text-center text-[11px] text-muted-foreground">
+                    No rules yet — this buff is applied permanently with the trait.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedBuff.rules.map((r) => {
+                      const patch = (next: Partial<BuffRuleRow>) =>
+                        setBuffs((p) =>
+                          p.map((b) =>
+                            b.id === selectedBuff.id
+                              ? {
+                                  ...b,
+                                  rules: b.rules.map((x) => (x.id === r.id ? { ...x, ...next } : x)),
+                                }
+                              : b,
+                          ),
+                        );
+                      return (
+                        <div key={r.id} className="rounded-md border border-border bg-card p-2.5">
+                          <div className="grid grid-cols-12 gap-2">
+                            <div className="col-span-5">
+                              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                When (trigger)
+                              </label>
+                              <select
+                                value={r.trigger}
+                                onChange={(e) =>
+                                  patch({ trigger: e.target.value as BuffRuleRow["trigger"] })
+                                }
+                                className="h-7 w-full rounded-md border border-border bg-background px-1.5 text-[11px]"
+                              >
+                                {Object.entries(BUFF_TRIGGER_LABEL).map(([k, label]) => (
+                                  <option key={k} value={k}>
+                                    {label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="col-span-7">
+                              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                Only if (condition)
+                              </label>
+                              <input
+                                value={r.condition}
+                                onChange={(e) => patch({ condition: e.target.value })}
+                                placeholder="e.g. Fun need below 30%, at a nightclub, raining"
+                                className="h-7 w-full rounded-md border border-border bg-background px-2 text-[11px]"
+                              />
+                            </div>
+                            <div className="col-span-4">
+                              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                Chance %
+                              </label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={100}
+                                value={r.chance}
+                                onChange={(e) =>
+                                  patch({ chance: Math.min(100, Math.max(1, Number(e.target.value) || 1)) })
+                                }
+                                className="h-7 w-full rounded-md border border-border bg-background px-2 text-[11px]"
+                              />
+                            </div>
+                            <div className="col-span-4">
+                              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                Cooldown (h)
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={r.cooldownHours}
+                                onChange={(e) =>
+                                  patch({ cooldownHours: Math.max(0, Number(e.target.value) || 0) })
+                                }
+                                className="h-7 w-full rounded-md border border-border bg-background px-2 text-[11px]"
+                              />
+                            </div>
+                            <div className="col-span-4 flex items-end justify-end">
+                              <button
+                                onClick={() =>
+                                  setBuffs((p) =>
+                                    p.map((b) =>
+                                      b.id === selectedBuff.id
+                                        ? { ...b, rules: b.rules.filter((x) => x.id !== r.id) }
+                                        : b,
+                                    ),
+                                  )
+                                }
+                                className="rounded-md border border-border px-2 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-accent"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                          <div className="mt-2 rounded bg-muted/40 px-2 py-1 text-[10.5px] text-muted-foreground">
+                            {BUFF_TRIGGER_LABEL[r.trigger]}
+                            {r.condition ? ` — only if ${r.condition}` : ""} · {r.chance}% chance ·{" "}
+                            {r.cooldownHours}h cooldown
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-end">
                 <button
                   onClick={() => {
