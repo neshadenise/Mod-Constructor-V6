@@ -1896,6 +1896,18 @@ type EmotionV5 = (typeof EMOTIONS_V5)[number];
 
 const VOICE_EFFECTS = ["None", "Robotic", "Ghost", "Alien", "Muffled", "Underwater", "Whisper"];
 
+/**
+ * A rule answers "why and when is this moodlet applied?".
+ * Every buff needs at least one, otherwise it silently sits on the Sim.
+ */
+type BuffRuleRow = {
+  id: string;
+  trigger: BuffTrigger;
+  condition: string;
+  chance: number;
+  cooldownHours: number;
+};
+
 type TraitBuff = {
   id: string;
   name: string;
@@ -1906,7 +1918,17 @@ type TraitBuff = {
   hasEmotion: boolean;
   color: string;
   icon: string;
+  rules: BuffRuleRow[];
 };
+
+const newRule = (): BuffRuleRow => ({
+  id: `rule_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+  trigger: "on-social",
+  condition: "",
+  chance: 100,
+  cooldownHours: 4,
+});
+
 
 type TraitTab =
   | "identity"
