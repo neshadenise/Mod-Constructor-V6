@@ -898,6 +898,7 @@ function RenameInput({
   return (
     <input
       autoFocus
+      onFocus={(e) => e.currentTarget.select()}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onClick={(e) => e.stopPropagation()}
