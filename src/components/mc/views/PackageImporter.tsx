@@ -88,7 +88,13 @@ export function PackageImporter() {
 
   const readFiles = useCallback(async (files: File[]) => {
     const next: Staged[] = [];
+    const games: File[] = [];
     for (const file of files) {
+      const ext = file.name.toLowerCase().split(".").pop() ?? "";
+      if (["package", "ts4script", "py", "pyo", "pyc"].includes(ext)) {
+        games.push(file);
+        continue;
+      }
       try {
         const bundle = JSON.parse(await file.text()) as ProjectBundle;
         if (!bundle?.project) throw new Error("Missing project data");
@@ -99,11 +105,54 @@ export function PackageImporter() {
         });
       }
     }
+    if (games.length) {
+      setGameFiles((prev) => [...games, ...prev]);
+      toast.success(`Staged ${games.length} game file${games.length === 1 ? "" : "s"}`);
+    }
     if (next.length) {
       setStaged((prev) => [...next, ...prev]);
       toast.success(`Staged ${next.length} package${next.length === 1 ? "" : "s"}`);
     }
   }, []);
+
+  /** Store staged .package / .ts4script files as assets on the target project. */
+  const importGameFiles = async (projectId: string) => {
+    const MAX_INLINE = 8 * 1024 * 1024;
+    let linkedOnly = 0;
+    for (const file of gameFiles) {
+      const isScript = !file.name.toLowerCase().endsWith(".package");
+      const inline = file.size <= MAX_INLINE;
+      if (!inline) linkedOnly++;
+      const dataUrl = inline
+        ? await new Promise<string>((resolve) => {
+            const r = new FileReader();
+            r.onload = () => resolve(String(r.result));
+            r.readAsDataURL(file);
+          })
+        : undefined;
+      store.addAsset({
+        projectId,
+        name: file.name,
+        folder: isScript ? "/Scripts" : "/Packages",
+        kind: isScript ? "script" : "package",
+        mimeType: file.type || (isScript ? "application/x-ts4script" : "application/x-sims4-package"),
+        sizeBytes: file.size,
+        dataUrl,
+        filePath: file.name,
+        source: "upload",
+        tags: [isScript ? "script" : "package"],
+      });
+    }
+    if (gameFiles.length) {
+      toast.success(`Added ${gameFiles.length} game file${gameFiles.length === 1 ? "" : "s"}`, {
+        description: linkedOnly
+          ? `${linkedOnly} large file${linkedOnly === 1 ? "" : "s"} referenced by name only (over 8 MB).`
+          : "Stored under /Packages and /Scripts in Assets.",
+      });
+      setGameFiles([]);
+    }
+  };
+
 
   const totals = useMemo(() => {
     const t: Record<Kind, number> = {
