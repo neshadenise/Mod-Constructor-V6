@@ -4416,7 +4416,20 @@ export function SectionView({
         </details>
       </div>
     );
-  if (active === "exporter") return <div className="mx-auto max-w-[1600px] p-6"><ExporterView /></div>;
+  if (active === "exporter")
+    return (
+      <div className="mx-auto max-w-[1600px] space-y-6 p-6">
+        <ExportCenter />
+        <details className="rounded-xl border border-border bg-card p-3">
+          <summary className="cursor-pointer text-sm font-semibold">
+            Share a Mod Constructor bundle instead (.mcbundle.json)
+          </summary>
+          <div className="mt-3">
+            <ExporterView />
+          </div>
+        </details>
+      </div>
+    );
 
   if (active === "validation") return <div className="mx-auto max-w-[1600px] p-6"><ValidationCenter /></div>;
   if (active === "queue") return <div className="mx-auto max-w-[1600px] p-6"><QueueView /></div>;
