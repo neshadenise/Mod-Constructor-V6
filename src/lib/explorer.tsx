@@ -217,6 +217,20 @@ const Ctx = createContext<ExplorerAPI | null>(null);
 
 const SCAFFOLD = ["Packages", "Scripts", "Images", "Localization", "Documentation", "Other Assets"];
 
+/** One-time repair: drop duplicate empty sibling folders sharing a name. */
+function dedupeEmptyFolders(items: ProjectExplorerItem[]): ProjectExplorerItem[] {
+  const seen = new Set<string>();
+  const doomed = new Set<string>();
+  for (const i of items) {
+    if (i.itemType !== "folder" || i.deletedAt) continue;
+    const key = `${i.projectId}|${i.parentFolderId ?? "root"}|${i.name.toLowerCase()}`;
+    const hasChildren = items.some((c) => c.parentFolderId === i.id);
+    if (seen.has(key) && !hasChildren) doomed.add(i.id);
+    else seen.add(key);
+  }
+  return doomed.size ? items.filter((i) => !doomed.has(i.id)) : items;
+}
+
 export function ExplorerProvider({
   children,
   adapter = localStorageAdapter,
@@ -238,7 +252,7 @@ export function ExplorerProvider({
       if (saved && saved.version === 1) {
         setData({
           version: 1,
-          items: saved.items ?? [],
+          items: dedupeEmptyFolders(saved.items ?? []),
           prefs: { ...defaultPrefs, ...(saved.prefs ?? {}) },
           seeded: saved.seeded ?? [],
         });
@@ -303,25 +317,32 @@ export function ExplorerProvider({
 
   const ensureScaffold = useCallback(
     (projectId: string) => {
-      const d = ref.current;
-      if (d.seeded.includes(projectId)) return;
-      const stamp = nowIso();
-      const folders: ProjectExplorerItem[] = SCAFFOLD.filter(
-        (n) =>
-          !d.items.some(
-            (i) => i.projectId === projectId && i.parentFolderId === null && i.name.toLowerCase() === n.toLowerCase(),
-          ),
-      ).map((n) => ({
-        id: uid(),
-        projectId,
-        parentFolderId: null,
-        itemType: "folder" as const,
-        name: n,
-        createdAt: stamp,
-        updatedAt: stamp,
-        deletedAt: null,
-      }));
-      mutate((s) => ({ ...s, items: [...s.items, ...folders], seeded: [...s.seeded, projectId] }));
+      // Computed inside `mutate` so double invocations (StrictMode, rapid
+      // project switches) can never create duplicate scaffold folders.
+      mutate((d) => {
+        if (d.seeded.includes(projectId)) return d;
+        const stamp = nowIso();
+        const folders: ProjectExplorerItem[] = SCAFFOLD.filter(
+          (n) =>
+            !d.items.some(
+              (i) =>
+                i.projectId === projectId &&
+                i.parentFolderId === null &&
+                !i.deletedAt &&
+                i.name.toLowerCase() === n.toLowerCase(),
+            ),
+        ).map((n) => ({
+          id: uid(),
+          projectId,
+          parentFolderId: null,
+          itemType: "folder" as const,
+          name: n,
+          createdAt: stamp,
+          updatedAt: stamp,
+          deletedAt: null,
+        }));
+        return { ...d, items: [...d.items, ...folders], seeded: [...d.seeded, projectId] };
+      });
     },
     [mutate],
   );
