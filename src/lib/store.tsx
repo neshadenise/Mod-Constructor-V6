@@ -404,7 +404,16 @@ export interface StoreAPI {
   mergeBundleIntoProject: (
     bundle: ProjectBundle,
     targetProjectId?: ID,
-  ) => { project: Project; added: Record<string, number> };
+  ) => {
+    project: Project;
+    added: Record<string, number>;
+    records: {
+      careers: Career[];
+      traits: Trait[];
+      aspirations: Aspiration[];
+      notifications: NotificationTemplate[];
+    };
+  };
 
   // Danger zone
   resetDemoData: () => Promise<void>;
