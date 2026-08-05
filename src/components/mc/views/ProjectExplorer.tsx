@@ -1,425 +1,1045 @@
-import { useMemo, useState } from "react";
+/**
+ * Project Explorer — the file and asset manager for the active project.
+ *
+ * Everything here reads and writes the persisted explorer store
+ * (src/lib/explorer.tsx). Items are addressed by stable IDs so builder
+ * references survive renames and moves.
+ */
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  FolderTree,
-  Search,
-  ChevronRight,
-  ChevronDown,
-  Briefcase,
-  Sparkles,
-  Target,
-  Bell,
-  Boxes,
-  FileCode2,
-  Star,
-  Filter,
-  Plus,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-  Circle,
+  FolderTree, Folder, FolderOpen, File as FileIcon, FileImage, FileCode2, FileText, Package,
+  ChevronRight, ChevronDown, Search, Plus, Upload, Copy, Scissors, ClipboardPaste, Pencil,
+  Trash2, Download, ArrowRightLeft, LayoutGrid, List, ArrowUpDown, RotateCcw, RefreshCw,
+  AlertTriangle, Home, X,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import {
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
+import {
+  useExplorer, sortItems, fileCategory, formatBytes, isPreviewableImage, isPreviewableText,
+  readFilePayload, splitName, extensionOf,
+  type ProjectExplorerItem, type SortKey,
+} from "@/lib/explorer";
 
-type Status = "draft" | "validated" | "building" | "error";
-type Kind = "career" | "trait" | "aspiration" | "notification" | "asset" | "tuning";
+/* ------------------------------ helpers -------------------------------- */
 
-type Node = {
-  id: string;
-  name: string;
-  kind?: Kind;
-  status?: Status;
-  updated?: string;
-  favorite?: boolean;
-  children?: Node[];
-};
-
-function fmtAgo(t: number): string {
-  const diff = Date.now() - t;
-  if (diff < 60_000) return "just now";
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  return `${Math.floor(diff / 86_400_000)}d ago`;
+function ItemIcon({ item, className }: { item: ProjectExplorerItem; className?: string }) {
+  if (item.itemType === "folder") return <Folder className={cn("text-[var(--blue)]", className)} />;
+  const e = extensionOf(item.name);
+  if (isPreviewableImage(item)) return <FileImage className={cn("text-[var(--pink)]", className)} />;
+  if (e === "package") return <Package className={cn("text-[var(--orange)]", className)} />;
+  if (e === "ts4script" || e === "py") return <FileCode2 className={cn("text-[var(--green)]", className)} />;
+  if (e === "xml" || e === "json") return <FileCode2 className={cn("text-[var(--teal)]", className)} />;
+  if (isPreviewableText(item)) return <FileText className={cn("text-muted-foreground", className)} />;
+  return <FileIcon className={cn("text-muted-foreground", className)} />;
 }
 
+function fmtDate(iso?: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+}
 
-const KIND_META: Record<Kind, { icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; color: string; label: string }> = {
-  career: { icon: Briefcase, color: "var(--blue)", label: "Career" },
-  trait: { icon: Sparkles, color: "var(--violet)", label: "Trait" },
-  aspiration: { icon: Target, color: "var(--teal)", label: "Aspiration" },
-  notification: { icon: Bell, color: "var(--orange)", label: "Notification" },
-  asset: { icon: Boxes, color: "var(--pink)", label: "Asset" },
-  tuning: { icon: FileCode2, color: "var(--green)", label: "Tuning" },
-};
-
-const STATUS_META: Record<Status, { icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; color: string; label: string }> = {
-  draft: { icon: Circle, color: "var(--muted-foreground)", label: "Draft" },
-  validated: { icon: CheckCircle2, color: "var(--green)", label: "Validated" },
-  building: { icon: Clock, color: "var(--blue)", label: "Building" },
-  error: { icon: AlertTriangle, color: "var(--red)", label: "Error" },
-};
-
-type FilterKey = "all" | Kind;
-const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "career", label: "Careers" },
-  { key: "trait", label: "Traits" },
-  { key: "aspiration", label: "Aspirations" },
-  { key: "notification", label: "Notifications" },
-  { key: "asset", label: "Assets" },
-  { key: "tuning", label: "Tuning" },
-];
-
-function matches(node: Node, query: string, filter: FilterKey): boolean {
-  const q = query.trim().toLowerCase();
-  const kindOk = filter === "all" || node.kind === filter;
-  const nameOk = !q || node.name.toLowerCase().includes(q);
-  if (node.children) {
-    // project is included if any child matches
-    return node.children.some((c) => matches(c, query, filter));
+function downloadItem(item: ProjectExplorerItem) {
+  if (!item.dataUrl) {
+    toast.error(`"${item.name}" has no stored contents to download.`);
+    return;
   }
-  return kindOk && nameOk;
+  const a = document.createElement("a");
+  a.href = item.dataUrl;
+  a.download = item.name;
+  a.click();
+  toast.success(`Downloading ${item.name}`);
 }
 
-function TreeRow({
-  node,
-  depth,
-  selected,
-  onSelect,
-  expanded,
-  onToggle,
-  query,
-  filter,
-}: {
-  node: Node;
-  depth: number;
-  selected: string | null;
-  onSelect: (id: string) => void;
-  expanded: Record<string, boolean>;
-  onToggle: (id: string) => void;
-  query: string;
-  filter: FilterKey;
-}) {
-  const isOpen = expanded[node.id] ?? true;
-  const hasChildren = !!node.children?.length;
-  const kindMeta = node.kind ? KIND_META[node.kind] : null;
-  const KindIcon = kindMeta?.icon;
-  const statusMeta = node.status ? STATUS_META[node.status] : null;
-
-  return (
-    <>
-      <button
-        onClick={() => (hasChildren ? onToggle(node.id) : onSelect(node.id))}
-        className={cn(
-          "flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-xs transition-colors",
-          selected === node.id
-            ? "bg-accent text-foreground"
-            : "text-foreground/85 hover:bg-accent/60",
-        )}
-        style={{ paddingLeft: 6 + depth * 12 }}
-      >
-        {hasChildren ? (
-          isOpen ? (
-            <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-          )
-        ) : (
-          <span className="w-3" />
-        )}
-        {KindIcon ? (
-          <KindIcon className="h-3.5 w-3.5 shrink-0" style={{ color: kindMeta!.color }} />
-        ) : (
-          <FolderTree className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        )}
-        <span className="truncate font-medium">{node.name}</span>
-        {node.favorite && <Star className="h-3 w-3 shrink-0 fill-[var(--orange)] text-[var(--orange)]" />}
-        <span className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground">
-          {node.updated}
-          {statusMeta && (
-            <span
-              className="inline-flex h-2 w-2 rounded-full"
-              style={{ backgroundColor: statusMeta.color }}
-              title={statusMeta.label}
-            />
-          )}
-        </span>
-      </button>
-      {hasChildren && isOpen && (
-        <div>
-          {node.children!.filter((c) => matches(c, query, filter)).map((c) => (
-            <TreeRow
-              key={c.id}
-              node={c}
-              depth={depth + 1}
-              selected={selected}
-              onSelect={onSelect}
-              expanded={expanded}
-              onToggle={onToggle}
-              query={query}
-              filter={filter}
-            />
-          ))}
-        </div>
-      )}
-    </>
-  );
-}
-
-function findNode(tree: Node[], id: string | null): Node | null {
-  if (!id) return null;
-  const stack = [...tree];
-  while (stack.length) {
-    const n = stack.pop()!;
-    if (n.id === id) return n;
-    if (n.children) stack.push(...n.children);
+function decodeText(dataUrl?: string): string {
+  if (!dataUrl) return "";
+  try {
+    const [, payload = ""] = dataUrl.split(",");
+    if (dataUrl.includes(";base64")) return decodeURIComponent(escape(atob(payload)));
+    return decodeURIComponent(payload);
+  } catch {
+    return "";
   }
-  return null;
 }
+
+/* ------------------------------ view ----------------------------------- */
 
 export function ProjectExplorer() {
   const store = useStore();
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<FilterKey>("all");
-  const [selected, setSelected] = useState<string | null>(null);
+  const ex = useExplorer();
+  const project = store.state.projects.find((p) => p.id === store.state.activeProjectId);
+  const projectId = project?.id;
+
+  const [cwd, setCwd] = useState<string | null>(null);
+  const [selection, setSelection] = useState<string[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [query, setQuery] = useState("");
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [showTrash, setShowTrash] = useState(false);
+  const [dragOver, setDragOver] = useState<string | null | "root">(null);
+  const [deleteTarget, setDeleteTarget] = useState<string[] | null>(null);
+  const [moveDialog, setMoveDialog] = useState<{ ids: string[] } | null>(null);
+  const [projectDialog, setProjectDialog] = useState<{ ids: string[]; mode: "copy" | "move" } | null>(null);
+  const [replaceTarget, setReplaceTarget] = useState<string | null>(null);
+  const uploadRef = useRef<HTMLInputElement>(null);
+  const replaceRef = useRef<HTMLInputElement>(null);
 
-  const tree: Node[] = useMemo(() => {
-    const s = store.state;
-    return s.projects.map((p) => {
-      const children: Node[] = [
-        ...s.careers.filter((c) => c.projectId === p.id).map<Node>((c) => ({
-          id: c.id, name: c.name, kind: "career", status: "draft", updated: fmtAgo(p.updatedAt),
-        })),
-        ...s.traits.filter((t) => t.projectId === p.id).map<Node>((t) => ({
-          id: t.id, name: t.name, kind: "trait", status: "draft", updated: fmtAgo(p.updatedAt),
-        })),
-        ...s.aspirations.filter((a) => a.projectId === p.id).map<Node>((a) => ({
-          id: a.id, name: a.name, kind: "aspiration", status: "draft", updated: fmtAgo(p.updatedAt),
-        })),
-        ...s.notifications.filter((n) => n.projectId === p.id).map<Node>((n) => ({
-          id: n.id, name: n.name, kind: "notification", status: "draft", updated: fmtAgo(p.updatedAt),
-        })),
-        ...s.assets.filter((a) => a.projectId === p.id).map<Node>((a) => ({
-          id: a.id, name: a.name, kind: "asset", updated: fmtAgo(p.updatedAt),
-        })),
-      ];
-      return {
-        id: p.id,
-        name: p.name,
-        updated: fmtAgo(p.updatedAt),
-        favorite: p.favorite,
-        children,
-      };
-    });
-  }, [store.state]);
+  /* Reset explorer state whenever the active project changes. */
+  useEffect(() => {
+    setCwd(null);
+    setSelection([]);
+    setExpanded({});
+    setQuery("");
+    setShowTrash(false);
+    setRenaming(null);
+  }, [projectId]);
 
-  const filtered = useMemo(
-    () => tree.filter((p) => matches(p, query, filter)),
-    [tree, query, filter],
+  useEffect(() => {
+    if (projectId && ex.hydrated) ex.ensureScaffold(projectId);
+  }, [projectId, ex.hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const all = useMemo(() => (projectId ? ex.listProject(projectId) : []), [ex, projectId]);
+  const trashed = useMemo(() => (projectId ? ex.listTrash(projectId) : []), [ex, projectId]);
+
+  const childrenOf = useCallback(
+    (parent: string | null) => all.filter((i) => i.parentFolderId === parent),
+    [all],
   );
 
-  const active = findNode(tree, selected);
-  const activeKind = active?.kind ? KIND_META[active.kind] : null;
-  const activeStatus = active?.status ? STATUS_META[active.status] : null;
+  const pathOf = useCallback(
+    (id: string) => {
+      const parts: string[] = [];
+      let cur: ProjectExplorerItem | undefined = all.find((i) => i.id === id);
+      let guard = 0;
+      while (cur && guard++ < 64) {
+        parts.unshift(cur.name);
+        cur = cur.parentFolderId ? all.find((i) => i.id === cur!.parentFolderId) : undefined;
+      }
+      return "/" + parts.join("/");
+    },
+    [all],
+  );
+
+  const breadcrumb = useMemo(() => {
+    const chain: ProjectExplorerItem[] = [];
+    let cur = cwd ? all.find((i) => i.id === cwd) : undefined;
+    let guard = 0;
+    while (cur && guard++ < 64) {
+      chain.unshift(cur);
+      cur = cur.parentFolderId ? all.find((i) => i.id === cur!.parentFolderId) : undefined;
+    }
+    return chain;
+  }, [cwd, all]);
+
+  const searching = query.trim().length > 0;
+  const rows = useMemo(() => {
+    if (showTrash) return sortItems(trashed.filter((i) => !i.parentFolderId || !trashed.some((p) => p.id === i.parentFolderId)), ex.prefs.sortKey, ex.prefs.sortDir);
+    if (searching) {
+      const q = query.trim().toLowerCase();
+      return sortItems(
+        all.filter(
+          (i) =>
+            i.name.toLowerCase().includes(q) ||
+            (i.extension ?? "").toLowerCase().includes(q) ||
+            fileCategory(i).toLowerCase().includes(q),
+        ),
+        ex.prefs.sortKey,
+        ex.prefs.sortDir,
+      );
+    }
+    return sortItems(childrenOf(cwd), ex.prefs.sortKey, ex.prefs.sortDir);
+  }, [showTrash, trashed, searching, query, all, childrenOf, cwd, ex.prefs.sortKey, ex.prefs.sortDir]);
+
+  const selected = selection.map((id) => all.find((i) => i.id === id) ?? trashed.find((i) => i.id === id)).filter(Boolean) as ProjectExplorerItem[];
+  const single = selected.length === 1 ? selected[0] : null;
+
+  /* -------------------- reference safety -------------------- */
+  const referencedIds = useMemo(() => {
+    const blob = JSON.stringify({
+      careers: store.state.careers,
+      traits: store.state.traits,
+      aspirations: store.state.aspirations,
+      notifications: store.state.notifications,
+      packModules: store.state.packModules,
+      projects: store.state.projects,
+    });
+    return new Set(all.filter((i) => blob.includes(`file:${i.id}`)).map((i) => i.id));
+  }, [store.state, all]);
+
+  /* ------------------------- actions ------------------------- */
+
+  const startRename = (id: string) => {
+    const item = all.find((i) => i.id === id) ?? trashed.find((i) => i.id === id);
+    if (!item) return;
+    setRenaming(id);
+    setRenameDraft(item.itemType === "file" ? splitName(item.name).base : item.name);
+  };
+
+  const commitRename = (next?: string) => {
+    if (!renaming) return;
+    const err = ex.rename(renaming, next ?? renameDraft);
+    if (err) toast.error(err);
+    else toast.success("Renamed");
+    setRenaming(null);
+  };
+
+  const newFolder = (parent: string | null) => {
+    if (!projectId) return;
+    const created = ex.createFolder(projectId, parent, "New Folder");
+    if (!created) {
+      toast.error("Could not create folder.");
+      return;
+    }
+    if (parent) setExpanded((s) => ({ ...s, [parent]: true }));
+    setCwd(parent);
+    setSelection([created.id]);
+    setRenaming(created.id);
+    setRenameDraft(created.name);
+  };
+
+  const uploadInto = useCallback(
+    async (parent: string | null, files: FileList | File[]) => {
+      if (!projectId) return;
+      const list = Array.from(files);
+      if (!list.length) return;
+      const payloads = await Promise.all(list.map(readFilePayload));
+      const created = ex.addFiles(projectId, parent, payloads);
+      toast.success(`Added ${created.length} file${created.length === 1 ? "" : "s"} to ${parent ? pathOf(parent) : "project root"}`);
+    },
+    [projectId, ex, pathOf],
+  );
+
+  const doDelete = (ids: string[]) => {
+    ex.trash(ids);
+    setSelection([]);
+    toast.success(`Moved ${ids.length} item${ids.length === 1 ? "" : "s"} to Trash`, {
+      action: { label: "Undo", onClick: () => ex.restore(ids) },
+    });
+  };
+
+  const requestDelete = (ids: string[]) => {
+    if (!ids.length) return;
+    const items = ids.map((id) => all.find((i) => i.id === id)).filter(Boolean) as ProjectExplorerItem[];
+    const needsConfirm =
+      ids.length > 1 ||
+      items.some((i) => i.itemType === "folder") ||
+      items.some((i) => referencedIds.has(i.id)) ||
+      items.some((i) => ["package", "ts4script"].includes(extensionOf(i.name)));
+    if (needsConfirm) setDeleteTarget(ids);
+    else doDelete(ids);
+  };
+
+  const doCopy = (mode: "copy" | "cut") => {
+    if (!projectId || !selection.length) return;
+    ex.setClipboard({ mode, ids: selection, projectId });
+    toast.message(`${mode === "copy" ? "Copied" : "Cut"} ${selection.length} item${selection.length === 1 ? "" : "s"}`);
+  };
+
+  const doPaste = () => {
+    if (!projectId) return;
+    const n = ex.paste(projectId, cwd);
+    if (n > 0) toast.success(`Pasted ${n} item${n === 1 ? "" : "s"}`);
+    else toast.error("Nothing to paste here.");
+  };
+
+  const doDuplicate = () => {
+    if (!selection.length) return;
+    const created = ex.duplicate(selection);
+    toast.success(`Duplicated ${created.length} item${created.length === 1 ? "" : "s"}`);
+  };
+
+  /* keyboard shortcuts */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && ["INPUT", "TEXTAREA"].includes(t.tagName)) return;
+      const meta = e.metaKey || e.ctrlKey;
+      if (meta && e.key.toLowerCase() === "c") { e.preventDefault(); doCopy("copy"); }
+      else if (meta && e.key.toLowerCase() === "x") { e.preventDefault(); doCopy("cut"); }
+      else if (meta && e.key.toLowerCase() === "v") { e.preventDefault(); doPaste(); }
+      else if (meta && e.key.toLowerCase() === "d") { e.preventDefault(); doDuplicate(); }
+      else if (e.key === "Delete" || e.key === "Backspace") { if (selection.length) { e.preventDefault(); requestDelete(selection); } }
+      else if (e.key === "F2") { if (single) { e.preventDefault(); startRename(single.id); } }
+      else if (e.key === "Enter") {
+        if (single?.itemType === "folder") { e.preventDefault(); setCwd(single.id); }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  /* ------------------------- empty state ------------------------- */
+  if (!project) {
+    return (
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-3 text-center">
+        <FolderTree className="h-10 w-10 text-muted-foreground" />
+        <h1 className="text-lg font-bold">Project Explorer</h1>
+        <p className="max-w-sm text-sm text-muted-foreground">Select or create a project to view its files.</p>
+      </div>
+    );
+  }
+
+  const clickItem = (e: React.MouseEvent, item: ProjectExplorerItem) => {
+    if (e.shiftKey || e.metaKey || e.ctrlKey) {
+      setSelection((s) => (s.includes(item.id) ? s.filter((x) => x !== item.id) : [...s, item.id]));
+    } else {
+      setSelection([item.id]);
+    }
+  };
+
+  const openItem = (item: ProjectExplorerItem) => {
+    if (item.itemType === "folder") {
+      setCwd(item.id);
+      setQuery("");
+      setSelection([]);
+    }
+  };
+
+  const revealItem = (item: ProjectExplorerItem) => {
+    setQuery("");
+    setCwd(item.itemType === "folder" ? item.id : item.parentFolderId);
+    setSelection([item.id]);
+  };
+
+  const folderTree = (parent: string | null, depth: number): React.ReactNode =>
+    sortItems(childrenOf(parent).filter((i) => i.itemType === "folder"), "name", "asc").map((f) => {
+      const open = expanded[f.id] ?? depth === 0;
+      const kids = childrenOf(f.id).filter((i) => i.itemType === "folder");
+      return (
+        <div key={f.id}>
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragOver(f.id); }}
+            onDragLeave={() => setDragOver((d) => (d === f.id ? null : d))}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(null);
+              if (e.dataTransfer.files.length) { void uploadInto(f.id, e.dataTransfer.files); return; }
+              const ids = e.dataTransfer.getData("text/explorer-ids");
+              if (ids) {
+                const err = ex.move(JSON.parse(ids), f.id);
+                if (err) toast.error(err); else toast.success("Moved");
+              }
+            }}
+            className={cn(
+              "flex cursor-pointer items-center gap-1 rounded-md px-1.5 py-1 text-xs hover:bg-accent/60",
+              cwd === f.id && "bg-accent text-foreground",
+              dragOver === f.id && "ring-1 ring-[var(--teal)]",
+            )}
+            style={{ paddingLeft: 6 + depth * 12 }}
+            onClick={() => { setCwd(f.id); setQuery(""); setShowTrash(false); }}
+          >
+            <button
+              onClick={(e) => { e.stopPropagation(); setExpanded((s) => ({ ...s, [f.id]: !open })); }}
+              className="shrink-0 text-muted-foreground"
+            >
+              {kids.length ? (open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />) : <span className="inline-block h-3 w-3" />}
+            </button>
+            {open ? <FolderOpen className="h-3.5 w-3.5 shrink-0 text-[var(--blue)]" /> : <Folder className="h-3.5 w-3.5 shrink-0 text-[var(--blue)]" />}
+            <span className="truncate">{f.name}</span>
+          </div>
+          {open && folderTree(f.id, depth + 1)}
+        </div>
+      );
+    });
+
+  const toolbarBtn = (
+    label: string,
+    Icon: React.ComponentType<{ className?: string }>,
+    onClick: () => void,
+    disabled = false,
+  ) => (
+    <button
+      key={label}
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1.5 text-[11px] font-medium hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <Icon className="h-3.5 w-3.5" />
+      <span className="hidden xl:inline">{label}</span>
+    </button>
+  );
 
   return (
     <div className="space-y-4">
+      <input
+        ref={uploadRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={(e) => { if (e.target.files) void uploadInto(cwd, e.target.files); e.target.value = ""; }}
+      />
+      <input
+        ref={replaceRef}
+        type="file"
+        className="hidden"
+        onChange={async (e) => {
+          const f = e.target.files?.[0];
+          const id = replaceTarget;
+          e.target.value = "";
+          if (!f || !id) return;
+          const target = all.find((i) => i.id === id);
+          const payload = await readFilePayload(f);
+          if (target && extensionOf(target.name) !== extensionOf(f.name)) {
+            toast.warning(`Replacement is a .${extensionOf(f.name)} file but the original is .${extensionOf(target.name)}.`);
+          }
+          ex.replaceFile(id, payload, true);
+          setReplaceTarget(null);
+          toast.success("File replaced — name and location kept");
+        }}
+      />
+
+      {/* Header */}
       <div className="flex items-center justify-between border-b border-border pb-4">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--blue)] text-white shadow-sm">
             <FolderTree className="h-5 w-5" />
           </div>
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Workspace
-            </div>
-            <h1 className="text-xl font-bold tracking-tight">Project Explorer</h1>
+          <div className="min-w-0">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Files & Assets</div>
+            <h1 className="truncate text-xl font-bold tracking-tight">Project Explorer — {project.name}</h1>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <button
+          onClick={() => setShowTrash((s) => !s)}
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:bg-accent",
+            showTrash && "bg-accent",
+          )}
+        >
+          <Trash2 className="h-3.5 w-3.5" /> Trash{trashed.length ? ` (${trashed.length})` : ""}
+        </button>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {toolbarBtn("New Folder", Plus, () => newFolder(cwd), showTrash)}
+        {toolbarBtn("Upload Files", Upload, () => uploadRef.current?.click(), showTrash)}
+        <span className="mx-1 h-5 w-px bg-border" />
+        {toolbarBtn("Copy", Copy, () => doCopy("copy"), !selection.length || showTrash)}
+        {toolbarBtn("Cut", Scissors, () => doCopy("cut"), !selection.length || showTrash)}
+        {toolbarBtn("Paste", ClipboardPaste, doPaste, !ex.clipboard || showTrash)}
+        {toolbarBtn("Rename", Pencil, () => single && startRename(single.id), !single || showTrash)}
+        {toolbarBtn("Delete", Trash2, () => requestDelete(selection), !selection.length || showTrash)}
+        {toolbarBtn("Download", Download, () => single && downloadItem(single), !single || single.itemType === "folder")}
+        {toolbarBtn("Copy to Project", ArrowRightLeft, () => setProjectDialog({ ids: selection, mode: "copy" }), !selection.length || showTrash)}
+        <span className="mx-1 h-5 w-px bg-border" />
+        <div className="relative min-w-[180px] flex-1">
+          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setShowTrash(false); }}
+            placeholder="Search files in this project..."
+            className="h-8 pl-7 text-xs"
+          />
+        </div>
+        <select
+          value={`${ex.prefs.sortKey}:${ex.prefs.sortDir}`}
+          onChange={(e) => {
+            const [k, d] = e.target.value.split(":");
+            ex.setPrefs({ sortKey: k as SortKey, sortDir: d as "asc" | "desc" });
+          }}
+          className="h-8 rounded-md border border-border bg-card px-2 text-[11px]"
+          title="Sort"
+        >
+          <option value="name:asc">Name A–Z</option>
+          <option value="name:desc">Name Z–A</option>
+          <option value="type:asc">Type</option>
+          <option value="size:desc">Size (largest)</option>
+          <option value="size:asc">Size (smallest)</option>
+          <option value="created:desc">Date added (newest)</option>
+          <option value="modified:desc">Date modified (newest)</option>
+        </select>
+        <div className="flex overflow-hidden rounded-md border border-border">
           <button
-            onClick={() => {
-              const p = store.createProject();
-              setSelected(p.id);
-              setExpanded((s) => ({ ...s, [p.id]: true }));
-              toast.success(`Created "${p.name}"`);
-            }}
-            className="inline-flex items-center gap-1.5 rounded-md bg-[var(--blue)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90"
+            onClick={() => ex.setPrefs({ view: "list" })}
+            className={cn("px-2 py-1.5", ex.prefs.view === "list" && "bg-accent")}
+            title="List view"
           >
-            <Plus className="h-3.5 w-3.5" /> New Project
+            <List className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => ex.setPrefs({ view: "grid" })}
+            className={cn("px-2 py-1.5", ex.prefs.view === "grid" && "bg-accent")}
+            title="Grid view"
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-12 gap-4">
-        {/* Tree pane */}
-        <section className="col-span-12 rounded-xl border border-border bg-card p-3 card-elevated lg:col-span-5 xl:col-span-4">
-          <div className="mb-3 flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search projects & items..."
-                className="h-8 pl-7 text-xs"
-              />
-            </div>
-            <button
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1.5 text-[10px] font-medium text-muted-foreground hover:bg-accent"
-              onClick={() => setFilter("all")}
-              title="Reset filters"
-            >
-              <Filter className="h-3 w-3" />
-            </button>
-          </div>
-
-          <div className="mb-3 flex flex-wrap gap-1">
-            {FILTERS.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={cn(
-                  "rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors",
-                  filter === f.key
-                    ? "border-[var(--blue)] bg-[var(--blue)]/10 text-[var(--blue)]"
-                    : "border-border bg-background text-muted-foreground hover:bg-accent",
-                )}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="max-h-[540px] overflow-y-auto pr-1">
-            {filtered.length === 0 ? (
-              <div className="rounded-md border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
-                No matches. Try a different search or filter.
-              </div>
-            ) : (
-              filtered.map((p) => (
-                <TreeRow
-                  key={p.id}
-                  node={p}
-                  depth={0}
-                  selected={selected}
-                  onSelect={setSelected}
-                  expanded={expanded}
-                  onToggle={(id) => setExpanded((s) => ({ ...s, [id]: !(s[id] ?? true) }))}
-                  query={query}
-                  filter={filter}
-                />
-              ))
+        {/* Folder tree */}
+        <section className="col-span-12 rounded-xl border border-border bg-card p-2 card-elevated lg:col-span-3">
+          <div
+            onClick={() => { setCwd(null); setShowTrash(false); setQuery(""); }}
+            onDragOver={(e) => { e.preventDefault(); setDragOver("root"); }}
+            onDragLeave={() => setDragOver(null)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(null);
+              if (e.dataTransfer.files.length) { void uploadInto(null, e.dataTransfer.files); return; }
+              const ids = e.dataTransfer.getData("text/explorer-ids");
+              if (ids) {
+                const err = ex.move(JSON.parse(ids), null);
+                if (err) toast.error(err); else toast.success("Moved to project root");
+              }
+            }}
+            className={cn(
+              "mb-1 flex cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-1 text-xs font-semibold hover:bg-accent/60",
+              cwd === null && !showTrash && "bg-accent",
+              dragOver === "root" && "ring-1 ring-[var(--teal)]",
             )}
+          >
+            <Home className="h-3.5 w-3.5 text-[var(--teal)]" />
+            <span className="truncate">{project.name}</span>
           </div>
+          {folderTree(null, 0)}
+          <button
+            onClick={() => newFolder(cwd)}
+            className="mt-2 inline-flex w-full items-center gap-1.5 rounded-md border border-dashed border-border px-2 py-1.5 text-[11px] text-muted-foreground hover:bg-accent"
+          >
+            <Plus className="h-3 w-3" /> New folder here
+          </button>
         </section>
 
-        {/* Detail pane */}
-        <section className="col-span-12 rounded-xl border border-border bg-card p-5 card-elevated lg:col-span-7 xl:col-span-8">
-          {!active ? (
-            <div className="flex h-64 items-center justify-center text-xs text-muted-foreground">
-              Select an item to inspect it.
+        {/* File area */}
+        <section className="col-span-12 rounded-xl border border-border bg-card card-elevated lg:col-span-6">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-1 border-b border-border px-3 py-2 text-[11px] text-muted-foreground">
+            <button className="hover:text-foreground" onClick={() => { setCwd(null); setShowTrash(false); }}>
+              {project.name}
+            </button>
+            {showTrash && <><ChevronRight className="h-3 w-3" /><span className="text-foreground">Trash</span></>}
+            {!showTrash && breadcrumb.map((b) => (
+              <span key={b.id} className="flex items-center gap-1">
+                <ChevronRight className="h-3 w-3" />
+                <button className="hover:text-foreground" onClick={() => setCwd(b.id)}>{b.name}</button>
+              </span>
+            ))}
+            {searching && <span className="ml-auto">Search results ({rows.length})</span>}
+          </div>
+
+          {showTrash && trashed.length > 0 && (
+            <div className="flex items-center justify-between border-b border-border px-3 py-2">
+              <span className="text-[11px] text-muted-foreground">Deleted items are kept here until you empty the Trash.</span>
+              <button
+                onClick={() => { if (projectId) { ex.emptyTrash(projectId); toast.success("Trash emptied"); } }}
+                className="rounded-md border border-[var(--red)]/40 px-2 py-1 text-[11px] font-semibold text-[var(--red)] hover:bg-[var(--red)]/10"
+              >
+                Empty Trash
+              </button>
             </div>
-          ) : (
-            <div className="space-y-5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  {activeKind ? (
-                    <div
-                      className="flex h-11 w-11 items-center justify-center rounded-lg text-white shadow-sm"
-                      style={{ backgroundColor: activeKind.color }}
-                    >
-                      <activeKind.icon className="h-5 w-5" />
-                    </div>
-                  ) : (
-                    <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                      <FolderTree className="h-5 w-5" />
-                    </div>
-                  )}
-                  <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      {activeKind?.label ?? "Project"}
-                    </div>
-                    <h2 className="text-lg font-bold tracking-tight">{active.name}</h2>
-                    <div className="mt-0.5 text-[11px] text-muted-foreground">
-                      Updated {active.updated ?? "recently"}
-                    </div>
+          )}
+
+          <ContextMenu>
+            <ContextMenuTrigger asChild>
+              <div
+                className={cn("min-h-[420px] p-2", dragOver === (cwd ?? "root") && "bg-accent/40")}
+                onClick={(e) => { if (e.target === e.currentTarget) setSelection([]); }}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(cwd ?? "root"); }}
+                onDragLeave={() => setDragOver(null)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(null);
+                  if (showTrash) return;
+                  if (e.dataTransfer.files.length) { void uploadInto(cwd, e.dataTransfer.files); return; }
+                  const ids = e.dataTransfer.getData("text/explorer-ids");
+                  if (ids) {
+                    const err = ex.move(JSON.parse(ids), cwd);
+                    if (err) toast.error(err); else toast.success("Moved");
+                  }
+                }}
+              >
+                {rows.length === 0 && (
+                  <div className="flex h-[380px] flex-col items-center justify-center gap-2 text-center text-xs text-muted-foreground">
+                    <Upload className="h-6 w-6" />
+                    {showTrash ? "Trash is empty." : "This folder is empty. Drag files here or use Upload Files."}
                   </div>
-                </div>
-                {activeStatus && (
-                  <span
-                    className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold"
-                    style={{ borderColor: activeStatus.color, color: activeStatus.color }}
-                  >
-                    <activeStatus.icon className="h-3 w-3" /> {activeStatus.label}
-                  </span>
+                )}
+
+                {ex.prefs.view === "grid" ? (
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+                    {rows.map((item) => (
+                      <ItemContextMenu
+                        key={item.id}
+                        item={item}
+                        showTrash={showTrash}
+                        onOpen={() => openItem(item)}
+                        onNewFolder={() => newFolder(item.itemType === "folder" ? item.id : cwd)}
+                        onUpload={() => { setCwd(item.itemType === "folder" ? item.id : cwd); uploadRef.current?.click(); }}
+                        onRename={() => startRename(item.id)}
+                        onDownload={() => downloadItem(item)}
+                        onReplace={() => { setReplaceTarget(item.id); replaceRef.current?.click(); }}
+                        onDuplicate={() => { setSelection([item.id]); ex.duplicate([item.id]); toast.success("Duplicated"); }}
+                        onCopy={() => { setSelection([item.id]); projectId && ex.setClipboard({ mode: "copy", ids: [item.id], projectId }); toast.message("Copied"); }}
+                        onCut={() => { setSelection([item.id]); projectId && ex.setClipboard({ mode: "cut", ids: [item.id], projectId }); toast.message("Cut"); }}
+                        onMove={() => setMoveDialog({ ids: selection.includes(item.id) ? selection : [item.id] })}
+                        onCopyProject={() => setProjectDialog({ ids: selection.includes(item.id) ? selection : [item.id], mode: "copy" })}
+                        onMoveProject={() => setProjectDialog({ ids: selection.includes(item.id) ? selection : [item.id], mode: "move" })}
+                        onDelete={() => requestDelete(selection.includes(item.id) ? selection : [item.id])}
+                        onRestore={() => { ex.restore([item.id]); toast.success("Restored"); }}
+                        onPurge={() => { ex.purge([item.id]); toast.success("Permanently deleted"); }}
+                        onDetails={() => setSelection([item.id])}
+                      >
+                        <div
+                          draggable={!showTrash}
+                          onDragStart={(e) => e.dataTransfer.setData("text/explorer-ids", JSON.stringify(selection.includes(item.id) ? selection : [item.id]))}
+                          onDragOver={(e) => { if (item.itemType === "folder") { e.preventDefault(); setDragOver(item.id); } }}
+                          onDrop={(e) => {
+                            if (item.itemType !== "folder") return;
+                            e.preventDefault(); e.stopPropagation(); setDragOver(null);
+                            if (e.dataTransfer.files.length) { void uploadInto(item.id, e.dataTransfer.files); return; }
+                            const ids = e.dataTransfer.getData("text/explorer-ids");
+                            if (ids) { const err = ex.move(JSON.parse(ids), item.id); if (err) toast.error(err); else toast.success("Moved"); }
+                          }}
+                          onClick={(e) => clickItem(e, item)}
+                          onDoubleClick={() => openItem(item)}
+                          className={cn(
+                            "flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-border p-3 text-center hover:bg-accent/50",
+                            selection.includes(item.id) && "border-[var(--teal)] bg-accent",
+                            dragOver === item.id && "ring-1 ring-[var(--teal)]",
+                          )}
+                        >
+                          <div className="flex h-16 w-full items-center justify-center overflow-hidden rounded-md bg-muted/40">
+                            {isPreviewableImage(item) && item.dataUrl ? (
+                              <img src={item.dataUrl} alt={item.name} className="h-full w-full object-contain" />
+                            ) : (
+                              <ItemIcon item={item} className="h-7 w-7" />
+                            )}
+                          </div>
+                          {renaming === item.id ? (
+                            <RenameInput value={renameDraft} onChange={setRenameDraft} onCommit={(v) => commitRename(v)} onCancel={() => setRenaming(null)} />
+                          ) : (
+                            <span className="w-full truncate text-[11px] font-medium">{item.name}</span>
+                          )}
+                        </div>
+                      </ItemContextMenu>
+                    ))}
+                  </div>
+                ) : (
+                  <div>
+                    <div className="grid grid-cols-12 gap-2 border-b border-border px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <span className="col-span-6">Name</span>
+                      <span className="col-span-2">Type</span>
+                      <span className="col-span-2">Size</span>
+                      <span className="col-span-2">Modified</span>
+                    </div>
+                    {rows.map((item) => (
+                      <ItemContextMenu
+                        key={item.id}
+                        item={item}
+                        showTrash={showTrash}
+                        onOpen={() => openItem(item)}
+                        onNewFolder={() => newFolder(item.itemType === "folder" ? item.id : cwd)}
+                        onUpload={() => { setCwd(item.itemType === "folder" ? item.id : cwd); uploadRef.current?.click(); }}
+                        onRename={() => startRename(item.id)}
+                        onDownload={() => downloadItem(item)}
+                        onReplace={() => { setReplaceTarget(item.id); replaceRef.current?.click(); }}
+                        onDuplicate={() => { ex.duplicate([item.id]); toast.success("Duplicated"); }}
+                        onCopy={() => { setSelection([item.id]); projectId && ex.setClipboard({ mode: "copy", ids: [item.id], projectId }); toast.message("Copied"); }}
+                        onCut={() => { setSelection([item.id]); projectId && ex.setClipboard({ mode: "cut", ids: [item.id], projectId }); toast.message("Cut"); }}
+                        onMove={() => setMoveDialog({ ids: selection.includes(item.id) ? selection : [item.id] })}
+                        onCopyProject={() => setProjectDialog({ ids: selection.includes(item.id) ? selection : [item.id], mode: "copy" })}
+                        onMoveProject={() => setProjectDialog({ ids: selection.includes(item.id) ? selection : [item.id], mode: "move" })}
+                        onDelete={() => requestDelete(selection.includes(item.id) ? selection : [item.id])}
+                        onRestore={() => { ex.restore([item.id]); toast.success("Restored"); }}
+                        onPurge={() => { ex.purge([item.id]); toast.success("Permanently deleted"); }}
+                        onDetails={() => setSelection([item.id])}
+                      >
+                        <div
+                          draggable={!showTrash}
+                          onDragStart={(e) => e.dataTransfer.setData("text/explorer-ids", JSON.stringify(selection.includes(item.id) ? selection : [item.id]))}
+                          onDragOver={(e) => { if (item.itemType === "folder") { e.preventDefault(); setDragOver(item.id); } }}
+                          onDragLeave={() => setDragOver((d) => (d === item.id ? null : d))}
+                          onDrop={(e) => {
+                            if (item.itemType !== "folder") return;
+                            e.preventDefault(); e.stopPropagation(); setDragOver(null);
+                            if (e.dataTransfer.files.length) { void uploadInto(item.id, e.dataTransfer.files); return; }
+                            const ids = e.dataTransfer.getData("text/explorer-ids");
+                            if (ids) { const err = ex.move(JSON.parse(ids), item.id); if (err) toast.error(err); else toast.success("Moved"); }
+                          }}
+                          onClick={(e) => clickItem(e, item)}
+                          onDoubleClick={() => (searching ? revealItem(item) : openItem(item))}
+                          className={cn(
+                            "grid cursor-pointer grid-cols-12 items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent/50",
+                            selection.includes(item.id) && "bg-accent",
+                            dragOver === item.id && "ring-1 ring-[var(--teal)]",
+                          )}
+                        >
+                          <span className="col-span-6 flex min-w-0 items-center gap-2">
+                            <ItemIcon item={item} className="h-4 w-4 shrink-0" />
+                            {renaming === item.id ? (
+                              <RenameInput value={renameDraft} onChange={setRenameDraft} onCommit={(v) => commitRename(v)} onCancel={() => setRenaming(null)} />
+                            ) : (
+                              <span className="min-w-0 truncate font-medium">
+                                {item.name}
+                                {searching && (
+                                  <span className="ml-2 text-[10px] font-normal text-muted-foreground">{pathOf(item.id)}</span>
+                                )}
+                                {referencedIds.has(item.id) && (
+                                  <span className="ml-2 rounded bg-[var(--teal)]/15 px-1 text-[9px] font-semibold text-[var(--teal)]">linked</span>
+                                )}
+                              </span>
+                            )}
+                          </span>
+                          <span className="col-span-2 truncate text-[11px] text-muted-foreground">{fileCategory(item)}</span>
+                          <span className="col-span-2 text-[11px] text-muted-foreground">{item.itemType === "folder" ? "—" : formatBytes(item.size)}</span>
+                          <span className="col-span-2 truncate text-[11px] text-muted-foreground">{fmtDate(item.updatedAt)}</span>
+                        </div>
+                      </ItemContextMenu>
+                    ))}
+                  </div>
                 )}
               </div>
+            </ContextMenuTrigger>
+            <ContextMenuContent className="w-52">
+              <ContextMenuItem onSelect={() => newFolder(cwd)}><Plus className="mr-2 h-3.5 w-3.5" /> New Folder</ContextMenuItem>
+              <ContextMenuItem onSelect={() => uploadRef.current?.click()}><Upload className="mr-2 h-3.5 w-3.5" /> Upload Files</ContextMenuItem>
+              <ContextMenuItem disabled={!ex.clipboard} onSelect={doPaste}><ClipboardPaste className="mr-2 h-3.5 w-3.5" /> Paste</ContextMenuItem>
+              <ContextMenuSeparator />
+              <ContextMenuItem onSelect={() => { setSelection([]); toast.message("Refreshed"); }}><RefreshCw className="mr-2 h-3.5 w-3.5" /> Refresh</ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
+        </section>
 
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                {[
-                  { k: "Fields", v: "24" },
-                  { k: "Assets", v: "6" },
-                  { k: "Warnings", v: "1" },
-                  { k: "Refs", v: "3" },
-                ].map((s) => (
-                  <div key={s.k} className="rounded-lg border border-border bg-background/50 p-3">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      {s.k}
-                    </div>
-                    <div className="mt-1 text-lg font-bold tabular-nums">{s.v}</div>
-                  </div>
-                ))}
+        {/* Details panel */}
+        <section className="col-span-12 rounded-xl border border-border bg-card p-3 card-elevated lg:col-span-3">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {selected.length > 1 ? `${selected.length} items selected` : "Details"}
+          </div>
+          {!single ? (
+            <p className="text-xs text-muted-foreground">
+              {selected.length > 1
+                ? "Use the toolbar or right-click to move, copy, or delete the selected items."
+                : "Select a file or folder to see its details."}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex h-32 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted/40">
+                {isPreviewableImage(single) && single.dataUrl ? (
+                  <img src={single.dataUrl} alt={single.name} className="h-full w-full object-contain" />
+                ) : (
+                  <ItemIcon item={single} className="h-10 w-10" />
+                )}
               </div>
-
-              <div>
-                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Recent Activity
+              <div className="truncate text-sm font-semibold">{single.name}</div>
+              <dl className="space-y-1 text-[11px]">
+                <Row k="Type" v={fileCategory(single)} />
+                <Row k="Size" v={single.itemType === "folder" ? `${ex.descendantsOf(single.id).length} items` : formatBytes(single.size)} />
+                <Row k="Location" v={single.parentFolderId ? pathOf(single.parentFolderId) : "/"} />
+                <Row k="Added" v={fmtDate(single.createdAt)} />
+                <Row k="Modified" v={fmtDate(single.updatedAt)} />
+                <Row k="Project" v={project.name} />
+                <Row k="File ID" v={single.id.slice(0, 8)} />
+              </dl>
+              {referencedIds.has(single.id) && (
+                <div className="flex items-start gap-1.5 rounded-md border border-[var(--teal)]/40 bg-[var(--teal)]/10 p-2 text-[11px] text-[var(--teal)]">
+                  <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                  This asset is used by the builder. Renaming and moving are safe; deleting will break the link.
                 </div>
-                <ul className="space-y-1 text-xs">
-                  {[
-                    { t: "2m ago", m: "Auto-saved rank tuning" },
-                    { t: "12m ago", m: "Renamed level 4 → 'Reef Analyst'" },
-                    { t: "1h ago", m: "Linked salary curve to shared preset" },
-                    { t: "yesterday", m: "Imported icon from Assets/Careers" },
-                  ].map((r, i) => (
-                    <li
-                      key={i}
-                      className="flex items-center justify-between rounded-md border border-border/70 bg-background/40 px-2.5 py-1.5"
-                    >
-                      <span>{r.m}</span>
-                      <span className="text-[10px] text-muted-foreground">{r.t}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <button
-                  onClick={() => toast.success(`Opening ${active.name}...`)}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-[var(--blue)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90"
-                >
-                  Open in Builder
-                </button>
-                <button
-                  onClick={() => toast("Duplicated", { description: active.name + " (copy)" })}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
-                >
-                  Duplicate
-                </button>
-                <button
-                  onClick={() => toast("Added to build queue")}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
-                >
-                  Queue Build
-                </button>
+              )}
+              {isPreviewableText(single) && single.dataUrl && (
+                <pre className="max-h-48 overflow-auto rounded-md border border-border bg-muted/40 p-2 text-[10px] leading-relaxed">
+                  {decodeText(single.dataUrl).slice(0, 4000) || "(empty file)"}
+                </pre>
+              )}
+              {!isPreviewableImage(single) && !isPreviewableText(single) && single.itemType === "file" && (
+                <p className="text-[11px] text-muted-foreground">
+                  No safe preview for this file type. Scripts and packages are never executed — download, rename, move, copy, or delete instead.
+                </p>
+              )}
+              <div className="flex flex-wrap gap-1.5">
+                {single.itemType === "file" && (
+                  <>
+                    <MiniBtn onClick={() => downloadItem(single)} icon={Download} label="Download" />
+                    <MiniBtn onClick={() => { setReplaceTarget(single.id); replaceRef.current?.click(); }} icon={RefreshCw} label="Replace" />
+                  </>
+                )}
+                <MiniBtn onClick={() => startRename(single.id)} icon={Pencil} label="Rename" />
+                <MiniBtn onClick={() => setMoveDialog({ ids: [single.id] })} icon={ArrowRightLeft} label="Move" />
+                {showTrash ? (
+                  <MiniBtn onClick={() => { ex.restore([single.id]); toast.success("Restored"); }} icon={RotateCcw} label="Restore" />
+                ) : (
+                  <MiniBtn onClick={() => requestDelete([single.id])} icon={Trash2} label="Delete" />
+                )}
               </div>
             </div>
           )}
         </section>
       </div>
+
+      {/* Delete confirm */}
+      <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Move to Trash?</DialogTitle>
+            <DialogDescription>Deleted items go to this project's Trash and can be restored.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 text-xs">
+            {(deleteTarget ?? []).map((id) => {
+              const item = all.find((i) => i.id === id);
+              if (!item) return null;
+              const kids = item.itemType === "folder" ? ex.descendantsOf(item.id) : [];
+              return (
+                <div key={id} className="rounded-md border border-border p-2">
+                  <div className="flex items-center gap-2 font-medium">
+                    <ItemIcon item={item} className="h-4 w-4" /> {item.name}
+                  </div>
+                  {item.itemType === "folder" && (
+                    <div className="mt-1 text-[11px] text-muted-foreground">
+                      Contains {kids.filter((k) => k.itemType === "file").length} file(s) and{" "}
+                      {kids.filter((k) => k.itemType === "folder").length} folder(s) — all of them will be moved to Trash too.
+                    </div>
+                  )}
+                  {["package", "ts4script"].includes(extensionOf(item.name)) && (
+                    <div className="mt-1 text-[11px] text-[var(--orange)]">
+                      Deleting this file may stop the mod from working correctly in-game.
+                    </div>
+                  )}
+                  {referencedIds.has(item.id) && (
+                    <div className="mt-1 text-[11px] text-[var(--red)]">
+                      This asset is linked in the builder — the reference will break.
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <DialogFooter>
+            <button className="rounded-md border border-border px-3 py-1.5 text-xs" onClick={() => setDeleteTarget(null)}>Cancel</button>
+            <button
+              className="rounded-md bg-[var(--red)] px-3 py-1.5 text-xs font-semibold text-white"
+              onClick={() => { doDelete(deleteTarget!); setDeleteTarget(null); }}
+            >
+              Move to Trash
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move dialog */}
+      <Dialog open={!!moveDialog} onOpenChange={(o) => !o && setMoveDialog(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Move items</DialogTitle></DialogHeader>
+          <FolderChooser
+            folders={all.filter((i) => i.itemType === "folder")}
+            excludeIds={moveDialog?.ids ?? []}
+            onPick={(dest) => {
+              const err = ex.move(moveDialog!.ids, dest);
+              if (err) toast.error(err);
+              else toast.success("Moved");
+              setMoveDialog(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Copy / Move to project */}
+      <Dialog open={!!projectDialog} onOpenChange={(o) => !o && setProjectDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{projectDialog?.mode === "move" ? "Move to another project" : "Copy to another project"}</DialogTitle>
+            <DialogDescription>Only files and folders are transferred — builder data is untouched.</DialogDescription>
+          </DialogHeader>
+          <CrossProjectPicker
+            projects={store.state.projects.filter((p) => p.id !== projectId).map((p) => ({ id: p.id, name: p.name }))}
+            allItems={ex.items}
+            onConfirm={(destProject, destFolder) => {
+              const ids = projectDialog!.ids;
+              const n =
+                projectDialog!.mode === "move"
+                  ? ex.moveToProject(ids, destProject, destFolder)
+                  : ex.copyToProject(ids, destProject, destFolder);
+              if (n > 0) {
+                toast.success(`${projectDialog!.mode === "move" ? "Moved" : "Copied"} ${n} item${n === 1 ? "" : "s"} to the destination project`);
+                setSelection([]);
+              } else {
+                toast.error("Nothing was transferred — the original files were kept.");
+              }
+              setProjectDialog(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/* --------------------------- small pieces ------------------------------ */
+
+function Row({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex items-start justify-between gap-2">
+      <dt className="text-muted-foreground">{k}</dt>
+      <dd className="max-w-[60%] truncate text-right font-medium">{v}</dd>
+    </div>
+  );
+}
+
+function MiniBtn({ onClick, icon: Icon, label }: { onClick: () => void; icon: React.ComponentType<{ className?: string }>; label: string }) {
+  return (
+    <button onClick={onClick} className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-accent">
+      <Icon className="h-3 w-3" /> {label}
+    </button>
+  );
+}
+
+function RenameInput({
+  value, onChange, onCommit, onCancel,
+}: { value: string; onChange: (v: string) => void; onCommit: (v: string) => void; onCancel: () => void }) {
+  // Uncontrolled on purpose: unrelated re-renders of the Explorer must not
+  // clobber the caret position while the user is typing a name.
+  const inputRef = useRef<HTMLInputElement>(null);
+  const done = useRef(false);
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.value = value;
+    el.focus();
+    el.select();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const finish = () => {
+    if (done.current) return;
+    done.current = true;
+    onCommit(inputRef.current?.value ?? value);
+  };
+  return (
+    <input
+      ref={inputRef}
+      defaultValue={value}
+      onChange={(e) => onChange(e.target.value)}
+      onClick={(e) => e.stopPropagation()}
+      onBlur={finish}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === "Enter") finish();
+        if (e.key === "Escape") { done.current = true; onCancel(); }
+      }}
+      className="w-full rounded border border-[var(--teal)] bg-background px-1 py-0.5 text-[11px] outline-none"
+    />
+  );
+}
+
+function ItemContextMenu(props: {
+  item: ProjectExplorerItem;
+  showTrash: boolean;
+  children: React.ReactNode;
+  onOpen: () => void; onNewFolder: () => void; onUpload: () => void; onRename: () => void;
+  onDownload: () => void; onReplace: () => void; onDuplicate: () => void; onCopy: () => void;
+  onCut: () => void; onMove: () => void; onCopyProject: () => void; onMoveProject: () => void;
+  onDelete: () => void; onRestore: () => void; onPurge: () => void; onDetails: () => void;
+}) {
+  const isFolder = props.item.itemType === "folder";
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{props.children}</ContextMenuTrigger>
+      <ContextMenuContent className="w-52">
+        {props.showTrash ? (
+          <>
+            <ContextMenuItem onSelect={props.onRestore}><RotateCcw className="mr-2 h-3.5 w-3.5" /> Restore</ContextMenuItem>
+            <ContextMenuItem className="text-[var(--red)]" onSelect={props.onPurge}><X className="mr-2 h-3.5 w-3.5" /> Delete permanently</ContextMenuItem>
+          </>
+        ) : (
+          <>
+            <ContextMenuItem onSelect={props.onOpen}>{isFolder ? "Open" : "Preview"}</ContextMenuItem>
+            {isFolder && <ContextMenuItem onSelect={props.onNewFolder}><Plus className="mr-2 h-3.5 w-3.5" /> New Folder</ContextMenuItem>}
+            {isFolder && <ContextMenuItem onSelect={props.onUpload}><Upload className="mr-2 h-3.5 w-3.5" /> Upload Files</ContextMenuItem>}
+            <ContextMenuItem onSelect={props.onRename}><Pencil className="mr-2 h-3.5 w-3.5" /> Rename</ContextMenuItem>
+            {!isFolder && <ContextMenuItem onSelect={props.onDownload}><Download className="mr-2 h-3.5 w-3.5" /> Download</ContextMenuItem>}
+            {!isFolder && <ContextMenuItem onSelect={props.onReplace}><RefreshCw className="mr-2 h-3.5 w-3.5" /> Replace</ContextMenuItem>}
+            <ContextMenuItem onSelect={props.onDuplicate}><Copy className="mr-2 h-3.5 w-3.5" /> Duplicate</ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem onSelect={props.onCopy}><Copy className="mr-2 h-3.5 w-3.5" /> Copy</ContextMenuItem>
+            <ContextMenuItem onSelect={props.onCut}><Scissors className="mr-2 h-3.5 w-3.5" /> Cut</ContextMenuItem>
+            <ContextMenuItem onSelect={props.onMove}><ArrowRightLeft className="mr-2 h-3.5 w-3.5" /> Move…</ContextMenuItem>
+            <ContextMenuItem onSelect={props.onCopyProject}>Copy to Project…</ContextMenuItem>
+            <ContextMenuItem onSelect={props.onMoveProject}>Move to Project…</ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem onSelect={props.onDetails}>{isFolder ? "Folder Details" : "File Details"}</ContextMenuItem>
+            <ContextMenuItem className="text-[var(--red)]" onSelect={props.onDelete}><Trash2 className="mr-2 h-3.5 w-3.5" /> Delete</ContextMenuItem>
+          </>
+        )}
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+
+function FolderChooser({
+  folders, excludeIds, onPick,
+}: { folders: ProjectExplorerItem[]; excludeIds: string[]; onPick: (dest: string | null) => void }) {
+  const [dest, setDest] = useState<string | null>(null);
+  const blocked = new Set(excludeIds);
+  const options = folders.filter((f) => !blocked.has(f.id));
+  const label = (f: ProjectExplorerItem) => {
+    const parts: string[] = [];
+    let cur: ProjectExplorerItem | undefined = f;
+    let guard = 0;
+    while (cur && guard++ < 32) {
+      parts.unshift(cur.name);
+      cur = cur.parentFolderId ? folders.find((x) => x.id === cur!.parentFolderId) : undefined;
+    }
+    return "/" + parts.join("/");
+  };
+  return (
+    <div className="space-y-3">
+      <select
+        value={dest ?? ""}
+        onChange={(e) => setDest(e.target.value || null)}
+        className="h-9 w-full rounded-md border border-border bg-card px-2 text-xs"
+      >
+        <option value="">/ (project root)</option>
+        {options.map((f) => (
+          <option key={f.id} value={f.id}>{label(f)}</option>
+        ))}
+      </select>
+      <DialogFooter>
+        <button className="rounded-md bg-[var(--teal)] px-3 py-1.5 text-xs font-semibold text-white" onClick={() => onPick(dest)}>
+          Move here
+        </button>
+      </DialogFooter>
+    </div>
+  );
+}
+
+function CrossProjectPicker({
+  projects, allItems, onConfirm,
+}: {
+  projects: { id: string; name: string }[];
+  allItems: ProjectExplorerItem[];
+  onConfirm: (projectId: string, folderId: string | null) => void;
+}) {
+  const [pid, setPid] = useState(projects[0]?.id ?? "");
+  const [fid, setFid] = useState<string | null>(null);
+  const folders = allItems.filter((i) => i.projectId === pid && i.itemType === "folder" && !i.deletedAt);
+  if (!projects.length) return <p className="text-xs text-muted-foreground">You have no other projects to transfer into.</p>;
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Destination project</label>
+        <select value={pid} onChange={(e) => { setPid(e.target.value); setFid(null); }} className="h-9 w-full rounded-md border border-border bg-card px-2 text-xs">
+          {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+      </div>
+      <div>
+        <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Destination folder</label>
+        <select value={fid ?? ""} onChange={(e) => setFid(e.target.value || null)} className="h-9 w-full rounded-md border border-border bg-card px-2 text-xs">
+          <option value="">/ (project root)</option>
+          {folders.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+        </select>
+      </div>
+      <DialogFooter>
+        <button className="rounded-md bg-[var(--teal)] px-3 py-1.5 text-xs font-semibold text-white" onClick={() => onConfirm(pid, fid)}>
+          Confirm
+        </button>
+      </DialogFooter>
     </div>
   );
 }

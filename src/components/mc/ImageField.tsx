@@ -18,6 +18,8 @@ import { IconPicker } from "./icons/IconPicker";
 import { IconArt } from "./icons/IconArt";
 import { findBuiltin, type IconRef } from "@/lib/icon-library";
 import { findCustomIcon } from "@/lib/custom-icons";
+import { ProjectFilePicker } from "./ProjectFilePicker";
+import { useExplorer, parseFileRef } from "@/lib/explorer";
 
 export interface ImageFieldProps {
   label: string;
@@ -53,7 +55,11 @@ export function ImageField({
   context,
 }: ImageFieldProps) {
   const [open, setOpen] = useState(false);
+  const [filesOpen, setFilesOpen] = useState(false);
   const [aiTab, setAiTab] = useState(false);
+  const explorer = useExplorer();
+  // Explorer-backed assets are referenced by stable ID, never by filename.
+  const explorerFile = explorer.getItem(parseFileRef(value) ?? "");
   const ref = parseRef(value);
   const builtin = ref?.kind === "builtin" ? findBuiltin(ref.id) : undefined;
   const custom = ref?.kind === "generated" ? findCustomIcon(ref.id) : undefined;
@@ -75,7 +81,9 @@ export function ImageField({
             "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-card",
           )}
         >
-          {custom ? (
+          {explorerFile?.dataUrl ? (
+            <img src={explorerFile.dataUrl} alt={explorerFile.name} className="h-full w-full object-contain" />
+          ) : custom ? (
             <img src={custom.dataUrl} alt={custom.name} className="h-full w-full object-contain" />
           ) : builtin ? (
             <IconArt icon={builtin} size={40} />
@@ -85,13 +93,16 @@ export function ImageField({
         </div>
         <div className="min-w-0 flex-1 text-[11px] text-muted-foreground">
           <div className="truncate font-medium text-foreground">
-            {custom?.name ?? builtin?.name ?? value ?? "No icon selected"}
+            {explorerFile?.name ?? custom?.name ?? builtin?.name ?? value ?? "No icon selected"}
           </div>
           {hint && <div className="truncate text-[10px]">{hint}</div>}
           {builtin && (
             <div className="text-[10px] text-muted-foreground">
               Default Library · <span className="font-mono">{builtin.id}</span>
             </div>
+          )}
+          {explorerFile && (
+            <div className="text-[10px] text-muted-foreground">Project file · linked by ID</div>
           )}
           {custom && (
             <div className="text-[10px] text-muted-foreground">
@@ -106,6 +117,14 @@ export function ImageField({
         >
           <Wand2 className="h-3 w-3" />
           AI
+        </button>
+        <button
+          onClick={() => setFilesOpen(true)}
+          title="Choose from this project's files"
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-[11px] font-semibold hover:bg-accent"
+        >
+          <ImageIcon className="h-3 w-3 text-[var(--blue)]" />
+          Project Files
         </button>
         <button
           onClick={() => openPicker(false)}
@@ -135,6 +154,12 @@ export function ImageField({
         suggestion={context?.subject}
         title={`Choose ${slot === "icon" ? "icon" : "image"} for ${label}`}
         onPick={(next) => onChange(serialize(next))}
+      />
+
+      <ProjectFilePicker
+        open={filesOpen}
+        onClose={() => setFilesOpen(false)}
+        onPick={(refValue) => onChange(refValue)}
       />
     </div>
   );

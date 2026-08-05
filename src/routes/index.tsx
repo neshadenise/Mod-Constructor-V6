@@ -15,6 +15,7 @@ import { AppNavigationProvider } from "@/lib/navigation";
 import { NotificationsProvider } from "@/lib/notifications";
 import { InspectorHistoryProvider } from "@/lib/inspector-history";
 import { StoreProvider } from "@/lib/store";
+import { ExplorerProvider } from "@/lib/explorer";
 import { AccountProvider } from "@/lib/account";
 import { TabsProvider, useTabs } from "@/lib/tabs";
 import { TabStrip } from "@/components/mc/TabStrip";
@@ -82,6 +83,7 @@ function FullApp() {
     <AppHostProvider>
       <AccountProvider>
       <StoreProvider>
+        <ExplorerProvider>
         <NotificationsProvider>
           <InspectorHistoryProvider>
             <AdvancedModeProvider>
@@ -89,6 +91,7 @@ function FullApp() {
             </AdvancedModeProvider>
           </InspectorHistoryProvider>
         </NotificationsProvider>
+        </ExplorerProvider>
       </StoreProvider>
       </AccountProvider>
     </AppHostProvider>
