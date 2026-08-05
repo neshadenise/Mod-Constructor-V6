@@ -83,6 +83,7 @@ function FullApp() {
     <AppHostProvider>
       <AccountProvider>
       <StoreProvider>
+        <ExplorerProvider>
         <NotificationsProvider>
           <InspectorHistoryProvider>
             <AdvancedModeProvider>
@@ -90,6 +91,7 @@ function FullApp() {
             </AdvancedModeProvider>
           </InspectorHistoryProvider>
         </NotificationsProvider>
+        </ExplorerProvider>
       </StoreProvider>
       </AccountProvider>
     </AppHostProvider>
