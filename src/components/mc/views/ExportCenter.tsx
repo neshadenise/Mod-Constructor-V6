@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useStore } from "@/lib/store";
-import { useAdvancedMode } from "@/lib/advanced-mode";
+import { useAdvanced } from "@/lib/advanced-mode";
 import { downloadExportedFile, runExport } from "@/lib/modexport/pipeline";
 import { listImportedProjects, subscribeImports } from "@/lib/modexport/registry";
 import { listExportHistory, recordExport } from "@/lib/modexport/history";
@@ -101,7 +101,7 @@ function Row({ checked, onChange, label, hint, required }: { checked: boolean; o
 
 export default function ExportCenter() {
   const store = useStore();
-  const { advanced } = useAdvancedMode();
+  const { advanced } = useAdvanced();
   const imports = useSyncExternalStore(subscribeImports, listImportedProjects, () => []);
 
   const project = store.state.projects.find((p) => p.id === store.state.activeProjectId) ?? store.state.projects[0];
