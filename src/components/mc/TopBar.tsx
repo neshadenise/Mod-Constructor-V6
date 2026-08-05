@@ -55,7 +55,7 @@ export function TopBar({ active, onOpenPalette }: Props) {
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-background/85 px-6 backdrop-blur-md">
-      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden whitespace-nowrap text-sm">
+      <div className="flex min-w-0 shrink items-center gap-2 overflow-hidden whitespace-nowrap text-sm">
         <button
           onClick={() => navigate("projects")}
           className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
@@ -64,8 +64,8 @@ export function TopBar({ active, onOpenPalette }: Props) {
           Projects
         </button>
         <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className={cn("max-w-[260px] truncate font-semibold", !project && "text-muted-foreground")}>
-          {project ? `Active Project: ${project.name}` : "No Active Project"}
+        <span className={cn("max-w-[200px] truncate font-semibold", !project && "text-muted-foreground")}>
+          {project ? project.name : "No Active Project"}
         </span>
         <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="hidden shrink-0 text-muted-foreground xl:inline">{SECTION_LABEL[active]}</span>
@@ -89,7 +89,7 @@ export function TopBar({ active, onOpenPalette }: Props) {
       </div>
 
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-2">
         <button
           onClick={() => {
             toggleAdvanced();
