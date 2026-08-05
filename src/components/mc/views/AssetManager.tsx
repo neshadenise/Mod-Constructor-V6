@@ -28,14 +28,23 @@ const KIND_META: Record<AssetKind, { icon: React.ComponentType<React.SVGProps<SV
   icon: { icon: ImageIcon, color: "var(--pink)" },
   image: { icon: ImageIcon, color: "var(--pink)" },
   audio: { icon: FileAudio, color: "var(--orange)" },
+  package: { icon: Boxes, color: "var(--blue)" },
+  script: { icon: FileText, color: "var(--green)" },
   other: { icon: FileText, color: "var(--teal)" },
 };
 
-function kindFromMime(mime: string): AssetKind {
+/** Sims 4 game files the app must accept alongside images/audio. */
+export const GAME_FILE_ACCEPT = ".package,.ts4script,.py,.pyo,.pyc,.zip";
+
+export function kindFromFile(name: string, mime: string): AssetKind {
+  const ext = name.toLowerCase().split(".").pop() ?? "";
+  if (ext === "package") return "package";
+  if (["ts4script", "py", "pyo", "pyc"].includes(ext)) return "script";
   if (mime.startsWith("image/")) return "image";
   if (mime.startsWith("audio/")) return "audio";
   return "other";
 }
+
 
 function fmtSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
