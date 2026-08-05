@@ -55,10 +55,10 @@ export function TopBar({ active, onOpenPalette }: Props) {
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-background/85 px-6 backdrop-blur-md">
-      <div className="flex min-w-0 items-center gap-2 whitespace-nowrap text-sm">
+      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden whitespace-nowrap text-sm">
         <button
           onClick={() => navigate("projects")}
-          className="text-muted-foreground transition-colors hover:text-foreground"
+          className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
           title="Back to Projects"
         >
           Projects
@@ -68,7 +68,7 @@ export function TopBar({ active, onOpenPalette }: Props) {
           {project ? `Active Project: ${project.name}` : "No Active Project"}
         </span>
         <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-muted-foreground">{SECTION_LABEL[active]}</span>
+        <span className="hidden shrink-0 text-muted-foreground xl:inline">{SECTION_LABEL[active]}</span>
         <span
           className="ml-2 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium"
           style={{
