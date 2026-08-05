@@ -28,14 +28,23 @@ const KIND_META: Record<AssetKind, { icon: React.ComponentType<React.SVGProps<SV
   icon: { icon: ImageIcon, color: "var(--pink)" },
   image: { icon: ImageIcon, color: "var(--pink)" },
   audio: { icon: FileAudio, color: "var(--orange)" },
+  package: { icon: Boxes, color: "var(--blue)" },
+  script: { icon: FileText, color: "var(--green)" },
   other: { icon: FileText, color: "var(--teal)" },
 };
 
-function kindFromMime(mime: string): AssetKind {
+/** Sims 4 game files the app must accept alongside images/audio. */
+export const GAME_FILE_ACCEPT = ".package,.ts4script,.py,.pyo,.pyc,.zip";
+
+export function kindFromFile(name: string, mime: string): AssetKind {
+  const ext = name.toLowerCase().split(".").pop() ?? "";
+  if (ext === "package") return "package";
+  if (["ts4script", "py", "pyo", "pyc"].includes(ext)) return "script";
   if (mime.startsWith("image/")) return "image";
   if (mime.startsWith("audio/")) return "audio";
   return "other";
 }
+
 
 function fmtSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -119,26 +128,39 @@ export function AssetManager() {
 
   const onImport = async (files: FileList | null) => {
     if (!files || !activeProject) return;
+    const MAX_INLINE = 8 * 1024 * 1024; // keep local storage sane for big .package files
+    let linkedOnly = 0;
     for (const file of Array.from(files)) {
-      const dataUrl = await new Promise<string>((resolve) => {
-        const r = new FileReader();
-        r.onload = () => resolve(String(r.result));
-        r.readAsDataURL(file);
-      });
+      const kind = kindFromFile(file.name, file.type);
+      const inline = file.size <= MAX_INLINE;
+      if (!inline) linkedOnly++;
+      const dataUrl = inline
+        ? await new Promise<string>((resolve) => {
+            const r = new FileReader();
+            r.onload = () => resolve(String(r.result));
+            r.readAsDataURL(file);
+          })
+        : undefined;
       store.addAsset({
         projectId: activeProject.id,
         name: file.name,
         folder: activeFolder === "All" ? "/" : activeFolder,
-        kind: kindFromMime(file.type),
-        mimeType: file.type || "application/octet-stream",
+        kind,
+        mimeType: file.type || (kind === "package" ? "application/x-sims4-package" : "application/octet-stream"),
         sizeBytes: file.size,
         dataUrl,
+        filePath: file.name,
         source: "upload",
-        tags: [],
+        tags: kind === "package" ? ["package"] : kind === "script" ? ["script"] : [],
       });
     }
-    toast.success(`Imported ${files.length} file${files.length === 1 ? "" : "s"}`);
+    toast.success(`Imported ${files.length} file${files.length === 1 ? "" : "s"}`, {
+      description: linkedOnly
+        ? `${linkedOnly} large file${linkedOnly === 1 ? "" : "s"} referenced by name only (over 8 MB).`
+        : undefined,
+    });
   };
+
 
   if (!activeProject) {
     return (
@@ -155,7 +177,7 @@ export function AssetManager() {
     <div className="space-y-4">
       <Header
         title="Assets"
-        subtitle={`Project · ${activeProject.name}`}
+        subtitle={`Project · ${activeProject.name} · images, audio, .package & .ts4script`}
         view={view}
         onView={setView}
         onImport={() => fileRef.current?.click()}
@@ -164,9 +186,11 @@ export function AssetManager() {
         ref={fileRef}
         type="file"
         multiple
+        accept={`image/*,audio/*,${GAME_FILE_ACCEPT}`}
         className="hidden"
         onChange={(e) => { void onImport(e.target.files); e.target.value = ""; }}
       />
+
 
       <div className="grid grid-cols-12 gap-4">
         {/* Folders */}

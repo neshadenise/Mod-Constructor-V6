@@ -279,7 +279,7 @@ export interface NotificationTemplate {
 
 /* -------------------------- Asset ------------------------------------ */
 
-export type AssetKind = "icon" | "image" | "audio" | "other";
+export type AssetKind = "icon" | "image" | "audio" | "package" | "script" | "other";
 
 export interface Asset {
   id: ID;
