@@ -8,7 +8,7 @@
  * Nothing is uploaded anywhere — all parsing happens on this device.
  */
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Boxes,
@@ -32,6 +32,7 @@ import {
 import { toast } from "sonner";
 import { analyzeUpload, type UploadInput } from "@/lib/modimport/analyze";
 import { downloadBytes, exportModProject, zipExport } from "@/lib/modimport/export";
+import { registerImportedProject, unregisterImportedProject } from "@/lib/modexport/registry";
 import {
   IMPORT_STAGES,
   type Confidence,
@@ -76,6 +77,13 @@ export function ModImporter() {
   const [stage, setStage] = useState<string>("");
   const [dragging, setDragging] = useState(false);
   const bytesRef = useRef<Map<string, Uint8Array>>(new Map());
+
+  // Publish analysed mods to the Export Center (memory only).
+  useEffect(() => {
+    projects.forEach((p) => registerImportedProject(p, bytesRef.current));
+    const ids = projects.map((p) => p.id);
+    return () => ids.forEach(unregisterImportedProject);
+  }, [projects]);
   const fileInput = useRef<HTMLInputElement | null>(null);
   const folderInput = useRef<HTMLInputElement | null>(null);
 
