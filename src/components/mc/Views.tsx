@@ -61,6 +61,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useImportPackage } from "./ImportPackageDialog";
+import ExportCenter from "./views/ExportCenter";
 import { PackageImporter } from "./views/PackageImporter";
 import { ModImporter } from "./views/ModImporter";
 import { BuildProgressCard, BuildLog, ModMetadataCard } from "./Dashboard";
