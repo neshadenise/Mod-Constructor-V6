@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useStore } from "@/lib/store";
+import { setBuilderSeed } from "@/lib/builder-seed";
 import { useAppNavigation } from "@/lib/navigation";
 import type { ProjectBundle } from "@/lib/types";
 import { cn } from "@/lib/utils";
