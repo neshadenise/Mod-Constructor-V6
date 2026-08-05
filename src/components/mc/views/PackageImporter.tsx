@@ -180,17 +180,18 @@ export function PackageImporter() {
   };
 
   const mergeAll = () => {
-    if (!staged.length) return toast.error("Add a package file first");
+    if (!staged.length && !gameFiles.length) return toast.error("Add a file first");
     if (!projects.length) return toast.error("Create a project first");
     try {
       let total = 0;
-      let name = "";
+      let name = projects.find((p) => p.id === target)?.name ?? "";
       staged.forEach((s) => {
         const { project, added } = store.mergeBundleIntoProject(filtered(s.bundle), target);
         total += Object.values(added).reduce((a, b) => a + b, 0);
         name = project.name;
       });
-      toast.success(`Added ${total} item${total === 1 ? "" : "s"} to "${name}"`);
+      void importGameFiles(target);
+      if (staged.length) toast.success(`Added ${total} item${total === 1 ? "" : "s"} to "${name}"`);
       setStaged([]);
       navigate("explorer");
     } catch (e) {
@@ -201,11 +202,14 @@ export function PackageImporter() {
   const importAsNew = () => {
     if (!staged.length) return toast.error("Add a package file first");
     let last = "";
+    let lastId = "";
     staged.forEach((s) => {
       const p = store.importBundle(filtered(s.bundle));
       store.setActiveProject(p.id);
       last = p.name;
+      lastId = p.id;
     });
+    if (lastId) void importGameFiles(lastId);
     toast.success(`Imported "${last}" as a new project`);
     setStaged([]);
     navigate("projects");
@@ -220,8 +224,10 @@ export function PackageImporter() {
           </div>
           <h1 className="text-xl font-bold tracking-tight">Package Importer</h1>
           <p className="text-xs text-muted-foreground">
-            Bring <span className="font-mono">.mcbundle.json</span> packages into this workspace. Files
-            are read on this device — nothing is uploaded.
+            Bring <span className="font-mono">.mcbundle.json</span> packages, Sims 4{" "}
+            <span className="font-mono">.package</span> files and{" "}
+            <span className="font-mono">.ts4script</span> mods into this workspace. Files are read on
+            this device — nothing is uploaded.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => navigate("exporter")}>
@@ -244,15 +250,15 @@ export function PackageImporter() {
         )}
       >
         <Upload className="h-6 w-6 text-[var(--teal)]" />
-        <div className="text-sm font-semibold">Drop package files here</div>
+        <div className="text-sm font-semibold">Drop mod files here</div>
         <div className="text-[11px] text-muted-foreground">
-          or click to browse · supports multiple .mcbundle.json files
+          or click to browse · .mcbundle.json · .package · .ts4script
         </div>
         <input
           ref={inputRef}
           type="file"
           multiple
-          accept="application/json,.json,.mcbundle.json"
+          accept="application/json,.json,.mcbundle.json,.package,.ts4script,.py,.pyo,.pyc,.zip"
           className="hidden"
           onChange={(e) => {
             void readFiles(Array.from(e.target.files ?? []));
@@ -260,6 +266,43 @@ export function PackageImporter() {
           }}
         />
       </div>
+
+      {gameFiles.length > 0 && (
+        <div className="space-y-2 rounded-xl border border-border bg-card p-3">
+          <div className="flex items-center justify-between">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Game files ({gameFiles.length})
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setGameFiles([])}>
+              <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Clear
+            </Button>
+          </div>
+          {gameFiles.map((f, i) => (
+            <div key={`${f.name}-${i}`} className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 p-2">
+              <FileJson className="h-4 w-4 text-[var(--blue)]" />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-xs font-semibold">{f.name}</div>
+                <div className="font-mono text-[10px] text-muted-foreground">
+                  {f.name.toLowerCase().endsWith(".package") ? "Package" : "Script"} · {(f.size / 1024).toFixed(1)} KB
+                </div>
+              </div>
+              <button
+                onClick={() => setGameFiles((p) => p.filter((_, j) => j !== i))}
+                className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                aria-label="Remove file"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+          {!staged.length && (
+            <Button size="sm" className="w-full" disabled={!projects.length} onClick={() => { void importGameFiles(target); navigate("assets"); }}>
+              <FolderInput className="mr-1.5 h-3.5 w-3.5" /> Add game files to selected project
+            </Button>
+          )}
+        </div>
+      )}
+
 
       {staged.length > 0 && (
         <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
