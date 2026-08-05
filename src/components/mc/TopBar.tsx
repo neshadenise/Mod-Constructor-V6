@@ -63,14 +63,14 @@ export function TopBar({ active, onOpenPalette }: Props) {
         >
           Projects
         </button>
-        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         <span className={cn("max-w-[200px] truncate font-semibold", !project && "text-muted-foreground")}>
           {project ? project.name : "No Active Project"}
         </span>
-        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="hidden shrink-0 text-muted-foreground xl:inline">{SECTION_LABEL[active]}</span>
+        <ChevronRight className="hidden h-3.5 w-3.5 shrink-0 text-muted-foreground 2xl:inline" />
+        <span className="hidden shrink-0 text-muted-foreground 2xl:inline">{SECTION_LABEL[active]}</span>
         <span
-          className="ml-2 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium"
+          className="ml-2 hidden shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium lg:inline-flex"
           style={{
             color: `var(--${busy ? "orange" : "green"})`,
             backgroundColor: `color-mix(in oklab, var(--${busy ? "orange" : "green"}) 12%, transparent)`,
@@ -83,7 +83,7 @@ export function TopBar({ active, onOpenPalette }: Props) {
           />
           {busy ? "Building" : project ? `v${project.version}` : "Idle"}
         </span>
-        <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+        <span className="ml-1 hidden shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground 2xl:inline-flex">
           <Save className="h-3 w-3" /> Saved · {savedAgo}
         </span>
       </div>
