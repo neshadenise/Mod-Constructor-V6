@@ -128,26 +128,39 @@ export function AssetManager() {
 
   const onImport = async (files: FileList | null) => {
     if (!files || !activeProject) return;
+    const MAX_INLINE = 8 * 1024 * 1024; // keep local storage sane for big .package files
+    let linkedOnly = 0;
     for (const file of Array.from(files)) {
-      const dataUrl = await new Promise<string>((resolve) => {
-        const r = new FileReader();
-        r.onload = () => resolve(String(r.result));
-        r.readAsDataURL(file);
-      });
+      const kind = kindFromFile(file.name, file.type);
+      const inline = file.size <= MAX_INLINE;
+      if (!inline) linkedOnly++;
+      const dataUrl = inline
+        ? await new Promise<string>((resolve) => {
+            const r = new FileReader();
+            r.onload = () => resolve(String(r.result));
+            r.readAsDataURL(file);
+          })
+        : undefined;
       store.addAsset({
         projectId: activeProject.id,
         name: file.name,
         folder: activeFolder === "All" ? "/" : activeFolder,
-        kind: kindFromMime(file.type),
-        mimeType: file.type || "application/octet-stream",
+        kind,
+        mimeType: file.type || (kind === "package" ? "application/x-sims4-package" : "application/octet-stream"),
         sizeBytes: file.size,
         dataUrl,
+        filePath: file.name,
         source: "upload",
-        tags: [],
+        tags: kind === "package" ? ["package"] : kind === "script" ? ["script"] : [],
       });
     }
-    toast.success(`Imported ${files.length} file${files.length === 1 ? "" : "s"}`);
+    toast.success(`Imported ${files.length} file${files.length === 1 ? "" : "s"}`, {
+      description: linkedOnly
+        ? `${linkedOnly} large file${linkedOnly === 1 ? "" : "s"} referenced by name only (over 8 MB).`
+        : undefined,
+    });
   };
+
 
   if (!activeProject) {
     return (
