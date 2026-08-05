@@ -73,7 +73,9 @@ export function PackageImporter() {
   const active = store.state.activeProjectId ?? projects[0]?.id ?? "";
 
   const [staged, setStaged] = useState<Staged[]>([]);
+  const [gameFiles, setGameFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
+
   const [targetId, setTargetId] = useState<string>("");
   const [selected, setSelected] = useState<Record<Kind, boolean>>({
     careers: true,
