@@ -1189,7 +1189,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       entityId: target.id,
       summary: `Imported package contents into "${target.name}"`,
     });
-    return { project: merged, added };
+    return { project: merged, added, records: { careers, traits, aspirations, notifications } };
   }, [mutate, log]);
 
 
