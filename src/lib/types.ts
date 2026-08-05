@@ -46,6 +46,10 @@ export interface Project {
   status: ProjectStatus;
   /** Ordered newest-first version history. */
   changelog: ChangelogEntry[];
+  /** High-level project category, e.g. "Career Mod". */
+  projectType?: string;
+  /** Optional cover image (data URL or absolute URL). */
+  imageUrl?: string;
   /** Marks this project as the built-in demo/show project. */
   isDemo?: boolean;
   /** Account this project belongs to. Undefined = device-local (guest) project. */

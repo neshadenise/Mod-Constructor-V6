@@ -7,6 +7,7 @@ import { SECTION_LABEL, type SectionId } from "./sections";
 import { cn } from "@/lib/utils";
 import { AccountMenu } from "./AccountMenu";
 import { useStore, useActiveProject } from "@/lib/store";
+import { useAppNavigation } from "@/lib/navigation";
 
 function formatAgo(ms: number) {
   const s = Math.max(0, Math.round(ms / 1000));
@@ -27,6 +28,7 @@ export function TopBar({ active, onOpenPalette }: Props) {
   const { unread, setDrawerOpen, push } = useNotifications();
   const store = useStore();
   const project = useActiveProject();
+  const { navigate } = useAppNavigation();
   const [online, setOnline] = useState(false);
   const [checking, setChecking] = useState(false);
 
@@ -53,10 +55,20 @@ export function TopBar({ active, onOpenPalette }: Props) {
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-background/85 px-6 backdrop-blur-md">
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-muted-foreground">{SECTION_LABEL[active]}</span>
+      <div className="flex min-w-0 items-center gap-2 whitespace-nowrap text-sm">
+        <button
+          onClick={() => navigate("projects")}
+          className="text-muted-foreground transition-colors hover:text-foreground"
+          title="Back to Projects"
+        >
+          Projects
+        </button>
         <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="font-semibold">{project?.name ?? "No project"}</span>
+        <span className={cn("max-w-[260px] truncate font-semibold", !project && "text-muted-foreground")}>
+          {project ? `Active Project: ${project.name}` : "No Active Project"}
+        </span>
+        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-muted-foreground">{SECTION_LABEL[active]}</span>
         <span
           className="ml-2 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium"
           style={{
