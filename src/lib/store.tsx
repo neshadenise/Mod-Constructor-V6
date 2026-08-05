@@ -404,7 +404,16 @@ export interface StoreAPI {
   mergeBundleIntoProject: (
     bundle: ProjectBundle,
     targetProjectId?: ID,
-  ) => { project: Project; added: Record<string, number> };
+  ) => {
+    project: Project;
+    added: Record<string, number>;
+    records: {
+      careers: Career[];
+      traits: Trait[];
+      aspirations: Aspiration[];
+      notifications: NotificationTemplate[];
+    };
+  };
 
   // Danger zone
   resetDemoData: () => Promise<void>;
@@ -1180,7 +1189,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       entityId: target.id,
       summary: `Imported package contents into "${target.name}"`,
     });
-    return { project: merged, added };
+    return { project: merged, added, records: { careers, traits, aspirations, notifications } };
   }, [mutate, log]);
 
 
