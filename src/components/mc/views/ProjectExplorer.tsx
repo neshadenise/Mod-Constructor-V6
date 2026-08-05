@@ -897,8 +897,7 @@ function RenameInput({
 }: { value: string; onChange: (v: string) => void; onCommit: () => void; onCancel: () => void }) {
   return (
     <input
-      autoFocus
-      onFocus={(e) => e.currentTarget.select()}
+      ref={(el) => { if (el && document.activeElement !== el) { el.focus(); el.select(); } }}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onClick={(e) => e.stopPropagation()}
