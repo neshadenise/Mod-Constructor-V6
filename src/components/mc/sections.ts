@@ -37,7 +37,7 @@ export const SECTION_LABEL: Record<SectionId, string> = {
   assets: "Project Assets",
   reference: "Reference Viewer",
   exporter: "Package Exporter",
-  importer: "Package Importer",
+  importer: "Mod Importer",
   validation: "Validation Center",
   queue: "Build Queue",
   templates: "Templates",
