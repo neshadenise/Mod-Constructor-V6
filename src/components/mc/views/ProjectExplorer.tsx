@@ -182,9 +182,9 @@ export function ProjectExplorer() {
     setRenameDraft(item.itemType === "file" ? splitName(item.name).base : item.name);
   };
 
-  const commitRename = () => {
+  const commitRename = (next?: string) => {
     if (!renaming) return;
-    const err = ex.rename(renaming, renameDraft);
+    const err = ex.rename(renaming, next ?? renameDraft);
     if (err) toast.error(err);
     else toast.success("Renamed");
     setRenaming(null);
@@ -616,7 +616,7 @@ export function ProjectExplorer() {
                             )}
                           </div>
                           {renaming === item.id ? (
-                            <RenameInput value={renameDraft} onChange={setRenameDraft} onCommit={commitRename} onCancel={() => setRenaming(null)} />
+                            <RenameInput value={renameDraft} onChange={setRenameDraft} onCommit={(v) => commitRename(v)} onCancel={() => setRenaming(null)} />
                           ) : (
                             <span className="w-full truncate text-[11px] font-medium">{item.name}</span>
                           )}
@@ -677,7 +677,7 @@ export function ProjectExplorer() {
                           <span className="col-span-6 flex min-w-0 items-center gap-2">
                             <ItemIcon item={item} className="h-4 w-4 shrink-0" />
                             {renaming === item.id ? (
-                              <RenameInput value={renameDraft} onChange={setRenameDraft} onCommit={commitRename} onCancel={() => setRenaming(null)} />
+                              <RenameInput value={renameDraft} onChange={setRenameDraft} onCommit={(v) => commitRename(v)} onCancel={() => setRenaming(null)} />
                             ) : (
                               <span className="min-w-0 truncate font-medium">
                                 {item.name}
@@ -894,25 +894,34 @@ function MiniBtn({ onClick, icon: Icon, label }: { onClick: () => void; icon: Re
 
 function RenameInput({
   value, onChange, onCommit, onCancel,
-}: { value: string; onChange: (v: string) => void; onCommit: () => void; onCancel: () => void }) {
+}: { value: string; onChange: (v: string) => void; onCommit: (v: string) => void; onCancel: () => void }) {
+  // Uncontrolled on purpose: unrelated re-renders of the Explorer must not
+  // clobber the caret position while the user is typing a name.
   const inputRef = useRef<HTMLInputElement>(null);
+  const done = useRef(false);
   useEffect(() => {
     const el = inputRef.current;
     if (!el) return;
+    el.value = value;
     el.focus();
     el.select();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const finish = () => {
+    if (done.current) return;
+    done.current = true;
+    onCommit(inputRef.current?.value ?? value);
+  };
   return (
     <input
       ref={inputRef}
-      value={value}
+      defaultValue={value}
       onChange={(e) => onChange(e.target.value)}
       onClick={(e) => e.stopPropagation()}
-      onBlur={onCommit}
+      onBlur={finish}
       onKeyDown={(e) => {
         e.stopPropagation();
-        if (e.key === "Enter") onCommit();
-        if (e.key === "Escape") onCancel();
+        if (e.key === "Enter") finish();
+        if (e.key === "Escape") { done.current = true; onCancel(); }
       }}
       className="w-full rounded border border-[var(--teal)] bg-background px-1 py-0.5 text-[11px] outline-none"
     />
