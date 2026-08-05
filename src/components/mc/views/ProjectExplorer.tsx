@@ -895,9 +895,16 @@ function MiniBtn({ onClick, icon: Icon, label }: { onClick: () => void; icon: Re
 function RenameInput({
   value, onChange, onCommit, onCancel,
 }: { value: string; onChange: (v: string) => void; onCommit: () => void; onCancel: () => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.focus();
+    el.select();
+  }, []);
   return (
     <input
-      ref={(el) => { if (el && document.activeElement !== el) { el.focus(); el.select(); } }}
+      ref={inputRef}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onClick={(e) => e.stopPropagation()}
