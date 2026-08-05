@@ -147,10 +147,10 @@ export function PackageImporter() {
       });
     }
     if (gameFiles.length) {
-      toast.success(`Added ${gameFiles.length} game file${gameFiles.length === 1 ? "" : "s"}`, {
+      toast.success(`Added ${gameFiles.length} game file${gameFiles.length === 1 ? "" : "s"} to Assets`, {
         description: linkedOnly
-          ? `${linkedOnly} large file${linkedOnly === 1 ? "" : "s"} referenced by name only (over 8 MB).`
-          : "Stored under /Packages and /Scripts in Assets.",
+          ? `${linkedOnly} large file${linkedOnly === 1 ? "" : "s"} referenced by name only (over 8 MB). Game files are stored as assets — they can't be opened in a builder.`
+          : "Stored under /Packages and /Scripts. Game files are binary, so they can't be opened in the Career Builder — use a .mcbundle.json to edit careers.",
       });
       setGameFiles([]);
     }
