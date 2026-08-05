@@ -179,21 +179,48 @@ export function PackageImporter() {
     return out as unknown as ProjectBundle;
   };
 
+  /** Open the first authored record we imported directly in its builder. */
+  const openFirstRecord = (records: {
+    careers: { id: string }[];
+    traits: { id: string }[];
+    aspirations: { id: string }[];
+  }) => {
+    const map = [
+      ["career", records.careers[0], "career"],
+      ["trait", records.traits[0], "trait"],
+      ["aspiration", records.aspirations[0], "aspiration"],
+    ] as const;
+    for (const [kind, rec, view] of map) {
+      if (rec) {
+        setBuilderSeed(kind, rec, rec.id);
+        navigate(view);
+        return true;
+      }
+    }
+    return false;
+  };
+
   const mergeAll = () => {
     if (!staged.length && !gameFiles.length) return toast.error("Add a file first");
     if (!projects.length) return toast.error("Create a project first");
     try {
       let total = 0;
       let name = projects.find((p) => p.id === target)?.name ?? "";
+      let first: Parameters<typeof openFirstRecord>[0] | null = null;
       staged.forEach((s) => {
-        const { project, added } = store.mergeBundleIntoProject(filtered(s.bundle), target);
+        const { project, added, records } = store.mergeBundleIntoProject(filtered(s.bundle), target);
         total += Object.values(added).reduce((a, b) => a + b, 0);
         name = project.name;
+        if (!first && (records.careers.length || records.traits.length || records.aspirations.length)) {
+          first = records;
+        }
       });
+      const hadGameFiles = gameFiles.length > 0;
       void importGameFiles(target);
       if (staged.length) toast.success(`Added ${total} item${total === 1 ? "" : "s"} to "${name}"`);
       setStaged([]);
-      navigate("explorer");
+      if (first && openFirstRecord(first)) return;
+      navigate(hadGameFiles ? "assets" : "explorer");
     } catch (e) {
       toast.error(String((e as Error)?.message ?? e));
     }
