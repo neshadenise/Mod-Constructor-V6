@@ -519,7 +519,8 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       notifications: s.notifications.filter((n) => n.projectId !== id),
       assets: s.assets.filter((a) => a.projectId !== id),
       packModules: s.packModules.filter((m) => m.projectId !== id),
-      activeProjectId: s.activeProjectId === id ? s.projects.find((p) => p.id !== id)?.id : s.activeProjectId,
+      // Deleting the active project clears the active project state.
+      activeProjectId: s.activeProjectId === id ? undefined : s.activeProjectId,
     }));
     log({ kind: "delete", entityType: "project", entityId: id, summary: `Deleted project` });
   }, [mutate, log]);
@@ -534,6 +535,8 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       description: src.description,
       tags: src.tags,
       version: src.version,
+      projectType: src.projectType,
+      imageUrl: src.imageUrl,
     });
   }, [createProject]);
 
@@ -1256,10 +1259,10 @@ export function useStore(): StoreAPI {
   return ctx;
 }
 
-/** Convenience: current active project or the first one. */
+/** The project the user explicitly activated, or undefined when none is active. */
 export function useActiveProject(): Project | undefined {
   const { state } = useStore();
-  return state.projects.find((p) => p.id === state.activeProjectId) ?? state.projects[0];
+  return state.projects.find((p) => p.id === state.activeProjectId);
 }
 
 /** Download a bundle as a .mcbundle.json file. */

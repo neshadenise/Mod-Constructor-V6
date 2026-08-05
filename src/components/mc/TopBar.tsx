@@ -7,6 +7,7 @@ import { SECTION_LABEL, type SectionId } from "./sections";
 import { cn } from "@/lib/utils";
 import { AccountMenu } from "./AccountMenu";
 import { useStore, useActiveProject } from "@/lib/store";
+import { useAppNavigation } from "@/lib/navigation";
 
 function formatAgo(ms: number) {
   const s = Math.max(0, Math.round(ms / 1000));
@@ -27,6 +28,7 @@ export function TopBar({ active, onOpenPalette }: Props) {
   const { unread, setDrawerOpen, push } = useNotifications();
   const store = useStore();
   const project = useActiveProject();
+  const { navigate } = useAppNavigation();
   const [online, setOnline] = useState(false);
   const [checking, setChecking] = useState(false);
 
@@ -53,12 +55,22 @@ export function TopBar({ active, onOpenPalette }: Props) {
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-background/85 px-6 backdrop-blur-md">
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-muted-foreground">{SECTION_LABEL[active]}</span>
-        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="font-semibold">{project?.name ?? "No project"}</span>
+      <div className="flex min-w-0 shrink-0 items-center gap-2 whitespace-nowrap text-sm">
+        <button
+          onClick={() => navigate("projects")}
+          className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+          title="Back to Projects"
+        >
+          Projects
+        </button>
+        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <span className={cn("max-w-[200px] truncate font-semibold", !project && "text-muted-foreground")}>
+          {project ? project.name : "No Active Project"}
+        </span>
+        <ChevronRight className="hidden h-3.5 w-3.5 shrink-0 text-muted-foreground 2xl:inline" />
+        <span className="hidden shrink-0 text-muted-foreground 2xl:inline">{SECTION_LABEL[active]}</span>
         <span
-          className="ml-2 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium"
+          className="ml-2 hidden shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium lg:inline-flex"
           style={{
             color: `var(--${busy ? "orange" : "green"})`,
             backgroundColor: `color-mix(in oklab, var(--${busy ? "orange" : "green"}) 12%, transparent)`,
@@ -71,13 +83,13 @@ export function TopBar({ active, onOpenPalette }: Props) {
           />
           {busy ? "Building" : project ? `v${project.version}` : "Idle"}
         </span>
-        <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+        <span className="ml-1 hidden shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground 2xl:inline-flex">
           <Save className="h-3 w-3" /> Saved · {savedAgo}
         </span>
       </div>
 
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex min-w-0 items-center gap-2">
         <button
           onClick={() => {
             toggleAdvanced();
@@ -116,7 +128,7 @@ export function TopBar({ active, onOpenPalette }: Props) {
 
         <button
           onClick={onOpenPalette}
-          className="group flex h-9 w-64 items-center gap-2 rounded-md border border-border bg-card px-2.5 text-left text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="group flex h-9 w-40 min-w-0 shrink items-center 2xl:w-64 gap-2 rounded-md border border-border bg-card px-2.5 text-left text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           aria-label="Open command palette and universal search"
         >
           <Search className="h-3.5 w-3.5" />

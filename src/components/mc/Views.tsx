@@ -62,6 +62,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useImportPackage } from "./ImportPackageDialog";
 import ExportCenter from "./views/ExportCenter";
+import { ProjectsScreen } from "./views/ProjectsScreen";
 import { PackageImporter } from "./views/PackageImporter";
 import { ModImporter } from "./views/ModImporter";
 import { BuildProgressCard, BuildLog, ModMetadataCard } from "./Dashboard";
@@ -85,7 +86,8 @@ import {
 } from "@/lib/app-host";
 import { MCP_TOOL_DEFS } from "@/lib/mcp-tools";
 import { downloadBundle, loadBundle, emptyBundle } from "@/lib/project-store";
-import { useStore, downloadBundle as downloadStoreBundle } from "@/lib/store";
+import { useStore, useActiveProject, downloadBundle as downloadStoreBundle } from "@/lib/store";
+import { useAppNavigation } from "@/lib/navigation";
 import {
   defaultEngineCapabilities,
   ENGINE_STATE_LABEL,
@@ -4383,6 +4385,35 @@ function Row({ k, v }: { k: string; v: string }) {
   );
 }
 
+/**
+ * Builders may only run against an active project. Without one the user is
+ * sent back to the Projects screen.
+ */
+function RequireProject({ children }: { children: React.ReactNode }) {
+  const project = useActiveProject();
+  const { navigate } = useAppNavigation();
+  useEffect(() => {
+    if (!project) {
+      toast("Select or create a project first.");
+      navigate("projects");
+    }
+  }, [project, navigate]);
+  if (!project) {
+    return (
+      <div className="rounded-xl border border-dashed border-border p-10 text-center">
+        <div className="text-sm font-semibold">No Active Project</div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Choose a project on the Projects screen and select <b>Open in Builder</b> to start editing.
+        </p>
+        <div className="mt-3">
+          <PrimaryBtn icon={FolderKanban} onClick={() => navigate("projects")}>Back to Projects</PrimaryBtn>
+        </div>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
+
 /* ---------- Router ---------- */
 
 export function SectionView({
@@ -4393,13 +4424,22 @@ export function SectionView({
   DashboardEl: React.ReactNode;
 }) {
   if (active === "dashboard") return <>{DashboardEl}</>;
-  if (active === "projects") return <div className="mx-auto max-w-[1600px] p-6"><ProjectsView /></div>;
+  if (active === "projects")
+    return (
+      <div className="mx-auto max-w-[1600px] space-y-6 p-6">
+        <ProjectsScreen />
+        <details className="rounded-xl border border-border bg-card p-3">
+          <summary className="cursor-pointer text-sm font-semibold">Project status, versions &amp; changelog</summary>
+          <div className="mt-3"><ProjectsView /></div>
+        </details>
+      </div>
+    );
   if (active === "explorer") return <div className="mx-auto max-w-[1600px] p-6"><ProjectExplorer /></div>;
   if (active === "reference") return <div className="mx-auto max-w-[1600px] p-6"><ReferenceViewer /></div>;
-  if (active === "career") return <div className="mx-auto max-w-[1600px] p-6"><CareerBuilder /></div>;
-  if (active === "trait") return <div className="mx-auto max-w-[1600px] p-6"><TraitBuilder /></div>;
-  if (active === "aspiration") return <div className="mx-auto max-w-[1600px] p-6"><AspirationBuilder /></div>;
-  if (active === "notifications") return <div className="mx-auto max-w-[1600px] p-6"><NotificationLibrary /></div>;
+  if (active === "career") return <div className="mx-auto max-w-[1600px] p-6"><RequireProject><CareerBuilder /></RequireProject></div>;
+  if (active === "trait") return <div className="mx-auto max-w-[1600px] p-6"><RequireProject><TraitBuilder /></RequireProject></div>;
+  if (active === "aspiration") return <div className="mx-auto max-w-[1600px] p-6"><RequireProject><AspirationBuilder /></RequireProject></div>;
+  if (active === "notifications") return <div className="mx-auto max-w-[1600px] p-6"><RequireProject><NotificationLibrary /></RequireProject></div>;
   if (active === "tuning") return <div className="mx-auto max-w-[1600px] p-6"><TuningEditor /></div>;
   if (active === "icons") return <div className="mx-auto max-w-[1600px] p-6"><IconLibraryView /></div>;
   if (active === "assets") return <div className="mx-auto max-w-[1600px] p-6"><AssetManager /></div>;
