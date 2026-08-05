@@ -177,7 +177,7 @@ export function AssetManager() {
     <div className="space-y-4">
       <Header
         title="Assets"
-        subtitle={`Project · ${activeProject.name}`}
+        subtitle={`Project · ${activeProject.name} · images, audio, .package & .ts4script`}
         view={view}
         onView={setView}
         onImport={() => fileRef.current?.click()}
@@ -186,9 +186,11 @@ export function AssetManager() {
         ref={fileRef}
         type="file"
         multiple
+        accept={`image/*,audio/*,${GAME_FILE_ACCEPT}`}
         className="hidden"
         onChange={(e) => { void onImport(e.target.files); e.target.value = ""; }}
       />
+
 
       <div className="grid grid-cols-12 gap-4">
         {/* Folders */}
