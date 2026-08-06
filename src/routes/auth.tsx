@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import { checkPassword, PASSWORD_RULES } from "@/lib/password";
+
 
 function safeNext(value: unknown): string {
   if (typeof value !== "string") return "/";
