@@ -821,3 +821,36 @@ export const OBJECTIVE_TEMPLATES: ObjectiveTemplate[] = [
   { id: "use-computer", label: "Use Computer", type: "interaction", description: "Use a computer for any task.", params: { times: 5 } },
   { id: "custom", label: "Custom", type: "custom", description: "Start from an empty custom test goal.", params: {} },
 ];
+
+/* --------------------------------------------------------- picker mapping -- */
+
+import type { ResourceKind } from "@/lib/traits/schema";
+
+/**
+ * Goal fields name resources the way creators talk about them; the resource
+ * picker speaks the shared trait vocabulary. This is the only place the two
+ * are reconciled.
+ */
+export const PICKER_KIND: Record<string, ResourceKind> = {
+  Trait: "Trait",
+  Buff: "Buff",
+  Loot: "Loot",
+  Interaction: "Interaction",
+  TestSet: "TestSet",
+  Statistic: "Statistic",
+  Skill: "Skill",
+  Career: "Career",
+  Notification: "Notification",
+  Broadcaster: "Broadcaster",
+  Aspiration: "Aspiration",
+  CASPart: "CasPart",
+  Object: "Snippet",
+  Recipe: "Snippet",
+  Collection: "Snippet",
+  Situation: "Snippet",
+  Venue: "Snippet",
+  RelationshipBit: "Snippet",
+};
+
+export const pickerKind = (expects?: string): ResourceKind =>
+  (expects && PICKER_KIND[expects]) || "Snippet";
