@@ -276,7 +276,7 @@ export const EA_ANIMATIONS: EaAnimation[] = [
   {
     id: "an_guitar", displayName: "Play Guitar", animationName: "a_guitar_play_x",
     asmKey: "instrument_guitar", stateMachine: "instrument_guitar", stateName: "play_loop",
-    clipName: "a_guitar_play_x", categories: ["Playing Instrument", "Music", "Prop-Based", "Looping", "Full Body"],
+    clipName: "a_guitar_play_x", categories: ["Playing Instrument", "Prop-Based", "Looping", "Full Body"],
     pack: "Base Game",
     actors: [
       { name: "x", role: "actor", ...human(["child", "teen", "youngadult", "adult", "elder"]) },
