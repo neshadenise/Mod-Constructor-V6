@@ -119,6 +119,27 @@ export function buildImportFiles(
   }
 
   const manifest: ResourceManifest = { version: 1, mod: project.name, resources: [] };
+  // Two resources can share a display name (same tuning name under different
+  // type ids). Paths address files, so they must stay unique or edits to one
+  // resource would silently overwrite another.
+  const usedPaths = new Set<string>();
+  const uniqueName = (folder: string[], name: string, key: string) => {
+    const path = [...folder, name].join("/");
+    if (!usedPaths.has(path)) {
+      usedPaths.add(path);
+      return name;
+    }
+    const dot = name.indexOf(".");
+    const stem = dot === -1 ? name : name.slice(0, dot);
+    const ext = dot === -1 ? "" : name.slice(dot);
+    let candidate = `${stem} (${key})${ext}`;
+    let n = 2;
+    while (usedPaths.has([...folder, candidate].join("/"))) {
+      candidate = `${stem} (${key}-${n++})${ext}`;
+    }
+    usedPaths.add([...folder, candidate].join("/"));
+    return candidate;
+  };
 
   for (const resource of project.resources) {
     const component = project.components.find((c) => c.id === resource.componentId);
@@ -167,6 +188,8 @@ export function buildImportFiles(
       size = resource.byteSize;
       dataUrl = textToDataUrl(stub, "text/plain");
     }
+
+    fileName = uniqueName(folder, fileName, `${resource.key.type}_${resource.key.instance}`);
 
     files.push({ folder, name: fileName, size, mimeType: mime, dataUrl, resourceKey: keyTag });
     manifest.resources.push({
