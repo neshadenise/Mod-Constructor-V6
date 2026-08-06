@@ -312,7 +312,10 @@ export async function analyzeUpload(
             editability:
               info.decodable && compression !== "internal" && compression !== "unknown"
                 ? "editable"
-                : "preserved-unsupported",
+                : info.preservable
+                  ? "read-only"
+                  : "preserved-unsupported",
+
             originalIndex: e.index,
           } satisfies ImportedResource;
         });
@@ -385,7 +388,17 @@ export async function analyzeUpload(
     for (const resource of a.component.resources) {
       const entry = pkg.entries[resource.originalIndex];
       if (!entry) continue;
-      if (resource.editability !== "editable") continue;
+      if (resource.editability !== "editable") {
+        // Recognised-but-binary resources still get a readable label so the
+        // review table never shows an anonymous row.
+        const info = resourceTypeInfo(resource.key.type);
+        resource.subtype ??= info.category;
+        resource.name ??= `${info.label} · ${resource.key.instance}`;
+        if (info.preservable && !resource.notes)
+          resource.notes = "Recognised binary format — copied through unchanged on export.";
+        continue;
+      }
+
       try {
         const payload = await readDbpfResource(entry);
         if (isStbl(payload)) {
@@ -419,9 +432,13 @@ export async function analyzeUpload(
     }
     for (const r of a.component.resources)
       if (resourceTypeInfo(r.key.type).category === "simdata") a.simdataInstances.add(r.key.instance);
-    a.component.parseStatus = a.component.resources.some((r) => r.editability === "editable")
-      ? "parsed"
-      : "partially-parsed";
+    // A package is fully handled when every resource is either editable or a
+    // recognised binary we round-trip byte-for-byte. Only genuinely unknown
+    // formats leave it partially parsed.
+    a.component.parseStatus = a.component.resources.some((r) => r.editability === "preserved-unsupported")
+      ? "partially-parsed"
+      : "parsed";
+
   }
 
   stage("Grouping mod components");
@@ -675,19 +692,49 @@ export async function analyzeUpload(
       add({
         level: "info",
         code: "preserved-unsupported",
-        message: `${unsupported} resource${unsupported === 1 ? "" : "s"} cannot be edited here and will be copied through unchanged on export.`,
+        message: `${unsupported} resource${unsupported === 1 ? "" : "s"} use a format this app does not recognise. They are copied through unchanged on export.`,
+        suggestion: "You can still edit everything else in this mod — nothing is lost.",
       });
 
+    const preserved = project.resources.filter((r) => r.editability === "read-only").length;
+    if (preserved)
+      add({
+        level: "info",
+        code: "preserved-binary",
+        message: `${preserved} recognised binary resource${preserved === 1 ? "" : "s"} (art, meshes, SimData) are preserved byte-for-byte.`,
+      });
+
+    // Reasons behind a non-ready status, in plain language for the review card.
+    const reasons: string[] = [];
+    const corruptFiles = project.components.filter((c) => c.parseStatus === "corrupt");
+    corruptFiles.forEach((c) =>
+      reasons.push(`${c.originalFileName} could not be read: ${c.parseError ?? "unknown error"}`),
+    );
+    if (unsupported)
+      reasons.push(
+        `${unsupported} resource${unsupported === 1 ? " uses" : "s use"} an unrecognised format — preserved unchanged, not editable here.`,
+      );
+    const compiledOnly = project.components.filter(
+      (c) => c.fileType === "ts4script" && c.parseStatus === "partially-parsed",
+    );
+    compiledOnly.forEach((c) =>
+      reasons.push(`${c.originalFileName} ships compiled bytecode only — it is bundled as-is, source cannot be edited.`),
+    );
+    if (project.confidence === "medium" || project.confidence === "low" || project.confidence === "conflict")
+      reasons.push("File grouping needs your confirmation before this mod is treated as one project.");
+
     project.validationResults = results;
+    project.supportReasons = reasons;
     const failed = project.components.every((c) => c.parseStatus === "corrupt");
     project.importStatus = failed
       ? "failed"
       : project.confidence === "medium" || project.confidence === "low" || project.confidence === "conflict"
         ? "needs-review"
-        : unsupported || project.components.some((c) => c.parseStatus === "partially-parsed")
+        : unsupported || corruptFiles.length
           ? "partially-supported"
           : "ready";
   }
+
 
   session.projects = projects;
   stage(projects.some((p) => p.importStatus === "needs-review") ? "Awaiting review" : "Import complete");
