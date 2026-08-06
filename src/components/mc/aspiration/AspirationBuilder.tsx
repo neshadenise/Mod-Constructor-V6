@@ -24,6 +24,8 @@ import {
   Zap,
   Bell,
   Radio,
+  FlaskConical,
+  Hammer,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -63,9 +65,18 @@ import {
   NotificationsSection,
   RewardsSection,
 } from "./GameplaySections";
+import { BuildSection, RequirementsSection } from "./PipelineSections";
 
 const NAV: {
-  id: AspirationSectionId | "milestones" | "rewards" | "gameplay" | "notifications" | "events";
+  id:
+    | AspirationSectionId
+    | "milestones"
+    | "rewards"
+    | "gameplay"
+    | "notifications"
+    | "events"
+    | "requirements"
+    | "build";
   label: string;
   icon: typeof Sparkles;
   advanced?: boolean;
@@ -77,6 +88,8 @@ const NAV: {
   { id: "gameplay", label: "Loot & buffs", icon: Zap },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "events", label: "Events & completion", icon: Radio },
+  { id: "requirements", label: "Requirements", icon: FlaskConical },
+  { id: "build", label: "Build & export", icon: Hammer },
   { id: "resources", label: "Resources & IDs", icon: Link2 },
   { id: "strings", label: "Text", icon: Languages },
   { id: "dependencies", label: "Dependencies", icon: Link2 },
@@ -375,6 +388,8 @@ export function AspirationBuilder() {
               }}
             />
           )}
+          {section === "requirements" && <RequirementsSection {...sectionProps} />}
+          {section === "build" && <BuildSection {...sectionProps} />}
           {section === "advanced" && advanced && <AdvancedSection {...sectionProps} />}
         </div>
       </div>
