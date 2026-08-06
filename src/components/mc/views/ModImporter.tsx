@@ -312,6 +312,8 @@ export function ModImporter() {
           project={project}
           others={projects.filter((p) => p.id !== project.id)}
           onRename={(name) => updateProject(project.id, { name })}
+          onPatch={(patch) => updateProject(project.id, patch)}
+
           onConfirm={() => updateProject(project.id, { importStatus: "ready", confidence: "confirmed" })}
           onMergeInto={(targetId) => mergeProjects(project.id, targetId)}
           onSplit={(component) => splitComponent(project, component)}
