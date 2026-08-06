@@ -23,6 +23,7 @@ export function MenuBar() {
   const [creditsOpen, setCreditsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const importer = useImportPackage();
+  const project = useActiveProject();
 
 
   useEffect(() => {
