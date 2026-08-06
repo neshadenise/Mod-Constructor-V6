@@ -505,6 +505,20 @@ export function ProjectExplorer() {
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1.5">
+        {toolbarBtn(
+          single && single.itemType === "file" && builderTargetOf(single)
+            ? `Open in ${builderTargetOf(single)!.label}`
+            : "Open",
+          ExternalLink,
+          () => {
+            if (!single) return;
+            if (single.itemType === "folder") { openItem(single); return; }
+            const target = builderTargetOf(single);
+            if (target) openInBuilder(single, target);
+            else { setSelection([single.id]); toast.message(`"${single.name}" has no matching builder — showing its preview.`); }
+          },
+          !single || showTrash,
+        )}
         {toolbarBtn("New Folder", Plus, () => newFolder(cwd), showTrash)}
         {toolbarBtn("Upload Files", Upload, () => uploadRef.current?.click(), showTrash)}
         <span className="mx-1 h-5 w-px bg-border" />
