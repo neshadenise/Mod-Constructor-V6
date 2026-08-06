@@ -80,9 +80,51 @@ export function ModImporter() {
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState<string>("");
   const [dragging, setDragging] = useState(false);
+  const [restoredAt, setRestoredAt] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const bytesRef = useRef<Map<string, Uint8Array>>(new Map());
   const ex = useExplorer();
   const activeProject = useActiveProject();
+
+  /* Bring back the last import: reloading or updating the app must never
+     throw away work that is already analysed. */
+  useEffect(() => {
+    let alive = true;
+    loadImportSession()
+      .then((saved) => {
+        if (!alive) return;
+        if (saved) {
+          bytesRef.current = saved.bytes;
+          setSession(saved.session);
+          setProjects(saved.projects);
+          setRestoredAt(saved.savedAt);
+        }
+        setHydrated(true);
+      })
+      .catch(() => setHydrated(true));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  /* Keep the stored copy in step with every edit (merge, split, rename). */
+  useEffect(() => {
+    if (!hydrated || !session) return;
+    const t = setTimeout(() => {
+      void saveImportSession(session, projects, bytesRef.current);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [hydrated, session, projects]);
+
+  const clearImport = useCallback(() => {
+    setSession(null);
+    setProjects([]);
+    setRestoredAt(null);
+    bytesRef.current = new Map();
+    void clearImportSession();
+    toast("Import cleared");
+  }, []);
+
 
   /** Write an imported mod into the current project's assets so it can be
    *  opened and edited in the Project Explorer like any other file. */
