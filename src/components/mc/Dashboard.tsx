@@ -130,6 +130,7 @@ export function Dashboard() {
 
       <div className="grid grid-cols-12 gap-4">
         <CurrentProject />
+        <ProjectHealthCard className="col-span-6" />
       </div>
 
 
