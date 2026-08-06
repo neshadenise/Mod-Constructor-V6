@@ -138,11 +138,12 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
 
   /* Mirror local edits upward, debounced. */
   useEffect(() => {
+    if (!autoSync) return;
     if (!account || !store.hydrated) return;
     if (pulledFor.current !== account.id) return;
     const t = setTimeout(() => void push(), PUSH_DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [account, store.hydrated, store.state, push]);
+  }, [autoSync, account, store.hydrated, store.state, push]);
 
   useEffect(() => {
     if (!account) {
@@ -151,7 +152,11 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
     }
   }, [account]);
 
-  const value = useMemo(() => ({ lastSyncedAt, syncNow: push }), [lastSyncedAt, push]);
+  const value = useMemo(
+    () => ({ lastSyncedAt, syncNow: push, autoSync, setAutoSync }),
+    [lastSyncedAt, push, autoSync, setAutoSync],
+  );
+
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
