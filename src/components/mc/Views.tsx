@@ -89,6 +89,7 @@ import {
 import { MCP_TOOL_DEFS } from "@/lib/mcp-tools";
 import { downloadBundle, loadBundle, emptyBundle } from "@/lib/project-store";
 import { useStore, useActiveProject, downloadBundle as downloadStoreBundle } from "@/lib/store";
+import { applyCreatorPrefix, normalizeCreatorPrefix } from "@/lib/modexport/filenames";
 import { useAppNavigation } from "@/lib/navigation";
 import {
   defaultEngineCapabilities,
