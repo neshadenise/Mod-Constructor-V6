@@ -388,7 +388,17 @@ export async function analyzeUpload(
     for (const resource of a.component.resources) {
       const entry = pkg.entries[resource.originalIndex];
       if (!entry) continue;
-      if (resource.editability !== "editable") continue;
+      if (resource.editability !== "editable") {
+        // Recognised-but-binary resources still get a readable label so the
+        // review table never shows an anonymous row.
+        const info = resourceTypeInfo(resource.key.type);
+        resource.subtype ??= info.category;
+        resource.name ??= `${info.label} · ${resource.key.instance}`;
+        if (info.preservable && !resource.notes)
+          resource.notes = "Recognised binary format — copied through unchanged on export.";
+        continue;
+      }
+
       try {
         const payload = await readDbpfResource(entry);
         if (isStbl(payload)) {
