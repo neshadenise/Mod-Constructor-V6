@@ -672,6 +672,8 @@ export function ProjectExplorer() {
                         item={item}
                         showTrash={showTrash}
                         onOpen={() => openItem(item)}
+                        builderTarget={builderTargetOf(item)}
+                        onOpenBuilder={() => { const t = builderTargetOf(item); if (t) openInBuilder(item, t); }}
                         onNewFolder={() => newFolder(item.itemType === "folder" ? item.id : cwd)}
                         onUpload={() => { setCwd(item.itemType === "folder" ? item.id : cwd); uploadRef.current?.click(); }}
                         onRename={() => startRename(item.id)}
