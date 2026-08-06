@@ -10,7 +10,7 @@ import {
   FolderTree, Folder, FolderOpen, File as FileIcon, FileImage, FileCode2, FileText, Package,
   ChevronRight, ChevronDown, Search, Plus, Upload, Copy, Scissors, ClipboardPaste, Pencil,
   Trash2, Download, ArrowRightLeft, LayoutGrid, List, ArrowUpDown, RotateCcw, RefreshCw,
-  AlertTriangle, Home, X,
+  AlertTriangle, Home, X, Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
