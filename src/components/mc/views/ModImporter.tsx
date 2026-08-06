@@ -366,6 +366,7 @@ function ProjectCard({
   project,
   others,
   onRename,
+  onPatch,
   onConfirm,
   onMergeInto,
   onSplit,
@@ -375,6 +376,7 @@ function ProjectCard({
   project: ModProject;
   others: ModProject[];
   onRename: (name: string) => void;
+  onPatch: (patch: Partial<ModProject>) => void;
   onConfirm: () => void;
   onMergeInto: (targetId: string) => void;
   onSplit: (component: ModComponent) => void;
@@ -385,7 +387,12 @@ function ProjectCard({
   const [tab, setTab] = useState<"files" | "resources" | "relationships" | "checks">("files");
 
   const editable = project.resources.filter((r) => r.editability === "editable").length;
-  const coverage = project.resources.length ? Math.round((editable / project.resources.length) * 100) : 0;
+  const preserved = project.resources.filter((r) => r.editability === "read-only").length;
+  const unknown = project.resources.filter((r) => r.editability === "preserved-unsupported").length;
+  const coverage = project.resources.length
+    ? Math.round(((editable + preserved) / project.resources.length) * 100)
+    : 0;
+
 
   return (
     <section className="rounded-xl border border-border bg-card">
