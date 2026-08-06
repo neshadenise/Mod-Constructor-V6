@@ -202,12 +202,24 @@ export function useBuilderRecord<S>(opts: {
   /* Sidebar / command palette "+" for this builder. */
   const addNewRef = useRef(addNew);
   addNewRef.current = addNew;
+  const selectRef = useRef(select);
+  selectRef.current = select;
   useEffect(() => {
     const handler = (e: Event) => {
       if ((e as CustomEvent).detail === kind) addNewRef.current();
     };
+    /* "Take me to this record" — Health Inspector, search, deep links. */
+    const reveal = (e: Event) => {
+      const d = (e as CustomEvent).detail as { kind: BuilderKind; id: ID } | undefined;
+      if (!d || d.kind !== kind) return;
+      if (listRef.current.some((r) => r.id === d.id)) selectRef.current(d.id);
+    };
     window.addEventListener(NEW_EVENT, handler);
-    return () => window.removeEventListener(NEW_EVENT, handler);
+    window.addEventListener(REVEAL_EVENT, reveal);
+    return () => {
+      window.removeEventListener(NEW_EVENT, handler);
+      window.removeEventListener(REVEAL_EVENT, reveal);
+    };
   }, [kind]);
 
   const loadDraft = useCallback(
