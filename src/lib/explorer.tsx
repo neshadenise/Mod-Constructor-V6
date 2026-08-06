@@ -190,6 +190,17 @@ export interface ExplorerAPI {
     parentFolderId: string | null,
     files: { name: string; size: number; mimeType?: string; dataUrl?: string }[],
   ) => ProjectExplorerItem[];
+  /**
+   * Write files into a folder path (segments below the project root),
+   * creating any missing folders. Atomic: one state update, so repeated
+   * calls in the same tick never duplicate folders.
+   */
+  addFilesAtPath: (
+    projectId: string,
+    folderPath: string[],
+    files: { name: string; size: number; mimeType?: string; dataUrl?: string }[],
+  ) => number;
+
   replaceFile: (id: string, file: { name: string; size: number; mimeType?: string; dataUrl?: string }, keepName: boolean) => void;
 
   rename: (id: string, nextName: string) => string | null;
