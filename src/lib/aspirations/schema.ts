@@ -590,8 +590,15 @@ export const isVisible = (doc: AspirationDoc): boolean => {
   return doc.visibility !== "hidden";
 };
 
-export const objectiveCount = (doc: AspirationDoc): number =>
-  doc.milestones.reduce((n, m) => n + m.objectives.length, 0);
+/** Every objective in a milestone, including composite children. */
+export function flattenObjectives(list: AspirationObjective[]): AspirationObjective[] {
+  return list.flatMap((o) => [o, ...flattenObjectives(o.children ?? [])]);
+}
+
+export const allObjectives = (doc: AspirationDoc): AspirationObjective[] =>
+  doc.milestones.flatMap((m) => flattenObjectives(m.objectives));
+
+export const objectiveCount = (doc: AspirationDoc): number => allObjectives(doc).length;
 
 /** Rough completion percentage of the *authoring* work, not gameplay. */
 export function completeness(doc: AspirationDoc): number {
@@ -610,6 +617,153 @@ export function completeness(doc: AspirationDoc): number {
   return Math.round((checks.filter(Boolean).length / checks.length) * 100);
 }
 
+/* ------------------------------------------------------- tree operations -- */
+
+/** Immutable move of an array item. Used by drag and drop and the arrow keys. */
+export function moveItem<T>(list: T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || from >= list.length) return list;
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  next.splice(Math.max(0, Math.min(next.length, to)), 0, item as T);
+  return next;
+}
+
+/** Renumber tiers and display order after any structural change. */
+export const reindexMilestones = (list: AspirationMilestone[]): AspirationMilestone[] =>
+  list.map((m, i) => ({ ...m, order: i, tier: ROMAN[i] ?? String(i + 1) }));
+
+/** Deep copy with brand new ids — never reuse a uuid across two records. */
+export function cloneObjective(o: AspirationObjective, suffix = " Copy"): AspirationObjective {
+  return {
+    ...o,
+    id: uid("obj"),
+    uuid: `objective_${uuid()}`,
+    label: `${o.label}${suffix}`,
+    internalName: "",
+    params: { ...o.params },
+    refs: { ...o.refs },
+    conditions: o.conditions.map((c) => ({ ...c, id: uid("cond") })),
+    repeat: { ...o.repeat },
+    timer: { ...o.timer },
+    dependsOn: [],
+    children: (o.children ?? []).map((c) => cloneObjective(c, "")),
+  };
+}
+
+export function cloneMilestone(m: AspirationMilestone, suffix = " Copy"): AspirationMilestone {
+  return {
+    ...m,
+    id: uid("ms"),
+    uuid: `milestone_${uuid()}`,
+    title: `${m.title}${suffix}`,
+    internalName: "",
+    objectives: m.objectives.map((o) => cloneObjective(o, "")),
+    rewards: m.rewards.map((r) => ({ ...r, id: uid("rw") })),
+    unlocks: m.unlocks.map((u) => ({ ...u, id: uid("unl") })),
+    failures: m.failures.map((f) => ({ ...f, id: uid("fail") })),
+    completion: { ...m.completion },
+    strings: { ...m.strings },
+  };
+}
+
+/** Machine names are derived from the namespace, never typed by hand. */
+export const milestoneInternalName = (doc: AspirationDoc, m: AspirationMilestone): string =>
+  m.internalName ||
+  `${doc.ids.namespace}_Milestone_${sanitizeInternalName(m.title || `Milestone ${m.order + 1}`, "")}`;
+
+export const objectiveInternalName = (doc: AspirationDoc, o: AspirationObjective): string =>
+  o.internalName ||
+  `${doc.ids.namespace}_Objective_${sanitizeInternalName(o.label || "Objective", "")}`;
+
+/** How many objectives a milestone needs before it completes. */
+export function requiredObjectives(m: AspirationMilestone): number {
+  const required = m.objectives.filter((o) => !o.optional && !o.bonus);
+  if (m.completion.mode === "any") return Math.min(1, required.length);
+  if (m.completion.mode === "count")
+    return Math.min(Math.max(1, m.completion.count), required.length);
+  return required.length;
+}
+
+/** Objective dependency cycles inside one milestone. */
+export function dependencyCycles(m: AspirationMilestone): string[] {
+  const list = flattenObjectives(m.objectives);
+  const byUuid = new Map(list.map((o) => [o.uuid, o]));
+  const bad: string[] = [];
+  for (const start of list) {
+    const seen = new Set<string>();
+    const walk = (o: AspirationObjective): boolean => {
+      if (seen.has(o.uuid)) return o.uuid === start.uuid;
+      seen.add(o.uuid);
+      return (o.dependsOn ?? []).some((d) => {
+        const next = byUuid.get(d);
+        return next ? walk(next) : false;
+      });
+    };
+    if ((start.dependsOn ?? []).some((d) => byUuid.get(d) && walk(byUuid.get(d)!)))
+      bad.push(start.uuid);
+  }
+  return bad;
+}
+
+/* ------------------------------------------------------------ normalizers -- */
+
+/** Upgrade a partially shaped objective (Part 1 doc, pasted JSON) in place. */
+export function normalizeObjective(raw: Partial<AspirationObjective>): AspirationObjective {
+  const type = (raw.type ?? "custom") as ObjectiveTypeId;
+  const base = makeObjective(raw.label ?? "New objective", type);
+  return {
+    ...base,
+    ...raw,
+    type,
+    id: raw.id ?? base.id,
+    uuid: raw.uuid ?? base.uuid,
+    params: { ...base.params, ...(raw.params ?? {}) },
+    refs: { ...(raw.refs ?? {}) },
+    ref: raw.ref ?? null,
+    count: typeof raw.count === "number" ? raw.count : 1,
+    current: typeof raw.current === "number" ? raw.current : 0,
+    progress: raw.progress ?? base.progress,
+    conditions: raw.conditions ?? [],
+    repeat: { ...blankRepeat(), ...(raw.repeat ?? {}) },
+    timer: { ...blankTimer(), ...(raw.timer ?? {}) },
+    hidden: Boolean(raw.hidden),
+    optional: Boolean(raw.optional),
+    bonus: Boolean(raw.bonus),
+    dependsOn: raw.dependsOn ?? [],
+    children: (raw.children ?? []).map((c) => normalizeObjective(c)),
+    notes: raw.notes ?? "",
+  };
+}
+
+export function normalizeMilestone(
+  raw: Partial<AspirationMilestone>,
+  index = 0,
+): AspirationMilestone {
+  const base = makeMilestone(index, raw.title ?? `Milestone ${index + 1}`);
+  return {
+    ...base,
+    ...raw,
+    id: raw.id ?? base.id,
+    uuid: raw.uuid ?? base.uuid,
+    tier: raw.tier ?? base.tier,
+    objectives: (raw.objectives ?? []).map((o) => normalizeObjective(o)),
+    rewards: (raw.rewards ?? []).map((r) => ({ ...makeReward(r.type), ...r })),
+    rewardRef: raw.rewardRef ?? null,
+    points: typeof raw.points === "number" ? raw.points : 500,
+    hidden: Boolean(raw.hidden),
+    order: typeof raw.order === "number" ? raw.order : index,
+    unlockMode: raw.unlockMode ?? "auto",
+    unlocks: raw.unlocks ?? [],
+    completion: { ...blankCompletion(), ...(raw.completion ?? {}) },
+    failures: raw.failures ?? [],
+    strings: { tooltip: "", journal: "", notification: "", ...(raw.strings ?? {}) },
+    collapsed: Boolean(raw.collapsed),
+  };
+}
+
+export const normalizeMilestones = (list: Partial<AspirationMilestone>[]): AspirationMilestone[] =>
+  list.map((m, i) => normalizeMilestone(m, i));
+
 /** Every reference the document holds, with a path for error reporting. */
 export function collectRefs(doc: AspirationDoc): { path: string; ref: ResourceRef }[] {
   const out: { path: string; ref: ResourceRef }[] = [];
@@ -620,7 +774,13 @@ export function collectRefs(doc: AspirationDoc): { path: string; ref: ResourceRe
   doc.connections.forEach((r, i) => push(`connections[${i}]`, r));
   doc.milestones.forEach((m, i) => {
     push(`milestones[${i}].reward`, m.rewardRef);
-    m.objectives.forEach((o, j) => push(`milestones[${i}].objectives[${j}]`, o.ref));
+    m.rewards.forEach((r, k) => push(`milestones[${i}].rewards[${k}]`, r.ref));
+    flattenObjectives(m.objectives).forEach((o, j) => {
+      push(`milestones[${i}].objectives[${j}]`, o.ref);
+      for (const [field, r] of Object.entries(o.refs ?? {}))
+        push(`milestones[${i}].objectives[${j}].${field}`, r);
+    });
   });
   return out;
 }
+
