@@ -1018,6 +1018,18 @@ function CareerBuilder() {
     restore: restoreCareer,
     blank: blankCareer,
     title: (d) => d.name,
+    fromRecord: (rec) => {
+      const c = rec as import("@/lib/types").Career;
+      const mapped = careerPayloadToBranches(c as unknown as CareerPayload);
+      return {
+        ...blankCareer(),
+        name: c.name,
+        description: c.description ?? "",
+        coverImage: c.coverImage,
+        branches: mapped.length ? mapped : INITIAL_BRANCHES,
+        branchId: (mapped.length ? mapped : INITIAL_BRANCHES)[0].id,
+      };
+    },
   });
 
   // Hydrate the builder when a template is opened here.
@@ -2117,6 +2129,40 @@ function TraitBuilder() {
     restore: restoreTrait,
     blank: blankTrait,
     title: (d) => d.name,
+    fromRecord: (rec) => {
+      const t = rec as import("@/lib/types").Trait;
+      return {
+        ...blankTrait(),
+        name: t.name,
+        description: t.description ?? "",
+        traitOrigin: t.description ?? "",
+        buffs: (t.buffs ?? []).map((b, i) => {
+          const emo = String(b.emotion ?? "fine");
+          const label = (emo.charAt(0).toUpperCase() + emo.slice(1)) as EmotionV5;
+          return {
+            id: b.id || `b${i + 1}`,
+            name: b.name,
+            description: b.description ?? "",
+            emotion: EMOTIONS_V5.includes(label) ? label : "Fine",
+            weight: b.weight ?? 1,
+            duration: (b.durationHours ?? 0) >= 1000 ? "Permanent" : `${b.durationHours ?? 1}h`,
+            hasEmotion: true,
+            color: "violet",
+            icon: "",
+            rules: (b.rules ?? []).map((r, ri) => ({
+              id: r.id || `r${ri + 1}`,
+              trigger: r.trigger,
+              condition: r.condition ?? "",
+              chance: r.chance ?? 100,
+              cooldownHours: r.cooldownHours ?? 0,
+            })),
+          };
+        }),
+        selectedBuffId: (t.buffs ?? [])[0]?.id ?? "",
+        socialInteractions: (t.socialInteractions ?? []).map(String),
+        commodities: (t.commodityWeights ?? []).map((c) => ({ commodity: c.commodity, weight: c.weight })),
+      };
+    },
   });
 
   // Hydrate the builder when a template is opened here.
@@ -2995,6 +3041,21 @@ function AspirationBuilder() {
       tiers: [],
     }),
     title: (d) => d.name,
+    fromRecord: (rec) => {
+      const a = rec as import("@/lib/types").Aspiration;
+      return {
+        name: a.name,
+        category: a.category ?? "Adventure",
+        rewardTrait: "",
+        description: a.description ?? "",
+        tiers: (a.milestones ?? []).map((m, i) => ({
+          t: ROMAN[i] ?? String(i + 1),
+          title: m.name,
+          goals: (m.objectives ?? []).map(String),
+          done: false,
+        })),
+      };
+    },
   });
 
   // Hydrate the builder when a template is opened here.

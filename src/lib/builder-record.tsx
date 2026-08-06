@@ -59,6 +59,11 @@ export function useBuilderRecord<S>(opts: {
   blank: () => S;
   /** Display name derived from the draft. */
   title: (draft: S) => string;
+  /**
+   * Build a draft from a stored record that has no saved builder state yet
+   * (created from the dashboard, an import, or an older version).
+   */
+  fromRecord?: (rec: Career | Trait | Aspiration) => S;
 }): BuilderRecordApi<S> {
   const { kind } = opts;
   const store = useStore();
@@ -120,10 +125,11 @@ export function useBuilderRecord<S>(opts: {
     if (rec && rec.builderState) {
       api.current.restore(rec.builderState as S);
     } else if (rec) {
-      // Created outside the builder (dashboard / import) — start from blank
-      // but keep the record's identity and name.
+      // Created outside the builder (dashboard / import): map the stored
+      // record onto a draft so its real content shows up.
+      const mapped = api.current.fromRecord?.(rec);
       const base = api.current.blank();
-      api.current.restore({ ...(base as object), name: rec.name } as S);
+      api.current.restore(mapped ?? ({ ...(base as object), name: rec.name } as S));
     } else {
       api.current.restore(api.current.blank());
     }
