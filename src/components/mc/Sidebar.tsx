@@ -1,4 +1,5 @@
 import {
+  Crown,
   Database,
   LayoutDashboard,
   FolderKanban,
@@ -60,6 +61,7 @@ export const SIDEBAR_ITEMS: Item[] = [
   { id: "career", label: "Career Builder", icon: Briefcase, quickNew: "career", group: "builders" },
   { id: "trait", label: "Trait Builder", icon: Sparkles, quickNew: "trait", group: "builders" },
   { id: "aspiration", label: "Aspiration Builder", icon: Target, quickNew: "aspiration", group: "builders" },
+  { id: "dynasty", label: "Custom Dynasty Builder", icon: Crown, group: "builders" },
   { id: "notifications", label: "Notification Library", icon: Bell, quickNew: "notification", group: "builders" },
   { id: "icons", label: "Icon Library", icon: Palette, group: "builders" },
   { id: "assets", label: "Project Assets", icon: Boxes, group: "builders" },
