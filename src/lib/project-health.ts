@@ -117,8 +117,10 @@ function sectionForScope(scope: DerivedIssue["scope"]): SectionId {
 }
 
 function recordFor(issue: DerivedIssue): HealthFinding["record"] {
+  const id = issue.recordId;
+  if (!id) return undefined;
   if (issue.scope === "career" || issue.scope === "trait" || issue.scope === "aspiration") {
-    return { kind: issue.scope, id: issue.recordId };
+    return { kind: issue.scope, id };
   }
   return undefined;
 }
