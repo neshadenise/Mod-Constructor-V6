@@ -1085,6 +1085,11 @@ function ItemContextMenu(props: {
         ) : (
           <>
             <ContextMenuItem onSelect={props.onOpen}>{isFolder ? "Open" : "Preview"}</ContextMenuItem>
+            {props.builderTarget && props.onOpenBuilder && (
+              <ContextMenuItem onSelect={props.onOpenBuilder}>
+                <ExternalLink className="mr-2 h-3.5 w-3.5" /> Open in {props.builderTarget.label}
+              </ContextMenuItem>
+            )}
             {isFolder && <ContextMenuItem onSelect={props.onNewFolder}><Plus className="mr-2 h-3.5 w-3.5" /> New Folder</ContextMenuItem>}
             {isFolder && <ContextMenuItem onSelect={props.onUpload}><Upload className="mr-2 h-3.5 w-3.5" /> Upload Files</ContextMenuItem>}
             <ContextMenuItem onSelect={props.onRename}><Pencil className="mr-2 h-3.5 w-3.5" /> Rename</ContextMenuItem>
