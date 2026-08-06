@@ -283,11 +283,12 @@ describe("creator prefix", () => {
   });
 
   it("combines with versioned file names", () => {
-    expect(versionedName("Dancer Career", "package", "1.2.0", "NeshaDenise")).toBe(
-      "NeshaDenise_DancerCareer_v1.2.0.package",
+    // Titles keep their own spacing/branding; only the prefix is normalized.
+    expect(versionedName("Dancer Career", "package", "1.2.0", "Nesha Denise")).toBe(
+      "NeshaDenise_Dancer Career_v1.2.0.package",
     );
-    expect(folderName("Dancer Career", "1.2.0", "NeshaDenise")).toBe("NeshaDenise_DancerCareer_v1.2.0");
-    expect(versionedName("Dancer Career", "package", undefined)).toBe("DancerCareer.package");
+    expect(folderName("Dancer Career", "1.2.0", "NeshaDenise")).toBe("NeshaDenise_Dancer Career_v1.2.0");
+    expect(versionedName("Dancer Career", "package", undefined)).toBe("Dancer Career.package");
   });
 
   it("prefixes exported files without touching internal tuning ids", async () => {
