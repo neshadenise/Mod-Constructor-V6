@@ -10,6 +10,7 @@ export type SectionId =
   | "icons"
   | "assets"
   | "reference"
+  | "gamedata"
   | "exporter"
   | "importer"
   | "validation"
@@ -35,6 +36,7 @@ export const SECTION_LABEL: Record<SectionId, string> = {
   icons: "Icon Library",
   assets: "Project Assets",
   reference: "Reference Viewer",
+  gamedata: "Game Data",
   exporter: "Package Exporter",
   importer: "Mod Importer",
   validation: "Validation Center",
