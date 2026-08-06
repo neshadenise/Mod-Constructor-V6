@@ -639,8 +639,12 @@ export async function analyzeUpload(
     const scriptNamespaces = new Set(
       project.components.flatMap((c) => (c.fileType === "ts4script" ? (c.namespaces ?? []) : [])),
     );
+    // Modules shipped by the base game (interactions.*, sims4.*, buffs.* ...) are
+    // always present at runtime, so they are never a missing-script problem.
     const referencedModules = new Set(
-      project.components.flatMap((c) => byId.get(c.id)?.candidate.tuningModules ?? []),
+      project.components
+        .flatMap((c) => byId.get(c.id)?.candidate.tuningModules ?? [])
+        .filter((m) => !GAME_MODULES.has(m.split(".")[0]!.toLowerCase())),
     );
     for (const m of referencedModules) {
       const top = m.split(".")[0]!;
