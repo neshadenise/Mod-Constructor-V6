@@ -346,13 +346,30 @@ export function ProjectExplorer() {
     }
   };
 
+  /** Jump to the builder that owns this file (and select its record). */
+  const openInBuilder = (item: ProjectExplorerItem, target: BuilderTarget) => {
+    nav.navigate(target.kind);
+    if (target.id) requestRevealRecord(target.kind, target.id);
+    toast.success(
+      target.id ? `Opened "${item.name}" in the ${target.label}` : `Opened the ${target.label}`,
+    );
+  };
+
   const openItem = (item: ProjectExplorerItem) => {
     if (item.itemType === "folder") {
       setCwd(item.id);
       setQuery("");
       setSelection([]);
+      return;
     }
+    const target = builderTargetOf(item);
+    if (target?.id) {
+      openInBuilder(item, target);
+      return;
+    }
+    setSelection([item.id]);
   };
+
 
   const revealItem = (item: ProjectExplorerItem) => {
     setQuery("");
