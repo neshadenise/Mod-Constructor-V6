@@ -94,10 +94,67 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     setSyncState("offline");
   }, []);
 
-  const value = useMemo(
-    () => ({ account, ready, syncState, setSyncState, signIn, signUp, signOut }),
-    [account, ready, syncState, signIn, signUp, signOut],
+  const updateProfile = useCallback(
+    async (patch: { displayName?: string; email?: string }) => {
+      const displayName = patch.displayName?.trim();
+      const email = patch.email?.trim();
+      const { data, error } = await supabase.auth.updateUser({
+        ...(email ? { email } : {}),
+        ...(displayName ? { data: { display_name: displayName } } : {}),
+      });
+      if (error) throw error;
+      const next = toAccount(data.user ?? null);
+      if (next) {
+        setAccount(next);
+        await supabase
+          .from("profiles")
+          .upsert(
+            { id: next.id, email: next.email, display_name: next.displayName },
+            { onConflict: "id" },
+          );
+      }
+    },
+    [],
   );
+
+  const updatePassword = useCallback(async (next: string) => {
+    const { error } = await supabase.auth.updateUser({ password: next });
+    if (error) throw error;
+  }, []);
+
+  const sendPasswordReset = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) throw error;
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      account,
+      ready,
+      syncState,
+      setSyncState,
+      signIn,
+      signUp,
+      signOut,
+      updateProfile,
+      updatePassword,
+      sendPasswordReset,
+    }),
+    [
+      account,
+      ready,
+      syncState,
+      signIn,
+      signUp,
+      signOut,
+      updateProfile,
+      updatePassword,
+      sendPasswordReset,
+    ],
+  );
+
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
