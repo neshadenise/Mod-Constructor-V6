@@ -117,7 +117,7 @@ function AuthPage() {
               type="password"
               value={password}
               required
-              minLength={10}
+              minLength={mode === "signup" ? 10 : 1}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
