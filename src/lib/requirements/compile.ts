@@ -63,7 +63,7 @@ function nodeXml(node: RequirementNode, indent: string): string {
     const spec = requirementSpec(node.specId);
     const params = Object.entries(node.params)
       .filter(([, v]) => v !== "" && v !== undefined)
-      .map(([k, v]) => `${indent}  <T n="${k}">${esc(v)}</T>`);
+      .map(([k, v]) => `${indent}  <T n="${k}">${esc(String(v))}</T>`);
     const comment = node.comment ? `${indent}<!-- ${esc(node.comment)} -->\n` : "";
     return `${comment}${indent}<V t="${spec.xmlClass}"${node.negate ? ' negate="True"' : ""}${
       node.priority ? ` priority="${node.priority}"` : ""
