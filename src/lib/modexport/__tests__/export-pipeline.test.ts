@@ -8,7 +8,13 @@ import { runExport } from "@/lib/modexport/pipeline";
 import { buildSnapshot } from "@/lib/modexport/snapshot";
 import { ResourceIdService, TYPE_TUNING, normalizeKey } from "@/lib/modexport/ids";
 import { mergeLocalization, checkReferences } from "@/lib/modexport/stbl";
-import { sanitizeFileName } from "@/lib/modexport/filenames";
+import {
+  applyCreatorPrefix,
+  folderName,
+  normalizeCreatorPrefix,
+  sanitizeFileName,
+  versionedName,
+} from "@/lib/modexport/filenames";
 import { exportScriptComponent, verifyScriptArchive } from "@/lib/modexport/scripts";
 import { DEFAULT_EXPORT_REQUEST, type ExportRequest } from "@/lib/modexport/types";
 import type { Aspiration, Career, Project, Trait } from "@/lib/types";
