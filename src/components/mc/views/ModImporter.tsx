@@ -862,7 +862,7 @@ function ProjectCard({
 export function ImportEmptyHint() {
   return (
     <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-      <Trash2 className="h-3 w-3" /> Import sessions are kept in memory only and clear when you reload.
+      <ShieldCheck className="h-3 w-3" /> Imports are saved on this device and reopen where you left off.
     </div>
   );
 }
