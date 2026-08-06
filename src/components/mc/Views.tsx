@@ -4126,6 +4126,71 @@ function InstallPaths() {
 /* ---------- Settings ---------- */
 
 
+/**
+ * Creator prefix — exported file names follow the community
+ * "CreatorName_ModTitle" convention. File names only: tuning names and
+ * internal ids are never touched.
+ */
+function CreatorPrefixCard() {
+  const store = useStore();
+  const project = store.activeProject;
+  const saved = store.state.settings.creatorPrefix ?? "";
+  const [draft, setDraft] = useState(saved);
+  useEffect(() => setDraft(saved), [saved]);
+
+  const suggestion = normalizeCreatorPrefix(project?.author && project.author !== "You" ? project.author : "");
+  const effective = normalizeCreatorPrefix(draft);
+  const title = (project?.name ?? "My Mod").replace(/\s+/g, "");
+  const version = project?.version ?? "1.0.0";
+  const example = `${applyCreatorPrefix(title, effective)}_v${version}.package`;
+
+  const commit = (value: string) => {
+    const clean = normalizeCreatorPrefix(value);
+    store.updateSettings({ creatorPrefix: clean || undefined });
+    setDraft(clean);
+    toast.success(clean ? `Exports will be named ${clean}_ModTitle` : "Creator prefix cleared.");
+  };
+
+  return (
+    <Card
+      title="Creator prefix"
+      action={
+        <span className="text-[11px] text-muted-foreground">
+          Applied to exported file names only.
+        </span>
+      }
+    >
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="min-w-[220px] flex-1 text-[11px]">
+          <span className="mb-1 block text-muted-foreground">Your creator name</span>
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={(e) => commit(e.target.value)}
+            placeholder={suggestion || "NeshaDenise"}
+            className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+          />
+        </label>
+        {suggestion && effective !== suggestion && (
+          <Button size="sm" variant="outline" onClick={() => commit(suggestion)}>
+            Use “{suggestion}”
+          </Button>
+        )}
+        {effective && (
+          <Button size="sm" variant="ghost" onClick={() => commit("")}>
+            Clear
+          </Button>
+        )}
+      </div>
+      <p className="mt-2 text-[11px] text-muted-foreground">
+        Packages, ZIPs and folders export as{" "}
+        <span className="font-mono text-foreground">{example}</span>. Tuning names and internal
+        ids stay exactly as they are.
+      </p>
+    </Card>
+  );
+}
+
 function SettingsView() {
   const { advanced, toggle: toggleAdvanced } = useAdvanced();
   const host = useAppHost();
@@ -4142,6 +4207,8 @@ function SettingsView() {
       {host.isChatGPT && <McpToolsCard />}
 
       <DemoDataCard />
+
+      <CreatorPrefixCard />
 
       <Card
         title="Interface Mode"
