@@ -77,6 +77,7 @@ export function RequirementEditor({ root, onChange, problems = {}, compact }: Ed
 interface NodeProps {
   node: RequirementNode;
   depth: number;
+  parentId?: string;
   isRoot?: boolean;
   compact?: boolean;
   problems: Record<string, "error" | "warning">;
@@ -161,9 +162,16 @@ function GroupNode(props: NodeProps & { node: RequirementGroup }) {
           )}
           {node.children.map((child) =>
             child.kind === "group" ? (
-              <GroupNode key={child.id} {...props} node={child} depth={depth + 1} isRoot={false} />
+              <GroupNode
+                key={child.id}
+                {...props}
+                node={child}
+                parentId={node.id}
+                depth={depth + 1}
+                isRoot={false}
+              />
             ) : (
-              <LeafNode key={child.id} {...props} node={child} depth={depth + 1} />
+              <LeafNode key={child.id} {...props} node={child} parentId={node.id} depth={depth + 1} />
             ),
           )}
         </div>
@@ -173,7 +181,7 @@ function GroupNode(props: NodeProps & { node: RequirementGroup }) {
 }
 
 function LeafNode(props: NodeProps & { node: RequirementLeaf }) {
-  const { node, problems, onPatch, onRemove, onMove, onAdd } = props;
+  const { node, parentId, problems, onPatch, onRemove, onMove, onAdd } = props;
   const spec = requirementSpec(node.specId);
   const tone = problems[node.id];
   const [showMeta, setShowMeta] = useState(false);
@@ -228,7 +236,7 @@ function LeafNode(props: NodeProps & { node: RequirementLeaf }) {
           label="NOT"
         />
         <Btn onClick={() => setShowMeta((v) => !v)}>{showMeta ? "Hide notes" : "Notes"}</Btn>
-        <Btn icon={Copy} onClick={() => onAdd(props.node.id, cloneNode(node))} title="Duplicate into group">
+        <Btn icon={Copy} onClick={() => parentId && onAdd(parentId, cloneNode(node))} title="Duplicate into group">
           {""}
         </Btn>
         <Btn icon={MoveUp} onClick={() => onMove(node.id, -1)} title="Move up">
