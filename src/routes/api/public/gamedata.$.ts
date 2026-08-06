@@ -113,12 +113,7 @@ export const Route = createFileRoute("/api/public/gamedata/$")({
         const upstreamUrl = `${UPSTREAM}${target.path}${qs ? `?${qs}` : ""}`;
 
         try {
-          const res = await fetch(upstreamUrl, {
-            headers: {
-              "User-Agent": BROWSER_UA,
-              Accept: "application/json",
-            },
-          });
+          const res = await fetch(upstreamUrl, { headers: BROWSER_HEADERS });
 
           const text = await res.text();
           if (!res.ok) {
