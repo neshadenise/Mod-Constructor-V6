@@ -227,6 +227,9 @@ export interface ModProject {
   originalFolderStructure?: FolderNode[];
 
   importStatus: ImportStatus;
+  /** Plain-language reasons behind importStatus (why it is not "ready"). */
+  supportReasons?: string[];
+
 
   /** Grouping confidence + the reasons that produced it. */
   confidence: Confidence;
