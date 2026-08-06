@@ -311,32 +311,297 @@ export function validateAspiration(
     out.push(
       issue("error", "NO_OBJECTIVES", "Milestones exist but contain no objectives.", "milestones"),
     );
+
+  const seenMilestoneNames = new Map<string, number>();
+  const seenObjectiveNames = new Map<string, number>();
+  const allUuids = new Set(allObjectives(doc).map((o) => o.uuid));
+
   doc.milestones.forEach((m) => {
+    const label = m.title || m.tier;
     if (!m.title.trim())
       out.push(issue("error", "MS_NO_TITLE", "A milestone has no title.", "milestones", m.id));
+
+    const internal = milestoneInternalName(doc, m);
+    seenMilestoneNames.set(internal, (seenMilestoneNames.get(internal) ?? 0) + 1);
+    if ((seenMilestoneNames.get(internal) ?? 0) > 1)
+      out.push(
+        issue(
+          "error",
+          "MS_DUP_NAME",
+          `Two milestones resolve to the same internal name "${internal}".`,
+          "milestones",
+          m.id,
+          "Rename one milestone or set its internal name manually.",
+        ),
+      );
+
     if (!m.objectives.length)
+      out.push(
+        issue("warning", "MS_NO_OBJ", `Milestone "${label}" has no objectives.`, "milestones", m.id),
+      );
+    if (!m.icon)
+      out.push(issue("warning", "MS_NO_ICON", `Milestone "${label}" has no icon.`, "milestones", m.id));
+    if (!m.description.trim())
       out.push(
         issue(
           "warning",
-          "MS_NO_OBJ",
-          `Milestone "${m.title || m.tier}" has no objectives.`,
+          "MS_NO_DESC",
+          `Milestone "${label}" has no description.`,
           "milestones",
           m.id,
         ),
       );
-    m.objectives.forEach((o) => {
+    if (!m.rewards.length && !m.rewardRef && !m.points)
+      out.push(
+        issue(
+          "warning",
+          "MS_NO_REWARD",
+          `Milestone "${label}" grants nothing on completion.`,
+          "milestones",
+          m.id,
+        ),
+      );
+    for (const r of m.rewards) {
+      const numeric = REWARD_NUMERIC.includes(r.type);
+      if (numeric && r.amount <= 0)
+        out.push(
+          issue(
+            "error",
+            "RW_NO_AMOUNT",
+            `Reward "${REWARD_LABEL[r.type]}" in "${label}" has no amount.`,
+            "milestones",
+            m.id,
+          ),
+        );
+      if (!numeric && !r.ref && r.type !== "custom")
+        out.push(
+          issue(
+            "error",
+            "RW_NO_TARGET",
+            `Reward "${REWARD_LABEL[r.type]}" in "${label}" has no resource attached.`,
+            "milestones",
+            m.id,
+          ),
+        );
+    }
+    if (m.hidden && m.unlockMode === "auto" && !m.unlocks.length)
+      out.push(
+        issue(
+          "suggestion",
+          "MS_HIDDEN_AUTO",
+          `Hidden milestone "${label}" unlocks automatically — it will appear immediately after the previous one.`,
+          "milestones",
+          m.id,
+        ),
+      );
+    if (m.unlockMode === "conditions" && !m.unlocks.length)
+      out.push(
+        issue(
+          "error",
+          "MS_NO_UNLOCK",
+          `Milestone "${label}" uses conditional unlocking but has no conditions.`,
+          "milestones",
+          m.id,
+        ),
+      );
+
+    const required = m.objectives.filter((o) => !o.optional && !o.bonus);
+    if (m.objectives.length && !required.length)
+      out.push(
+        issue(
+          "error",
+          "MS_ALL_OPTIONAL",
+          `Every objective in "${label}" is optional — the milestone can never complete.`,
+          "milestones",
+          m.id,
+        ),
+      );
+    if (m.completion.mode === "count" && m.completion.count > required.length)
+      out.push(
+        issue(
+          "error",
+          "MS_IMPOSSIBLE",
+          `"${label}" asks for ${m.completion.count} of ${required.length} objectives — impossible.`,
+          "milestones",
+          m.id,
+          "Lower the count or add objectives.",
+        ),
+      );
+    for (const bad of dependencyCycles(m))
+      out.push(
+        issue(
+          "error",
+          "OBJ_CYCLE",
+          `Circular objective dependency in "${label}".`,
+          "milestones",
+          bad,
+        ),
+      );
+
+    const labels = new Map<string, number>();
+    flattenObjectives(m.objectives).forEach((o) => {
+      const oLabel = o.label || "objective";
       if (!o.label.trim())
         out.push(
           issue(
             "error",
             "OBJ_NO_LABEL",
-            `An objective in "${m.title || m.tier}" has no label.`,
+            `An objective in "${label}" has no name.`,
+            "milestones",
+            o.id,
+          ),
+        );
+      labels.set(oLabel, (labels.get(oLabel) ?? 0) + 1);
+      if ((labels.get(oLabel) ?? 0) === 2)
+        out.push(
+          issue(
+            "warning",
+            "OBJ_DUP",
+            `"${label}" has two objectives called "${oLabel}".`,
+            "milestones",
+            o.id,
+          ),
+        );
+
+      const oInternal = objectiveInternalName(doc, o);
+      seenObjectiveNames.set(oInternal, (seenObjectiveNames.get(oInternal) ?? 0) + 1);
+      if ((seenObjectiveNames.get(oInternal) ?? 0) === 2)
+        out.push(
+          issue(
+            "error",
+            "OBJ_DUP_NAME",
+            `Two objectives resolve to the same internal name "${oInternal}".`,
+            "milestones",
+            o.id,
+          ),
+        );
+
+      const oSpec = objectiveTypeSpec(o.type);
+      for (const f of oSpec.fields) {
+        if (!f.required) continue;
+        if (f.kind === "ref" && !o.refs[f.id])
+          out.push(
+            issue(
+              "error",
+              "OBJ_NO_TEST",
+              `"${oLabel}" needs a ${f.label.toLowerCase()} before the game can test it.`,
+              "milestones",
+              o.id,
+            ),
+          );
+        if (f.kind === "number" && !Number(o.params[f.id] ?? 0))
+          out.push(
+            issue(
+              "error",
+              "OBJ_BAD_TARGET",
+              `"${oLabel}" has no ${f.label.toLowerCase()}.`,
+              "milestones",
+              o.id,
+            ),
+          );
+        if (f.kind === "text" && !String(o.params[f.id] ?? "").trim())
+          out.push(
+            issue(
+              "error",
+              "OBJ_MISSING_FIELD",
+              `"${oLabel}" is missing ${f.label.toLowerCase()}.`,
+              "milestones",
+              o.id,
+            ),
+          );
+      }
+
+      const min = Number(o.params["minimum"] ?? o.params["minimumLevel"] ?? 0);
+      const max = Number(o.params["maximum"] ?? o.params["maximumLevel"] ?? 0);
+      if (max && min > max)
+        out.push(
+          issue(
+            "error",
+            "OBJ_RANGE",
+            `"${oLabel}" has a minimum above its maximum.`,
+            "milestones",
+            o.id,
+          ),
+        );
+      if (o.count <= 0 && o.progress !== "boolean")
+        out.push(
+          issue(
+            "error",
+            "OBJ_BAD_TARGET",
+            `"${oLabel}" has a target value of ${o.count}.`,
+            "milestones",
+            o.id,
+          ),
+        );
+      if (o.type === "composite" && !o.children.length)
+        out.push(
+          issue(
+            "error",
+            "OBJ_EMPTY_COMPOSITE",
+            `Composite goal "${oLabel}" has no child objectives.`,
+            "milestones",
+            o.id,
+          ),
+        );
+      if (o.timer.mode !== "none" && o.timer.mode !== "stopwatch" && !o.timer.hours)
+        out.push(
+          issue(
+            "error",
+            "OBJ_TIMER",
+            `"${oLabel}" is timed but has no duration.`,
+            "milestones",
+            o.id,
+          ),
+        );
+      for (const dep of o.dependsOn)
+        if (!allUuids.has(dep))
+          out.push(
+            issue(
+              "error",
+              "OBJ_DEAD_DEP",
+              `"${oLabel}" depends on an objective that no longer exists.`,
+              "milestones",
+              o.id,
+            ),
+          );
+      const dupConditions = new Set<string>();
+      for (const c of o.conditions) {
+        const sig = `${c.kind}:${c.value}:${c.negate}`;
+        if (dupConditions.has(sig))
+          out.push(
+            issue(
+              "warning",
+              "OBJ_DUP_COND",
+              `"${oLabel}" repeats the same condition twice.`,
+              "milestones",
+              o.id,
+            ),
+          );
+        dupConditions.add(sig);
+      }
+      if (o.hidden && o.progress !== "hidden-counter")
+        out.push(
+          issue(
+            "suggestion",
+            "OBJ_HIDDEN_STYLE",
+            `Hidden objective "${oLabel}" uses a visible progress style.`,
+            "milestones",
+            o.id,
+          ),
+        );
+      if (o.optional && o.bonus)
+        out.push(
+          issue(
+            "suggestion",
+            "OBJ_FLAGS",
+            `"${oLabel}" is marked both optional and bonus.`,
             "milestones",
             o.id,
           ),
         );
     });
   });
+
 
   /* ---- reward ---- */
   if (spec.expectsRewardTrait && !doc.rewardTrait)
