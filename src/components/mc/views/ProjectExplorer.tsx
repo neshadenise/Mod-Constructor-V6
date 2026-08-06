@@ -180,6 +180,21 @@ export function ProjectExplorer() {
     [all],
   );
 
+  /** Builder records belonging to this project, for file → builder matching. */
+  const builderRecords = useMemo(() => {
+    const rows: { kind: BuilderKind; id: string; name: string }[] = [];
+    for (const c of store.state.careers) if (c.projectId === projectId) rows.push({ kind: "career", id: c.id, name: c.name });
+    for (const t of store.state.traits) if (t.projectId === projectId) rows.push({ kind: "trait", id: t.id, name: t.name });
+    for (const a of store.state.aspirations) if (a.projectId === projectId) rows.push({ kind: "aspiration", id: a.id, name: a.name });
+    return rows;
+  }, [projectId, store.state.careers, store.state.traits, store.state.aspirations]);
+
+  const builderTargetOf = useCallback(
+    (item: ProjectExplorerItem) => resolveBuilderTarget(item, pathOf(item.id), builderRecords),
+    [pathOf, builderRecords],
+  );
+
+
   const breadcrumb = useMemo(() => {
     const chain: ProjectExplorerItem[] = [];
     let cur = cwd ? all.find((i) => i.id === cwd) : undefined;
