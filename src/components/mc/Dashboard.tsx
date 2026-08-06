@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
 import { useStore, useActiveProject } from "@/lib/store";
 import { useAppNavigation } from "@/lib/navigation";
+import { ProjectHealthCard } from "@/components/mc/HealthInspector";
 import { useBuildEngine } from "@/lib/build-engine";
 import {
   scopeProject,

@@ -12,6 +12,7 @@ import { ShortcutsDialog } from "@/components/mc/ShortcutsDialog";
 import { AdvancedModeProvider, useAdvanced } from "@/lib/advanced-mode";
 import { AppHostProvider } from "@/lib/app-host";
 import { AppNavigationProvider } from "@/lib/navigation";
+import { HealthInspectorHost } from "@/components/mc/HealthInspector";
 import { NotificationsProvider } from "@/lib/notifications";
 import { InspectorHistoryProvider } from "@/lib/inspector-history";
 import { StoreProvider } from "@/lib/store";
@@ -143,6 +144,7 @@ function ShellBody() {
         <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
         <NotificationCenter />
         <ShortcutsDialog />
+        <HealthInspectorHost />
       </div>
     </AppNavigationProvider>
   );
