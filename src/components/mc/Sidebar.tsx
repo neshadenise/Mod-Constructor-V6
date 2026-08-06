@@ -30,7 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
 import type { SectionId } from "./sections";
-import { useProjectHealth } from "./HealthMetrics";
+import { openHealthInspector, useHealthReport } from "./HealthInspector";
 import { useStore, useActiveProject } from "@/lib/store";
 import { requestNewRecord } from "@/lib/builder-record";
 import { useAppHost } from "@/lib/app-host";
