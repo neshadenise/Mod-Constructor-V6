@@ -22,7 +22,7 @@ const MAX_ZOOM = 2.2;
 
 const KIND_TONE: Record<string, string> = {
   founder: "border-amber-400/60 bg-amber-400/10",
-  leader: "border-primary/60 bg-primary/10",
+  supreme_leader: "border-primary/60 bg-primary/10",
   co_leader: "border-primary/40 bg-primary/5",
   heir: "border-cyan-400/50 bg-cyan-400/10",
   council: "border-violet-400/50 bg-violet-400/10",
@@ -162,7 +162,7 @@ export function HierarchyWhiteboard({ doc, onChange, problemRoleIds, selectedId,
       internalName: sanitizeInternalName(`Role_${doc.identity.internalName}_${NODE_KIND_LABEL[kind]}`),
       hierarchyLevel: level,
       rank: level === 0 ? 100 : LEADERSHIP_KINDS.includes(kind) ? 90 : 10,
-      unique: kind === "founder" || kind === "leader",
+      unique: kind === "founder" || kind === "supreme_leader",
       successionEligible: kind === "heir" || kind === "co_leader",
       x: snap(160 + roles.length * 40),
       y: snap(120 + level * 170),
@@ -201,7 +201,7 @@ export function HierarchyWhiteboard({ doc, onChange, problemRoleIds, selectedId,
     <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div className="overflow-hidden rounded-xl border border-border bg-card/40">
         <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-background/60 px-2.5 py-2">
-          <Btn icon={Crown} onClick={() => addRole("leader")}>Leader</Btn>
+          <Btn icon={Crown} onClick={() => addRole("supreme_leader")}>Leader</Btn>
           <Btn icon={Users} onClick={() => addRole("standard_member")}>Role</Btn>
           <Btn icon={Plus} onClick={() => addRole("heir")}>Heir</Btn>
           <Btn icon={StickyNote} onClick={addNote}>Note</Btn>
