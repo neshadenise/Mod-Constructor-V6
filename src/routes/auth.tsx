@@ -55,6 +55,11 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
+        const check = checkPassword(password);
+        if (!check.ok) {
+          toast.error(`Password is not strong enough: ${check.failures.join(" · ")}`);
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -74,6 +79,18 @@ function AuthPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function forgot() {
+    if (!email) {
+      toast.error("Enter your email first.");
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) toast.error(error.message);
+    else toast.success(`Reset link sent to ${email}.`);
   }
 
   return (
@@ -98,10 +115,25 @@ function AuthPage() {
               type="password"
               value={password}
               required
-              minLength={8}
+              minLength={10}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
+          {mode === "signup" && (
+            <ul className="space-y-1">
+              {PASSWORD_RULES.map((rule) => {
+                const pass = rule.test(password);
+                return (
+                  <li
+                    key={rule.id}
+                    className={`text-[11px] ${pass ? "text-[var(--green)]" : "text-muted-foreground"}`}
+                  >
+                    {pass ? "✓" : "•"} {rule.label}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
           <Button className="w-full" type="submit" disabled={busy}>
             {mode === "signin" ? "Sign in" : "Create account"}
           </Button>
@@ -113,6 +145,14 @@ function AuthPage() {
         >
           {mode === "signin" ? "Need an account? Sign up" : "Already have an account? Sign in"}
         </button>
+        <button
+          type="button"
+          className="text-xs text-muted-foreground hover:text-foreground w-full text-center"
+          onClick={() => void forgot()}
+        >
+          Forgot your password?
+        </button>
+
       </Card>
     </main>
   );
