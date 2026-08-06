@@ -47,6 +47,8 @@ import {
   aspirationTypeSpec,
   completeness,
   isVisible,
+  makeMilestone,
+  makeObjective,
   objectiveCount,
   sanitizeInternalName,
   type AspirationDoc,
@@ -807,5 +809,117 @@ export function AdvancedSection({ doc, patch }: SectionProps) {
         )}
       </Panel>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------ milestones -- */
+
+/**
+ * Milestone overview. The full sequencing / event-listener editor lands in
+ * Part 2 — this keeps structure real (and therefore validated and exported)
+ * from Part 1 onwards.
+ */
+export function MilestonesSection({ doc, patch, focus }: SectionProps) {
+  return (
+    <Panel
+      title="Milestones"
+      subtitle="Structure only for now. Goal sequencing, event listeners and completion logic arrive in Part 2."
+      actions={
+        <Btn
+          variant="primary"
+          onClick={() =>
+            patch((d) => ({ ...d, milestones: [...d.milestones, makeMilestone(d.milestones.length)] }))
+          }
+        >
+          Add milestone
+        </Btn>
+      }
+    >
+      {doc.milestones.length === 0 ? (
+        <EmptyHint>No milestones yet. An aspiration with no milestones can never be completed.</EmptyHint>
+      ) : (
+        <ol className="space-y-2">
+          {doc.milestones.map((m, i) => (
+            <li
+              key={m.id}
+              className={cn("rounded-md border border-border bg-background/60 p-2.5", ring(focus, m.id))}
+            >
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border text-[10px] font-bold">
+                  {m.tier}
+                </span>
+                <TextInput
+                  value={m.title}
+                  onChange={(e) =>
+                    patch((d) => ({
+                      ...d,
+                      milestones: d.milestones.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)),
+                    }))
+                  }
+                />
+                <Btn
+                  variant="danger"
+                  onClick={() =>
+                    patch((d) => ({ ...d, milestones: d.milestones.filter((_, j) => j !== i) }))
+                  }
+                >
+                  Remove
+                </Btn>
+              </div>
+
+              <div className="mt-2 space-y-1.5 pl-8">
+                {m.objectives.map((o, k) => (
+                  <div key={o.id} className={cn("flex items-center gap-2", ring(focus, o.id))}>
+                    <TextInput
+                      value={o.label}
+                      onChange={(e) =>
+                        patch((d) => ({
+                          ...d,
+                          milestones: d.milestones.map((x, j) =>
+                            j === i
+                              ? {
+                                  ...x,
+                                  objectives: x.objectives.map((y, l) =>
+                                    l === k ? { ...y, label: e.target.value } : y,
+                                  ),
+                                }
+                              : x,
+                          ),
+                        }))
+                      }
+                    />
+                    <Btn
+                      variant="danger"
+                      onClick={() =>
+                        patch((d) => ({
+                          ...d,
+                          milestones: d.milestones.map((x, j) =>
+                            j === i ? { ...x, objectives: x.objectives.filter((_, l) => l !== k) } : x,
+                          ),
+                        }))
+                      }
+                    >
+                      {""}
+                    </Btn>
+                  </div>
+                ))}
+                <Btn
+                  onClick={() =>
+                    patch((d) => ({
+                      ...d,
+                      milestones: d.milestones.map((x, j) =>
+                        j === i ? { ...x, objectives: [...x.objectives, makeObjective()] } : x,
+                      ),
+                    }))
+                  }
+                >
+                  Add objective
+                </Btn>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Panel>
   );
 }
