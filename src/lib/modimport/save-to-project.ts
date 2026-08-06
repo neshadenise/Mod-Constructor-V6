@@ -152,8 +152,9 @@ export function buildImportFiles(
       // Preserved binary: recorded as a read-only stub file so it is visible,
       // addressable, and rebuildable. Bytes stay in the original .package.
       folder = [...root, "Preserved"];
-      fileName = `${base}${binaryExtension(resource)}`;
-      mime = "application/octet-stream";
+      fileName = `${base}${binaryExtension(resource)}.info.txt`;
+      mime = "text/plain";
+
       const stub = [
         `Resource ${keyTag}`,
         `Type: ${resource.typeLabel}`,
