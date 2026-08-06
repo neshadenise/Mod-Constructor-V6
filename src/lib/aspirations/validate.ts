@@ -9,7 +9,6 @@
 import { canSerializeSimData, requiresSimData } from "@/lib/modexport/simdata";
 import { REWARD_LABEL, REWARD_NUMERIC, objectiveTypeSpec } from "./goals";
 import {
-  ensureGameplay,
   rewardChainCycles,
   rewardKindSpec,
   type AspirationGameplay,
@@ -17,6 +16,7 @@ import {
 import {
   allObjectives,
   aspirationTypeSpec,
+  ensureGameplay,
   collectRefs,
   dependencyCycles,
   flattenObjectives,
