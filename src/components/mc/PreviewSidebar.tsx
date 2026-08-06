@@ -265,15 +265,15 @@ export function PreviewSidebar({
           <Empty text="Select a project to preview its content." />
         ) : (
           <>
-            {kind !== "project" && records.length > 1 && (
+            {records.length > 0 && (
               <select
-                value={currentId ?? ""}
-                onChange={(e) => setPickedId(e.target.value)}
+                value={current?.key ?? ""}
+                onChange={(e) => setPickedKey(e.target.value)}
                 className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
               >
                 {records.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
+                  <option key={r.key} value={r.key}>
+                    {browsing ? `${KIND_LABEL[r.kind].label} · ${r.name}` : r.name}
                   </option>
                 ))}
               </select>
