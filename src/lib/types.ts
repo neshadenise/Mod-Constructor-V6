@@ -440,6 +440,11 @@ export interface AppSettings {
   advancedMode: boolean;
   theme: "light" | "dark" | "system";
   simsInstallPath?: string;
+  /**
+   * Creator handle used to prefix exported file names as
+   * "CreatorName_ModTitle". Empty = no prefix. File names only.
+   */
+  creatorPrefix?: string;
   modsFolderPath?: string;
   autoUpdate: boolean;
   autosaveIntervalSec: number;

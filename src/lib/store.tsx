@@ -51,6 +51,7 @@ const defaultSettings: AppSettings = {
   advancedMode: false,
   theme: "system",
   simsInstallPath: undefined,
+  creatorPrefix: undefined,
   modsFolderPath: undefined,
   autoUpdate: true,
   autosaveIntervalSec: 30,
