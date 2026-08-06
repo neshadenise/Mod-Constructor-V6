@@ -217,6 +217,32 @@ export default function ExportCenter() {
         </div>
       )}
 
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-[11px]">
+        <span className="font-semibold uppercase tracking-wider text-muted-foreground">
+          File name
+        </span>
+        <span className="font-mono text-foreground">
+          {versionedName(
+            request.outputName || project.name,
+            "package",
+            request.versionedFileNames ? project.version : undefined,
+            creatorPrefix,
+          )}
+        </span>
+        {store.state.settings.creatorPrefix ? (
+          <label className="ml-auto flex cursor-pointer items-center gap-1.5 text-muted-foreground">
+            <Checkbox checked={skipPrefix} onCheckedChange={(v) => setSkipPrefix(Boolean(v))} />
+            Skip creator prefix for this export
+          </label>
+        ) : (
+          <span className="ml-auto text-muted-foreground">
+            Set a creator prefix in Settings to name files “Creator_ModTitle”.
+          </span>
+        )}
+      </div>
+
+
+
       <div className="grid gap-4 lg:grid-cols-3">
         <Card title="Source" subtitle="Builder projects rebuild from your models; imported mods preserve their original resources.">
           <div className="space-y-1">
