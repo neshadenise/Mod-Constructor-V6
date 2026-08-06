@@ -1,4 +1,5 @@
 import {
+  Crown,
   Database,
   LayoutDashboard,
   FolderKanban,
