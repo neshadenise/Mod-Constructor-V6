@@ -415,6 +415,9 @@ export interface StoreAPI {
     };
   };
 
+  /** Replace the entire workspace (used by cloud sync when pulling a newer copy). */
+  replaceState: (next: AppState) => void;
+
   // Danger zone
   resetDemoData: () => Promise<void>;
 }
@@ -624,6 +627,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       careerType: init.careerType ?? "standard",
       ageGates: init.ageGates ?? ["young-adult", "adult"],
       iconAssetId: init.iconAssetId,
+      builderState: init.builderState,
       branches: init.branches ?? [],
       messageOverrides: init.messageOverrides ?? [],
       workFromHomeEvents: init.workFromHomeEvents ?? [],
@@ -673,6 +677,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       category: init.category ?? "personality",
       ageGates: init.ageGates ?? ["young-adult", "adult"],
       iconAssetId: init.iconAssetId,
+      builderState: init.builderState,
       buffs: init.buffs ?? [],
       socialInteractions: init.socialInteractions ?? [],
       buffReplacements: init.buffReplacements ?? [],
@@ -722,6 +727,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
       description: init.description ?? "",
       category: init.category ?? "Creative",
       iconAssetId: init.iconAssetId,
+      builderState: init.builderState,
       milestones: init.milestones ?? [],
       rewardTraitId: init.rewardTraitId,
       createdAt: now(),
@@ -1199,6 +1205,10 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
 
   /* ------------- Reset ------------- */
 
+  const replaceState: StoreAPI["replaceState"] = useCallback((next) => {
+    setState(backfillDemoContent({ ...next, packModules: next.packModules ?? [] }));
+  }, []);
+
   const resetDemoData: StoreAPI["resetDemoData"] = useCallback(async () => {
     await adapter.clear();
     setState(makeDemoState());
@@ -1226,6 +1236,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
     toggleFavorite, markRecent,
     updateSettings,
     exportBundle, importBundle, mergeBundleIntoProject,
+    replaceState,
     resetDemoData,
   }), [
     state, adapter, hydrated,
@@ -1247,6 +1258,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
     toggleFavorite, markRecent,
     updateSettings,
     exportBundle, importBundle, mergeBundleIntoProject,
+    replaceState,
     resetDemoData,
   ]);
 

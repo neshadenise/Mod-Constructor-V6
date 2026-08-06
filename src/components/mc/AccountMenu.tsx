@@ -1,39 +1,62 @@
 import { useState } from "react";
-import { LogIn, LogOut, Cloud, CloudOff, UserRound, ChevronDown } from "lucide-react";
-import { useAccount, SYNC_LABEL, SYNC_CONFIGURED, initials } from "@/lib/account";
-import { useStore } from "@/lib/store";
+import { LogIn, LogOut, Cloud, CloudOff, UserRound, ChevronDown, RefreshCw } from "lucide-react";
+import { useAccount, SYNC_LABEL, initials } from "@/lib/account";
+import { useCloudSync } from "@/lib/cloud-sync";
 import { useNotifications } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 export function AccountMenu() {
-  const { account, syncState, signIn, signOut } = useAccount();
-  const store = useStore();
+  const { account, syncState, signIn, signUp, signOut } = useAccount();
+  const sync = useCloudSync();
   const { push } = useNotifications();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(false);
+  const [form, setForm] = useState<null | "signin" | "signup">(null);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const unowned = store.state.projects.filter((p) => !p.isDemo && !p.ownerId).length;
-
-  const doSignIn = () => {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return;
-    const acct = signIn(email, name);
-    // Attach any device-local projects to the account that just signed in.
-    store.state.projects
-      .filter((p) => !p.isDemo && !p.ownerId)
-      .forEach((p) => store.updateProject(p.id, { ownerId: acct.id }));
-    setForm(false);
-    setOpen(false);
-    setEmail("");
-    setName("");
-    push({
-      kind: "success",
-      title: `Signed in as ${acct.displayName}`,
-      description: SYNC_CONFIGURED
-        ? "Your projects will sync across devices."
-        : "Projects are attached to this account on this device. Cloud sync is not configured in this build.",
-    });
+  const submit = async () => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      push({ kind: "error", title: "Enter a valid email address" });
+      return;
+    }
+    if (password.length < 8) {
+      push({ kind: "error", title: "Password must be at least 8 characters" });
+      return;
+    }
+    setBusy(true);
+    try {
+      if (form === "signup") {
+        await signUp(email, password, name);
+        push({
+          kind: "success",
+          title: "Account created",
+          description:
+            "If email confirmation is required, click the link we sent before your workspace starts syncing.",
+        });
+      } else {
+        await signIn(email, password);
+        push({
+          kind: "success",
+          title: "Signed in",
+          description: "Your workspace will sync so you can continue on another device.",
+        });
+      }
+      setForm(null);
+      setOpen(false);
+      setEmail("");
+      setName("");
+      setPassword("");
+    } catch (err) {
+      push({
+        kind: "error",
+        title: "Sign in failed",
+        description: err instanceof Error ? err.message : "Please try again.",
+      });
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -58,10 +81,18 @@ export function AccountMenu() {
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             {syncState === "synced" ? (
               <Cloud className="h-2.5 w-2.5 text-[var(--green)]" />
+            ) : syncState === "syncing" ? (
+              <RefreshCw className="h-2.5 w-2.5 animate-spin" />
             ) : (
               <CloudOff className="h-2.5 w-2.5" />
             )}
-            {account ? (SYNC_CONFIGURED ? "Synced" : "Local account") : "Offline"}
+            {account
+              ? syncState === "synced"
+                ? "Synced"
+                : syncState === "syncing"
+                  ? "Syncing"
+                  : "Sync issue"
+              : "Offline"}
           </div>
         </div>
         <ChevronDown className="h-3 w-3 text-muted-foreground" />
@@ -83,64 +114,78 @@ export function AccountMenu() {
                 </div>
                 <p className="rounded-md border border-border bg-muted/40 p-2 leading-relaxed text-muted-foreground">
                   {SYNC_LABEL[syncState]}
+                  {sync.lastSyncedAt ? ` · last sync ${new Date(sync.lastSyncedAt).toLocaleTimeString()}` : ""}
                 </p>
-                <button
-                  onClick={() => {
-                    signOut();
-                    setOpen(false);
-                    push({
-                      kind: "info",
-                      title: "Signed out",
-                      description: "The app keeps working offline. Projects stay on this device.",
-                    });
-                  }}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-border px-2 py-1.5 font-semibold hover:bg-accent"
-                >
-                  <LogOut className="h-3.5 w-3.5" /> Sign out
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => void sync.syncNow()}
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-border px-2 py-1.5 font-semibold hover:bg-accent"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" /> Sync now
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await signOut();
+                      setOpen(false);
+                      push({
+                        kind: "info",
+                        title: "Signed out",
+                        description: "The app keeps working offline. Projects stay on this device.",
+                      });
+                    }}
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-border px-2 py-1.5 font-semibold hover:bg-accent"
+                  >
+                    <LogOut className="h-3.5 w-3.5" /> Sign out
+                  </button>
+                </div>
               </div>
             ) : form ? (
               <div className="space-y-2">
                 <Field label="Email" value={email} onChange={setEmail} placeholder="you@example.com" />
-                <Field label="Display name" value={name} onChange={setName} placeholder="Optional" />
-                {unowned > 0 && (
-                  <p className="text-[10.5px] text-muted-foreground">
-                    {unowned} local project{unowned === 1 ? "" : "s"} will be attached to this account.
-                  </p>
+                {form === "signup" && (
+                  <Field label="Display name" value={name} onChange={setName} placeholder="Optional" />
                 )}
+                <Field
+                  label="Password"
+                  value={password}
+                  onChange={setPassword}
+                  placeholder="At least 8 characters"
+                  type="password"
+                />
                 <div className="flex gap-2 pt-1">
                   <button
-                    onClick={doSignIn}
-                    className="flex-1 rounded-md bg-[var(--teal)] px-2 py-1.5 font-semibold text-white hover:opacity-90"
+                    disabled={busy}
+                    onClick={() => void submit()}
+                    className="flex-1 rounded-md bg-[var(--teal)] px-2 py-1.5 font-semibold text-white hover:opacity-90 disabled:opacity-60"
                   >
-                    Sign in
+                    {form === "signup" ? "Create account" : "Sign in"}
                   </button>
                   <button
-                    onClick={() => setForm(false)}
+                    onClick={() => setForm(null)}
                     className="rounded-md border border-border px-2 py-1.5 hover:bg-accent"
                   >
                     Cancel
                   </button>
                 </div>
+                <button
+                  onClick={() => setForm(form === "signup" ? "signin" : "signup")}
+                  className="w-full pt-1 text-center text-[10.5px] text-muted-foreground hover:text-foreground"
+                >
+                  {form === "signup" ? "Already have an account? Sign in" : "Need an account? Sign up"}
+                </button>
               </div>
             ) : (
               <div className="space-y-3">
                 <p className="leading-relaxed text-muted-foreground">
                   You are using Mod Constructor offline as a guest. Everything works — projects are
-                  saved on this computer only, so you cannot continue a build from another machine.
+                  saved on this computer only. Sign in to carry your workspace to another device.
                 </p>
                 <button
-                  onClick={() => setForm(true)}
+                  onClick={() => setForm("signin")}
                   className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-[var(--teal)] px-2 py-1.5 font-semibold text-white hover:opacity-90"
                 >
-                  <LogIn className="h-3.5 w-3.5" /> Sign in to attach projects
+                  <LogIn className="h-3.5 w-3.5" /> Sign in / create account
                 </button>
-                {!SYNC_CONFIGURED && (
-                  <p className="text-[10.5px] text-muted-foreground">
-                    Cloud sync is not configured in this build — signing in creates a device account
-                    that owns your projects and is ready for sync when the service is enabled.
-                  </p>
-                )}
               </div>
             )}
           </div>
@@ -155,11 +200,13 @@ function Field({
   value,
   onChange,
   placeholder,
+  type = "text",
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  type?: string;
 }) {
   return (
     <label className="block">
@@ -167,6 +214,7 @@ function Field({
         {label}
       </span>
       <input
+        type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
