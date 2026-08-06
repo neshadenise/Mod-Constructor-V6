@@ -421,14 +421,21 @@ export function computeProjectHealth({ scope, issues, builds = [] }: HealthInput
     },
   ];
 
-  const score = clamp(categories.reduce((sum, c) => sum + c.score * c.weight, 0));
-  const g = gradeFor(score);
-
   const counts = {
     critical: findings.filter((f) => f.severity === "critical").length,
     warning: findings.filter((f) => f.severity === "warning").length,
     suggestion: findings.filter((f) => f.severity === "suggestion").length,
   };
+
+  const weighted = categories.reduce((sum, c) => sum + c.score * c.weight, 0);
+  /**
+   * Hard cap: a mod that cannot load is never "Healthy", however polished the
+   * rest of it is. One blocking problem caps at "Needs Attention", three or
+   * more caps at "Critical".
+   */
+  const cap = counts.critical === 0 ? 100 : counts.critical >= 3 ? 45 : 59;
+  const score = clamp(Math.min(weighted, cap));
+  const g = gradeFor(score);
 
   const order: Record<FindingSeverity, number> = { critical: 0, warning: 1, suggestion: 2 };
   findings.sort((a, b) => order[a.severity] - order[b.severity]);
