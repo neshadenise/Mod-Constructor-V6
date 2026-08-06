@@ -20,6 +20,7 @@ import {
   ensureStringKeys,
   type AspirationKeys,
 } from "./ids";
+import { REWARD_NUMERIC, objectiveTypeSpec } from "./goals";
 import {
   AGE_LABEL,
   aspirationTypeSpec,
@@ -27,8 +28,10 @@ import {
   isVisible,
   objectiveCount,
   type AspirationDoc,
+  type AspirationObjective,
   type ResourceRef,
 } from "./schema";
+
 import { externalDependencies, requiredPacks, resolveRef, type ResolveContext } from "./resolver";
 import { validateAspiration, type AspirationValidation } from "./validate";
 
@@ -118,6 +121,86 @@ export function buildAspirationXml(
   return L.join("\n");
 }
 
+/* ---------------------------------------------------- milestones/goals -- */
+
+function objectiveXml(
+  o: AspirationObjective,
+  ctx: ResolveContext,
+  tuningName: string,
+  decimal: string,
+): string {
+  const spec = objectiveTypeSpec(o.type);
+  const L: string[] = [];
+  const push = (indent: number, line: string) => L.push(`${"  ".repeat(indent)}${line}`);
+  push(0, `<?xml version="1.0" encoding="utf-8"?>`);
+  push(
+    0,
+    `<I c="${spec.testClass}" i="objective" m="aspirations.aspiration_tuning" n="${esc(tuningName)}" s="${decimal}">`,
+  );
+  push(1, `<T n="goal_type">${spec.id}</T>`);
+  push(1, `<T n="display_text">${esc(o.label)}</T>`);
+  if (o.description.trim()) push(1, `<T n="description">${esc(o.description)}</T>`);
+  push(1, `<T n="iterations">${Math.max(1, o.count)}</T>`);
+  push(1, `<T n="display_style">${o.progress}</T>`);
+  if (o.hidden) push(1, `<T n="hidden">True</T>`);
+  if (o.optional) push(1, `<T n="optional">True</T>`);
+  if (o.bonus) push(1, `<T n="bonus">True</T>`);
+
+  const params = Object.entries(o.params).filter(([, v]) => v !== "" && v !== false && v !== 0);
+  if (params.length) {
+    push(1, `<U n="goal_settings">`);
+    for (const [k, v] of params) push(2, `<T n="${k}">${esc(String(v))}</T>`);
+    push(1, `</U>`);
+  }
+
+  const refs = Object.entries(o.refs).filter(([, r]) => Boolean(r)) as [string, ResourceRef][];
+  if (refs.length || o.ref) {
+    push(1, `<U n="goal_targets">`);
+    if (o.ref) push(2, `<T n="target">${esc(refValue(o.ref, ctx))}</T>`);
+    for (const [k, r] of refs) push(2, `<T n="${k}">${esc(refValue(r, ctx))}</T>`);
+    push(1, `</U>`);
+  }
+
+  if (o.conditions.length) {
+    push(1, `<L n="tests">`);
+    for (const c of o.conditions)
+      push(2, `<T n="${c.kind}"${c.negate ? ` invert="True"` : ""}>${esc(c.value)}</T>`);
+    push(1, `</L>`);
+  }
+
+  if (o.repeat.mode !== "one-time") {
+    push(1, `<U n="repeat">`);
+    push(2, `<T n="mode">${o.repeat.mode}</T>`);
+    push(2, `<T n="reset_on_failure">${o.repeat.resetOnFailure ? "True" : "False"}</T>`);
+    push(2, `<T n="reset_on_travel">${o.repeat.resetOnTravel ? "True" : "False"}</T>`);
+    push(2, `<T n="reset_on_age_up">${o.repeat.resetOnAgeUp ? "True" : "False"}</T>`);
+    push(1, `</U>`);
+  }
+
+  if (o.timer.mode !== "none") {
+    push(1, `<U n="timing">`);
+    push(2, `<T n="mode">${o.timer.mode}</T>`);
+    if (o.timer.hours) push(2, `<T n="hours">${o.timer.hours}</T>`);
+    if (o.timer.window) push(2, `<T n="window">${esc(o.timer.window)}</T>`);
+    push(1, `</U>`);
+  }
+
+  if (o.dependsOn.length) {
+    push(1, `<L n="requires">`);
+    for (const d of o.dependsOn) push(2, `<T>${esc(d)}</T>`);
+    push(1, `</L>`);
+  }
+
+  if (o.children.length) {
+    push(1, `<L n="children">`);
+    for (const c of o.children) push(2, `<T>${esc(c.label)}</T>`);
+    push(1, `</L>`);
+  }
+
+  push(0, `</I>`);
+  return L.join("\n");
+}
+
 function buildMilestoneXml(
   doc: AspirationDoc,
   ctx: ResolveContext,
@@ -134,9 +217,52 @@ function buildMilestoneXml(
       `<I c="Objective" i="aspiration" m="aspirations.aspiration_tuning" n="${esc(mk.tuningName)}" s="${mk.decimal}">`,
     );
     push(1, `<T n="tier">${esc(m.tier)}</T>`);
+    push(1, `<T n="display_order">${m.order}</T>`);
+    push(1, `<T n="display_name">${esc(m.title)}</T>`);
+    if (m.description.trim()) push(1, `<T n="description">${esc(m.description)}</T>`);
+    if (m.strings.tooltip.trim()) push(1, `<T n="tooltip">${esc(m.strings.tooltip)}</T>`);
+    if (m.strings.journal.trim()) push(1, `<T n="journal_text">${esc(m.strings.journal)}</T>`);
+    if (m.strings.notification.trim())
+      push(1, `<T n="completion_notification">${esc(m.strings.notification)}</T>`);
+    if (m.icon) push(1, `<T n="icon">${esc(m.icon)}</T>`);
+    push(1, `<T n="hidden">${m.hidden ? "True" : "False"}</T>`);
     push(1, `<T n="points">${m.points}</T>`);
-    const reward = refValue(m.rewardRef, ctx);
-    if (reward) push(1, `<T n="reward">${esc(reward)}</T>`);
+
+    push(1, `<U n="completion">`);
+    push(2, `<T n="mode">${m.completion.mode}</T>`);
+    if (m.completion.mode === "count") push(2, `<T n="count">${m.completion.count}</T>`);
+    push(2, `<T n="sequential">${m.completion.sequential ? "True" : "False"}</T>`);
+    push(1, `</U>`);
+
+    if (m.unlockMode === "conditions" && m.unlocks.length) {
+      push(1, `<L n="unlock_tests">`);
+      for (const u of m.unlocks)
+        push(2, `<T n="${u.kind}"${u.negate ? ` invert="True"` : ""}>${esc(u.value)}</T>`);
+      push(1, `</L>`);
+    }
+
+    if (m.failures.length) {
+      push(1, `<L n="failure_tests">`);
+      for (const f of m.failures) push(2, `<T n="${f.kind}">${esc(f.value)}</T>`);
+      push(1, `</L>`);
+    }
+
+    const legacyReward = refValue(m.rewardRef, ctx);
+    if (legacyReward) push(1, `<T n="reward">${esc(legacyReward)}</T>`);
+    if (m.rewards.length) {
+      push(1, `<L n="rewards">`);
+      for (const r of m.rewards) {
+        const value = REWARD_NUMERIC.includes(r.type)
+          ? String(r.amount)
+          : refValue(r.ref, ctx) || r.text;
+        push(2, `<U>`);
+        push(3, `<T n="type">${r.type}</T>`);
+        push(3, `<T n="value">${esc(value)}</T>`);
+        push(2, `</U>`);
+      }
+      push(1, `</L>`);
+    }
+
     push(1, `<L n="objectives">`);
     mk.objectives.forEach((ok, j) => {
       const o = m.objectives[j];
@@ -144,7 +270,8 @@ function buildMilestoneXml(
     });
     push(1, `</L>`);
     push(0, `</I>`);
-    return [
+
+    const files: AspirationExportFile[] = [
       {
         name: `${mk.tuningName.replace(":", "_")}.xml`,
         kind: "tuning" as const,
@@ -152,8 +279,22 @@ function buildMilestoneXml(
         resourceKey: keyToString(mk.key),
       },
     ];
+
+    mk.objectives.forEach((ok, j) => {
+      const o = m.objectives[j];
+      if (!o) return;
+      files.push({
+        name: `${ok.tuningName.replace(":", "_")}.xml`,
+        kind: "tuning",
+        contents: objectiveXml(o, ctx, ok.tuningName, ok.decimal),
+        resourceKey: keyToString(ok.key),
+      });
+    });
+
+    return files;
   });
 }
+
 
 /* --------------------------------------------------------------- STBL -- */
 

@@ -15,6 +15,8 @@ import {
   blankAspirationDoc,
   makeMilestone,
   makeObjective,
+  normalizeMilestones,
+
   sanitizeInternalName,
   type AspirationCategoryId,
   type AspirationDoc,
@@ -53,8 +55,16 @@ export function migrateAspirationDoc(rec: Aspiration): AspirationDoc {
   const state = rec.builderState as unknown;
   if (isNewDoc(state)) {
     // Keep the record name authoritative — it is what the rest of the app shows.
-    return { ...state, displayName: rec.name || state.displayName };
+    // Part 1 documents only knew about flat milestones: normalising fills in the
+    // Part 2 fields (uuids, goal types, rewards, unlocks) without inventing data.
+    return {
+      ...state,
+      version: ASPIRATION_DOC_VERSION,
+      displayName: rec.name || state.displayName,
+      milestones: normalizeMilestones(state.milestones ?? []),
+    };
   }
+
 
   const legacy = (state ?? {}) as Record<string, unknown>;
   const tiers = Array.isArray(legacy["tiers"]) ? (legacy["tiers"] as LegacyTier[]) : [];

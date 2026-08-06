@@ -327,7 +327,14 @@ export function AspirationBuilder() {
         <div className="min-w-0">
           {section === "identity" && <IdentitySection {...sectionProps} />}
           {section === "availability" && <AvailabilitySection {...sectionProps} />}
-          {section === "milestones" && <MilestonesSection {...sectionProps} />}
+          {section === "milestones" && (
+            <MilestonesSection
+              {...sectionProps}
+              {...(record.currentId ? { recordId: record.currentId } : {})}
+              projectId={project.id}
+            />
+          )}
+
           {section === "resources" && <ResourcesSection {...sectionProps} />}
           {section === "strings" && <StringsSection {...sectionProps} />}
           {section === "dependencies" && (
