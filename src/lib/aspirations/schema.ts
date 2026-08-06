@@ -258,29 +258,79 @@ export interface AspirationAvailability {
   claimsBaseGame: boolean;
 }
 
-/* -------------------------------------------------- milestones (part 2) -- */
+/* --------------------------------------------- milestones and objectives -- */
 
+/**
+ * One objective. Everything the game needs to test, count, gate, time and
+ * reward the goal lives on this object — the editor never asks the creator to
+ * type a tuning id, only to pick resources and numbers.
+ */
 export interface AspirationObjective {
   id: string;
+  /** Permanent id. Survives renames, reorders, duplication of the parent. */
+  uuid: string;
   label: string;
-  /** Test/goal tuning this objective points at, when connected. */
+  /** Unique machine name, e.g. "NeshaMods_Objective_Level3Painting". */
+  internalName: string;
+  description: string;
+  type: ObjectiveTypeId;
+  /** Scalar fields declared by the objective type spec. */
+  params: Record<string, GoalParamValue>;
+  /** Resource fields declared by the objective type spec, keyed by field id. */
+  refs: Record<string, ResourceRef | null>;
+  /** Legacy single reference — kept so Part 1 documents keep resolving. */
   ref: ResourceRef | null;
+  /** Target value shown in the progress readout. */
   count: number;
+  /** Authoring-side preview of current progress. Never exported. */
+  current: number;
+  progress: ProgressStyle;
+  conditions: GoalCondition[];
+  repeat: RepeatRules;
+  timer: GoalTimer;
+  hidden: boolean;
+  optional: boolean;
+  bonus: boolean;
+  /** Objective uuids that must complete first. */
+  dependsOn: string[];
+  /** Children of a composite goal. */
+  children: AspirationObjective[];
   notes: string;
+}
+
+export interface MilestoneStrings {
+  tooltip: string;
+  journal: string;
+  notification: string;
 }
 
 export interface AspirationMilestone {
   id: string;
+  uuid: string;
   /** Roman-ish tier label, purely presentational. */
   tier: string;
   title: string;
+  internalName: string;
   description: string;
+  icon: string;
   objectives: AspirationObjective[];
-  /** Loot awarded when the milestone completes. */
+  /** Legacy single loot reference — superseded by `rewards`. */
   rewardRef: ResourceRef | null;
+  rewards: MilestoneReward[];
   /** Satisfaction points granted on completion. */
   points: number;
+  hidden: boolean;
+  /** Maintained by drag and drop; manual override allowed. */
+  order: number;
+  unlockMode: "auto" | "conditions";
+  unlocks: UnlockCondition[];
+  completion: CompletionRule;
+  failures: FailureCondition[];
+  strings: MilestoneStrings;
+  /** Editor-only tree state. */
+  collapsed: boolean;
 }
+
 
 /* -------------------------------------------------------------- strings -- */
 
