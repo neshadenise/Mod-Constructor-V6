@@ -4134,7 +4134,7 @@ function InstallPaths() {
  */
 function CreatorPrefixCard() {
   const store = useStore();
-  const project = store.activeProject;
+  const project = useActiveProject();
   const saved = store.state.settings.creatorPrefix ?? "";
   const [draft, setDraft] = useState(saved);
   useEffect(() => setDraft(saved), [saved]);
@@ -4173,14 +4173,20 @@ function CreatorPrefixCard() {
           />
         </label>
         {suggestion && effective !== suggestion && (
-          <Button size="sm" variant="outline" onClick={() => commit(suggestion)}>
+          <button
+            onClick={() => commit(suggestion)}
+            className="rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-accent"
+          >
             Use “{suggestion}”
-          </Button>
+          </button>
         )}
         {effective && (
-          <Button size="sm" variant="ghost" onClick={() => commit("")}>
+          <button
+            onClick={() => commit("")}
+            className="rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-accent"
+          >
             Clear
-          </Button>
+          </button>
         )}
       </div>
       <p className="mt-2 text-[11px] text-muted-foreground">
