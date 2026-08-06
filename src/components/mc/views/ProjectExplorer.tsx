@@ -1066,6 +1066,7 @@ function ItemContextMenu(props: {
   item: ProjectExplorerItem;
   showTrash: boolean;
   children: React.ReactNode;
+  builderTarget?: BuilderTarget | null; onOpenBuilder?: () => void;
   onOpen: () => void; onNewFolder: () => void; onUpload: () => void; onRename: () => void;
   onDownload: () => void; onReplace: () => void; onDuplicate: () => void; onCopy: () => void;
   onCut: () => void; onMove: () => void; onCopyProject: () => void; onMoveProject: () => void;
