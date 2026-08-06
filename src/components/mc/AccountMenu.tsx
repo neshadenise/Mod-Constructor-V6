@@ -82,8 +82,7 @@ export function AccountMenu() {
         push({
           kind: "success",
           title: "Account created",
-          description:
-            "If email confirmation is required, click the link we sent before your workspace starts syncing.",
+          description: "You are signed in — your workspace will start syncing.",
         });
       } else {
         await signIn(email, password);
