@@ -402,17 +402,10 @@ function StructureViewer({ ea, onClose }: { ea: EaInteraction; onClose: () => vo
         <pre className="overflow-auto rounded-lg border border-border bg-muted/30 p-2 font-mono text-[10.5px] leading-relaxed">
           {lines.join("\n")}
         </pre>
-        {ea.usedByNote && <p className="mt-2 text-[11px] text-muted-foreground">{ea.usedByNote}</p>}
+        <p className="mt-2 text-[11px] text-muted-foreground">{ea.summary}</p>
       </div>
     </div>
   );
-}
-
-/** Optional note some catalogue entries carry. */
-declare module "@/lib/interactions/catalog" {
-  interface EaInteraction {
-    usedByNote?: string;
-  }
 }
 
 export const AddInteractionHint = () => (
