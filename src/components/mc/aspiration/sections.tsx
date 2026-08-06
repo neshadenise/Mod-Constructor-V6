@@ -20,6 +20,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useStore, useActiveProject } from "@/lib/store";
 import { RefField } from "@/components/mc/trait/ResourcePicker";
+import { MilestoneBuilder } from "./MilestoneBuilder";
+
 import {
   Badge,
   Btn,
