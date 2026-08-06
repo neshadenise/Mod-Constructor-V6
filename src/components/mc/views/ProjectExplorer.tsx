@@ -10,7 +10,7 @@ import {
   FolderTree, Folder, FolderOpen, File as FileIcon, FileImage, FileCode2, FileText, Package,
   ChevronRight, ChevronDown, Search, Plus, Upload, Copy, Scissors, ClipboardPaste, Pencil,
   Trash2, Download, ArrowRightLeft, LayoutGrid, List, ArrowUpDown, RotateCcw, RefreshCw,
-  AlertTriangle, Home, X, Save,
+  AlertTriangle, Home, X, Save, ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -20,11 +20,55 @@ import {
 } from "@/components/ui/context-menu";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
+import { useAppNavigation } from "@/lib/navigation";
+import { requestRevealRecord, type BuilderKind } from "@/lib/builder-record";
 import {
   useExplorer, sortItems, fileCategory, formatBytes, isPreviewableImage, isPreviewableText,
   readFilePayload, splitName, extensionOf,
   type ProjectExplorerItem, type SortKey,
 } from "@/lib/explorer";
+
+/* ------------------------- builder resolution -------------------------- */
+
+const BUILDER_LABEL: Record<BuilderKind, string> = {
+  career: "Career Builder",
+  trait: "Trait Builder",
+  aspiration: "Aspiration Builder",
+};
+
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+export type BuilderTarget = { kind: BuilderKind; id?: string; label: string };
+
+/**
+ * Work out which builder (and which record) a file belongs to, so "Open"
+ * can take the user straight there. Matches a saved record by name first,
+ * then falls back to the folder the file lives in.
+ */
+function resolveBuilderTarget(
+  item: ProjectExplorerItem,
+  path: string,
+  records: { kind: BuilderKind; id: string; name: string }[],
+): BuilderTarget | null {
+  if (item.itemType === "folder") {
+    const p = norm(item.name);
+    if (p.startsWith("career")) return { kind: "career", label: BUILDER_LABEL.career };
+    if (p.startsWith("trait") || p.startsWith("buff")) return { kind: "trait", label: BUILDER_LABEL.trait };
+    if (p.startsWith("aspiration")) return { kind: "aspiration", label: BUILDER_LABEL.aspiration };
+    return null;
+  }
+
+  const base = norm(splitName(item.name).base);
+  const hit = records.find((r) => norm(r.name) === base) ?? records.find((r) => base.includes(norm(r.name)) && norm(r.name).length > 3);
+  if (hit) return { kind: hit.kind, id: hit.id, label: BUILDER_LABEL[hit.kind] };
+
+  const p = norm(path);
+  if (p.includes("career")) return { kind: "career", label: BUILDER_LABEL.career };
+  if (p.includes("trait") || p.includes("buff")) return { kind: "trait", label: BUILDER_LABEL.trait };
+  if (p.includes("aspiration")) return { kind: "aspiration", label: BUILDER_LABEL.aspiration };
+  return null;
+}
+
 
 /* ------------------------------ helpers -------------------------------- */
 
@@ -80,6 +124,7 @@ function encodeText(text: string, mimeType?: string): { dataUrl: string; size: n
 export function ProjectExplorer() {
   const store = useStore();
   const ex = useExplorer();
+  const nav = useAppNavigation();
   const project = store.state.projects.find((p) => p.id === store.state.activeProjectId);
   const projectId = project?.id;
 
@@ -134,6 +179,21 @@ export function ProjectExplorer() {
     },
     [all],
   );
+
+  /** Builder records belonging to this project, for file → builder matching. */
+  const builderRecords = useMemo(() => {
+    const rows: { kind: BuilderKind; id: string; name: string }[] = [];
+    for (const c of store.state.careers) if (c.projectId === projectId) rows.push({ kind: "career", id: c.id, name: c.name });
+    for (const t of store.state.traits) if (t.projectId === projectId) rows.push({ kind: "trait", id: t.id, name: t.name });
+    for (const a of store.state.aspirations) if (a.projectId === projectId) rows.push({ kind: "aspiration", id: a.id, name: a.name });
+    return rows;
+  }, [projectId, store.state.careers, store.state.traits, store.state.aspirations]);
+
+  const builderTargetOf = useCallback(
+    (item: ProjectExplorerItem) => resolveBuilderTarget(item, pathOf(item.id), builderRecords),
+    [pathOf, builderRecords],
+  );
+
 
   const breadcrumb = useMemo(() => {
     const chain: ProjectExplorerItem[] = [];
@@ -302,13 +362,30 @@ export function ProjectExplorer() {
     }
   };
 
+  /** Jump to the builder that owns this file (and select its record). */
+  const openInBuilder = (item: ProjectExplorerItem, target: BuilderTarget) => {
+    nav.navigate(target.kind);
+    if (target.id) requestRevealRecord(target.kind, target.id);
+    toast.success(
+      target.id ? `Opened "${item.name}" in the ${target.label}` : `Opened the ${target.label}`,
+    );
+  };
+
   const openItem = (item: ProjectExplorerItem) => {
     if (item.itemType === "folder") {
       setCwd(item.id);
       setQuery("");
       setSelection([]);
+      return;
     }
+    const target = builderTargetOf(item);
+    if (target?.id) {
+      openInBuilder(item, target);
+      return;
+    }
+    setSelection([item.id]);
   };
+
 
   const revealItem = (item: ProjectExplorerItem) => {
     setQuery("");
@@ -428,6 +505,20 @@ export function ProjectExplorer() {
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1.5">
+        {toolbarBtn(
+          single && single.itemType === "file" && builderTargetOf(single)
+            ? `Open in ${builderTargetOf(single)!.label}`
+            : "Open",
+          ExternalLink,
+          () => {
+            if (!single) return;
+            if (single.itemType === "folder") { openItem(single); return; }
+            const target = builderTargetOf(single);
+            if (target) openInBuilder(single, target);
+            else { setSelection([single.id]); toast.message(`"${single.name}" has no matching builder — showing its preview.`); }
+          },
+          !single || showTrash,
+        )}
         {toolbarBtn("New Folder", Plus, () => newFolder(cwd), showTrash)}
         {toolbarBtn("Upload Files", Upload, () => uploadRef.current?.click(), showTrash)}
         <span className="mx-1 h-5 w-px bg-border" />
@@ -581,6 +672,8 @@ export function ProjectExplorer() {
                         item={item}
                         showTrash={showTrash}
                         onOpen={() => openItem(item)}
+                        builderTarget={builderTargetOf(item)}
+                        onOpenBuilder={() => { const t = builderTargetOf(item); if (t) openInBuilder(item, t); }}
                         onNewFolder={() => newFolder(item.itemType === "folder" ? item.id : cwd)}
                         onUpload={() => { setCwd(item.itemType === "folder" ? item.id : cwd); uploadRef.current?.click(); }}
                         onRename={() => startRename(item.id)}
@@ -646,6 +739,8 @@ export function ProjectExplorer() {
                         item={item}
                         showTrash={showTrash}
                         onOpen={() => openItem(item)}
+                        builderTarget={builderTargetOf(item)}
+                        onOpenBuilder={() => { const t = builderTargetOf(item); if (t) openInBuilder(item, t); }}
                         onNewFolder={() => newFolder(item.itemType === "folder" ? item.id : cwd)}
                         onUpload={() => { setCwd(item.itemType === "folder" ? item.id : cwd); uploadRef.current?.click(); }}
                         onRename={() => startRename(item.id)}
@@ -971,6 +1066,7 @@ function ItemContextMenu(props: {
   item: ProjectExplorerItem;
   showTrash: boolean;
   children: React.ReactNode;
+  builderTarget?: BuilderTarget | null; onOpenBuilder?: () => void;
   onOpen: () => void; onNewFolder: () => void; onUpload: () => void; onRename: () => void;
   onDownload: () => void; onReplace: () => void; onDuplicate: () => void; onCopy: () => void;
   onCut: () => void; onMove: () => void; onCopyProject: () => void; onMoveProject: () => void;
@@ -989,6 +1085,11 @@ function ItemContextMenu(props: {
         ) : (
           <>
             <ContextMenuItem onSelect={props.onOpen}>{isFolder ? "Open" : "Preview"}</ContextMenuItem>
+            {props.builderTarget && props.onOpenBuilder && (
+              <ContextMenuItem onSelect={props.onOpenBuilder}>
+                <ExternalLink className="mr-2 h-3.5 w-3.5" /> Open in {props.builderTarget.label}
+              </ContextMenuItem>
+            )}
             {isFolder && <ContextMenuItem onSelect={props.onNewFolder}><Plus className="mr-2 h-3.5 w-3.5" /> New Folder</ContextMenuItem>}
             {isFolder && <ContextMenuItem onSelect={props.onUpload}><Upload className="mr-2 h-3.5 w-3.5" /> Upload Files</ContextMenuItem>}
             <ContextMenuItem onSelect={props.onRename}><Pencil className="mr-2 h-3.5 w-3.5" /> Rename</ContextMenuItem>
