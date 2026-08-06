@@ -42,11 +42,21 @@ export interface BuilderRecordApi<S> {
 const AUTOSAVE_MS = 1200;
 
 const NEW_EVENT = "mc:builder-new";
+const REVEAL_EVENT = "mc:builder-reveal";
 
 /** Ask the given builder to start a blank entry (used by sidebar "+"). */
 export function requestNewRecord(kind: BuilderKind) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(NEW_EVENT, { detail: kind }));
+}
+
+/** Ask the given builder to open a specific record (Health Inspector, search). */
+export function requestRevealRecord(kind: BuilderKind, id: ID) {
+  if (typeof window === "undefined") return;
+  const fire = () => window.dispatchEvent(new CustomEvent(REVEAL_EVENT, { detail: { kind, id } }));
+  // The builder may not be mounted yet when navigation just started.
+  fire();
+  setTimeout(fire, 120);
 }
 
 export function useBuilderRecord<S>(opts: {
@@ -202,12 +212,24 @@ export function useBuilderRecord<S>(opts: {
   /* Sidebar / command palette "+" for this builder. */
   const addNewRef = useRef(addNew);
   addNewRef.current = addNew;
+  const selectRef = useRef(select);
+  selectRef.current = select;
   useEffect(() => {
     const handler = (e: Event) => {
       if ((e as CustomEvent).detail === kind) addNewRef.current();
     };
+    /* "Take me to this record" — Health Inspector, search, deep links. */
+    const reveal = (e: Event) => {
+      const d = (e as CustomEvent).detail as { kind: BuilderKind; id: ID } | undefined;
+      if (!d || d.kind !== kind) return;
+      if (listRef.current.some((r) => r.id === d.id)) selectRef.current(d.id);
+    };
     window.addEventListener(NEW_EVENT, handler);
-    return () => window.removeEventListener(NEW_EVENT, handler);
+    window.addEventListener(REVEAL_EVENT, reveal);
+    return () => {
+      window.removeEventListener(NEW_EVENT, handler);
+      window.removeEventListener(REVEAL_EVENT, reveal);
+    };
   }, [kind]);
 
   const loadDraft = useCallback(

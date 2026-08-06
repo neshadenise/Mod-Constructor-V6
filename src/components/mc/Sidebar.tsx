@@ -30,7 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
 import type { SectionId } from "./sections";
-import { useProjectHealth } from "./HealthMetrics";
+import { openHealthInspector, useHealthReport } from "./HealthInspector";
 import { useStore, useActiveProject } from "@/lib/store";
 import { requestNewRecord } from "@/lib/builder-record";
 import { useAppHost } from "@/lib/app-host";
@@ -268,9 +268,8 @@ function WorkspaceStatus() {
 }
 
 /**
- * Compact project-health rail. The full metric cards now live on their related
- * pages (Validation Center, Dependency Graph, Package Exporter); these rows are
- * the shortcut into them.
+ * Compact project-health rail. Shows the weighted grade — not a progress bar —
+ * and opens the Health Report, where every finding is clickable.
  */
 function ProjectHealthStrip({
   onSelect,
@@ -279,42 +278,68 @@ function ProjectHealthStrip({
   onSelect: (id: SectionId) => void;
   advanced: boolean;
 }) {
-  const health = useProjectHealth();
-  const rows: { label: string; value: number; color: string; to: SectionId }[] = [
-    { label: "Build health", value: health?.buildHealth ?? 0, color: "var(--green)", to: advanced ? "validation" : "queue" },
-    { label: "Compatibility", value: health?.compatibility ?? 0, color: "var(--blue)", to: "graph" },
-    { label: "Completeness", value: health?.completeness ?? 0, color: "var(--orange)", to: "exporter" },
+  const report = useHealthReport();
+  const r = report.readouts;
+  const rows: { label: string; value: string; color?: string; to: SectionId }[] = [
+    {
+      label: "Errors",
+      value: String(r.errors),
+      color: r.errors ? "var(--red, #ef4444)" : "var(--green)",
+      to: advanced ? "validation" : "queue",
+    },
+    { label: "Warnings", value: String(r.warnings), color: r.warnings ? "var(--orange)" : "var(--green)", to: advanced ? "validation" : "queue" },
+    { label: "Compatibility", value: `${r.compatibilityPct}%`, color: "var(--blue)", to: "graph" },
+    {
+      label: "Testing",
+      value: r.testing === "passed" ? "Passed" : r.testing === "failed" ? "Failed" : "Untested",
+      color: r.testing === "passed" ? "var(--green)" : r.testing === "failed" ? "var(--red, #ef4444)" : "var(--orange)",
+      to: "exporter",
+    },
   ];
   return (
     <div className="m-3 rounded-lg border border-sidebar-border bg-sidebar-accent/30 p-3">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-        Project Health
-      </div>
-      <div className="mt-2 flex flex-col gap-2">
-        {rows.map((r) => (
+      <button onClick={openHealthInspector} className="w-full text-left" title="Open the Health Report">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Project Health
+        </div>
+        <div className="mt-1 flex items-baseline gap-1.5">
+          <span className="text-lg font-bold tabular-nums" style={{ color: report.color }}>
+            {report.score}%
+          </span>
+          <span className="text-[11px] font-semibold" style={{ color: report.color }}>
+            {report.gradeLabel}
+          </span>
+        </div>
+        <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-sidebar-border">
+          <div
+            className="h-full rounded-full transition-all"
+            style={{ width: `${report.score}%`, background: report.color }}
+          />
+        </div>
+      </button>
+      <div className="mt-2 flex flex-col gap-1">
+        {rows.map((row) => (
           <button
-            key={r.label}
-            onClick={() => onSelect(r.to)}
-            className="group text-left"
-            title={`Open in ${r.to}`}
+            key={row.label}
+            onClick={() => onSelect(row.to)}
+            className="group flex items-center justify-between text-[11px]"
+            title={`Open in ${row.to}`}
           >
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-muted-foreground group-hover:text-sidebar-foreground">
-                {r.label}
-              </span>
-              <span className="font-semibold tabular-nums" style={{ color: r.color }}>
-                {r.value}%
-              </span>
-            </div>
-            <div className="mt-1 h-1 overflow-hidden rounded-full bg-sidebar-border">
-              <div
-                className="h-full rounded-full transition-all"
-                style={{ width: `${r.value}%`, background: r.color }}
-              />
-            </div>
+            <span className="text-muted-foreground group-hover:text-sidebar-foreground">
+              {row.label}
+            </span>
+            <span className="font-semibold tabular-nums" style={{ color: row.color }}>
+              {row.value}
+            </span>
           </button>
         ))}
       </div>
+      <button
+        onClick={openHealthInspector}
+        className="mt-2 w-full rounded-md border border-sidebar-border px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-sidebar-accent"
+      >
+        Health Report
+      </button>
     </div>
   );
 }

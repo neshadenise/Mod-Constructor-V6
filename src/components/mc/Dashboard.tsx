@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { useAdvanced } from "@/lib/advanced-mode";
 import { useStore, useActiveProject } from "@/lib/store";
 import { useAppNavigation } from "@/lib/navigation";
+import { ProjectHealthCard } from "@/components/mc/HealthInspector";
 import { useBuildEngine } from "@/lib/build-engine";
 import {
   scopeProject,
@@ -130,6 +131,7 @@ export function Dashboard() {
 
       <div className="grid grid-cols-12 gap-4">
         <CurrentProject />
+        <ProjectHealthCard className="col-span-6" />
       </div>
 
 
