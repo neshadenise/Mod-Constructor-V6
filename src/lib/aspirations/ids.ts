@@ -131,6 +131,64 @@ export function computeAspirationKeys(doc: AspirationDoc, ids?: ResourceIdServic
   };
 }
 
+export interface GameplayKey {
+  uuid: string;
+  tuningName: string;
+  key: ResourceKey;
+  decimal: string;
+}
+
+export interface AspirationGameplayKeys {
+  rewards: GameplayKey[];
+  loot: GameplayKey[];
+  notifications: GameplayKey[];
+  broadcasters: GameplayKey[];
+  listeners: GameplayKey[];
+}
+
+/**
+ * Deterministic keys for every Part 3 gameplay resource. Derived from the
+ * aspiration's internal name plus the resource's own stable uuid, so adding a
+ * reward never renumbers the ones that already shipped.
+ */
+export function computeGameplayKeys(
+  doc: AspirationDoc,
+  ids?: ResourceIdService,
+): AspirationGameplayKeys {
+  const service = ids ?? new ResourceIdService();
+  const ns = doc.ids.namespace;
+  const g = doc.gameplay;
+
+  const build = (kind: string, uuid: string, label: string): GameplayKey => {
+    const name = `${doc.ids.internalName}_${kind}_${sanitizeChild(label || uuid)}`;
+    const { key, decimal } = childKey(service, ns, `aspiration_${kind}`, name);
+    return { uuid, tuningName: tuningNameFor(ns, name), key, decimal };
+  };
+
+  return {
+    rewards: (g?.rewards ?? []).map((r) => build("reward", r.uuid, r.name)),
+    loot: (g?.loot ?? []).map((l) => build("loot", l.uuid, l.internalName || l.name)),
+    notifications: (g?.notifications ?? []).map((n) => build("notification", n.uuid, n.name)),
+    broadcasters: (g?.broadcasters ?? []).map((b) => build("broadcaster", b.uuid, b.name)),
+    listeners: (g?.listeners ?? []).map((l) => build("listener", l.uuid, l.name)),
+  };
+}
+
+const sanitizeChild = (s: string) =>
+  s
+    .trim()
+    .replace(/[^A-Za-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "") || "item";
+
+/** Localisation keys for notification titles and bodies. */
+export function notificationStringKeys(doc: AspirationDoc, uuid: string, name: string) {
+  const base = `${sanitizeChild(name)}_${uuid.slice(-8)}`;
+  return {
+    title: localizationKey(doc.ids.namespace, "aspiration", doc.ids.internalName, `note_${base}_title`),
+    body: localizationKey(doc.ids.namespace, "aspiration", doc.ids.internalName, `note_${base}_body`),
+  };
+}
+
 /** Preview of the keys a rename/regeneration would produce, without applying. */
 export function previewKeys(namespace: string, internalName: string) {
   const seed = `${namespace}:aspiration:${internalName}`;
