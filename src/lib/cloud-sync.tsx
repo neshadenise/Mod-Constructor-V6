@@ -24,12 +24,20 @@ import type { AppState } from "@/lib/types";
 type CloudSyncApi = {
   lastSyncedAt: number | null;
   syncNow: () => Promise<void>;
+  autoSync: boolean;
+  setAutoSync: (v: boolean) => void;
 };
 
-const Ctx = createContext<CloudSyncApi>({ lastSyncedAt: null, syncNow: async () => {} });
+const Ctx = createContext<CloudSyncApi>({
+  lastSyncedAt: null,
+  syncNow: async () => {},
+  autoSync: true,
+  setAutoSync: () => {},
+});
 
 const PUSH_DEBOUNCE_MS = 4000;
 const PUSH_KEY = "mc.cloud.lastPush";
+const AUTO_KEY = "mc.cloud.autoSync";
 
 function lastLocalPush(): number {
   try {
@@ -39,10 +47,34 @@ function lastLocalPush(): number {
   }
 }
 
+function readAutoSync(): boolean {
+  try {
+    return localStorage.getItem(AUTO_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+
 export function CloudSyncProvider({ children }: { children: ReactNode }) {
   const { account, setSyncState } = useAccount();
   const store = useStore();
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  const [autoSync, setAutoSyncState] = useState(true);
+
+  useEffect(() => {
+    setAutoSyncState(readAutoSync());
+  }, []);
+
+  const setAutoSync = useCallback((v: boolean) => {
+    setAutoSyncState(v);
+    try {
+      localStorage.setItem(AUTO_KEY, v ? "on" : "off");
+    } catch {
+      /* storage unavailable — preference applies for this session only */
+    }
+  }, []);
+
   const pulledFor = useRef<string | null>(null);
   const stateRef = useRef(store.state);
   stateRef.current = store.state;
@@ -106,11 +138,12 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
 
   /* Mirror local edits upward, debounced. */
   useEffect(() => {
+    if (!autoSync) return;
     if (!account || !store.hydrated) return;
     if (pulledFor.current !== account.id) return;
     const t = setTimeout(() => void push(), PUSH_DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [account, store.hydrated, store.state, push]);
+  }, [autoSync, account, store.hydrated, store.state, push]);
 
   useEffect(() => {
     if (!account) {
@@ -119,7 +152,11 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
     }
   }, [account]);
 
-  const value = useMemo(() => ({ lastSyncedAt, syncNow: push }), [lastSyncedAt, push]);
+  const value = useMemo(
+    () => ({ lastSyncedAt, syncNow: push, autoSync, setAutoSync }),
+    [lastSyncedAt, push, autoSync, setAutoSync],
+  );
+
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
