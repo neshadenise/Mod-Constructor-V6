@@ -840,6 +840,7 @@ export function ExplorerProvider({
       ensureScaffold,
       createFolder,
       addFiles,
+      addFilesAtPath,
       replaceFile,
       rename,
       move,
@@ -858,7 +859,7 @@ export function ExplorerProvider({
     [
       hydrated, data.items, data.prefs, clipboard,
       listProject, listTrash, childrenOf, getItem, pathOf, descendantsOf, ensureScaffold,
-      createFolder, addFiles, replaceFile, rename, move, duplicate, trash, restore, purge,
+      createFolder, addFiles, addFilesAtPath, replaceFile, rename, move, duplicate, trash, restore, purge,
       emptyTrash, copyToProject, moveToProject, paste, setPrefs, purgeProject,
     ],
   );
