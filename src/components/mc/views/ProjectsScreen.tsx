@@ -52,12 +52,17 @@ export const PROJECT_TYPES = [
   "Other",
 ];
 
-/** Builder section a project type opens into. */
+/**
+ * Builder section a project opens into. A project holding more than one kind
+ * of buildable content has no single builder, so it opens the explorer.
+ */
 function builderFor(p: Project): SectionId {
-  const has = (n: number) => n > 0;
-  if (has(p.careerIds.length)) return "career";
-  if (has(p.traitIds.length)) return "trait";
-  if (has(p.aspirationIds.length)) return "aspiration";
+  const kinds: SectionId[] = [];
+  if (p.careerIds.length) kinds.push("career");
+  if (p.traitIds.length) kinds.push("trait");
+  if (p.aspirationIds.length) kinds.push("aspiration");
+  if (kinds.length > 1) return "explorer";
+  if (kinds.length === 1) return kinds[0]!;
   switch (p.projectType) {
     case "Trait Mod":
       return "trait";
@@ -66,7 +71,7 @@ function builderFor(p: Project): SectionId {
     case "Career Mod":
       return "career";
     default:
-      return "dashboard";
+      return "explorer";
   }
 }
 
