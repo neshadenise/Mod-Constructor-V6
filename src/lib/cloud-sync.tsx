@@ -24,12 +24,20 @@ import type { AppState } from "@/lib/types";
 type CloudSyncApi = {
   lastSyncedAt: number | null;
   syncNow: () => Promise<void>;
+  autoSync: boolean;
+  setAutoSync: (v: boolean) => void;
 };
 
-const Ctx = createContext<CloudSyncApi>({ lastSyncedAt: null, syncNow: async () => {} });
+const Ctx = createContext<CloudSyncApi>({
+  lastSyncedAt: null,
+  syncNow: async () => {},
+  autoSync: true,
+  setAutoSync: () => {},
+});
 
 const PUSH_DEBOUNCE_MS = 4000;
 const PUSH_KEY = "mc.cloud.lastPush";
+const AUTO_KEY = "mc.cloud.autoSync";
 
 function lastLocalPush(): number {
   try {
@@ -38,6 +46,15 @@ function lastLocalPush(): number {
     return 0;
   }
 }
+
+function readAutoSync(): boolean {
+  try {
+    return localStorage.getItem(AUTO_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
 
 export function CloudSyncProvider({ children }: { children: ReactNode }) {
   const { account, setSyncState } = useAccount();
