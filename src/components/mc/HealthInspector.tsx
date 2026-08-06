@@ -201,7 +201,9 @@ export function HealthInspectorHost() {
     (f: HealthFinding) => {
       setOpen(false);
       navigate(f.section);
-      if (f.record) requestRevealRecord(f.record.kind, f.record.id);
+      if (f.record && f.record.kind !== "notification") {
+        requestRevealRecord(f.record.kind, f.record.id);
+      }
     },
     [navigate],
   );
