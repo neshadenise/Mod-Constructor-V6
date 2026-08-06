@@ -73,6 +73,7 @@ import { CareerPreview, type CareerPreviewData } from "./preview/CareerPreview";
 import { TraitPreview, type TraitPreviewData } from "./preview/TraitPreview";
 import { AspirationPreview, type AspirationPreviewData } from "./preview/AspirationPreview";
 import { AspirationBuilder } from "./aspiration/AspirationBuilder";
+import { DynastyBuilder } from "./dynasty/DynastyBuilder";
 import { NotificationLibrary } from "./preview/NotificationLibrary";
 import { useBuilderRecord } from "@/lib/builder-record";
 import { BuilderRecordBar } from "./BuilderRecordBar";
@@ -5363,6 +5364,14 @@ export function SectionView({
       <div className="mx-auto max-w-[1600px] p-6">
         <RequireProject>
           <AspirationBuilder />
+        </RequireProject>
+      </div>
+    );
+  if (active === "dynasty")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <RequireProject>
+          <DynastyBuilder />
         </RequireProject>
       </div>
     );
