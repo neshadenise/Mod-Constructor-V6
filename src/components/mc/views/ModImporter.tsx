@@ -555,7 +555,20 @@ function ProjectCard({
                 Everything in this mod is either editable here or preserved byte-for-byte on export.
               </div>
             )}
+            {preservedTypes.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {preservedTypes.map(([label, count]) => (
+                  <span
+                    key={label}
+                    className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground"
+                  >
+                    {label} × {count}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
+
 
 
           <div className="rounded-lg border border-border bg-muted/30 p-2.5">
