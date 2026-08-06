@@ -20,6 +20,7 @@ import {
   ensureStringKeys,
   type AspirationKeys,
 } from "./ids";
+import { REWARD_NUMERIC, objectiveTypeSpec } from "./goals";
 import {
   AGE_LABEL,
   aspirationTypeSpec,
@@ -27,8 +28,10 @@ import {
   isVisible,
   objectiveCount,
   type AspirationDoc,
+  type AspirationObjective,
   type ResourceRef,
 } from "./schema";
+
 import { externalDependencies, requiredPacks, resolveRef, type ResolveContext } from "./resolver";
 import { validateAspiration, type AspirationValidation } from "./validate";
 
