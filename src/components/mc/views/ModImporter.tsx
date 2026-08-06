@@ -429,6 +429,70 @@ function ProjectCard({
 
       {open && (
         <div className="space-y-3 p-3">
+          {/* Mod details — filled from the manifest when present, editable here. */}
+          <div className="grid gap-2 sm:grid-cols-3">
+            {(
+              [
+                ["Creator", "creator", "Your creator name"],
+                ["Version", "version", "1.0.0"],
+              ] as const
+            ).map(([label, field, placeholder]) => (
+              <label key={field} className="space-y-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {label}
+                </span>
+                <input
+                  value={project[field] ?? ""}
+                  placeholder={placeholder}
+                  onChange={(e) => onPatch({ [field]: e.target.value } as Partial<ModProject>)}
+                  className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs outline-none focus:border-[var(--teal)]"
+                />
+              </label>
+            ))}
+            <label className="space-y-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Description
+              </span>
+              <input
+                value={project.description ?? ""}
+                placeholder="What this mod does"
+                onChange={(e) => onPatch({ description: e.target.value })}
+                className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs outline-none focus:border-[var(--teal)]"
+              />
+            </label>
+          </div>
+
+          <div className="rounded-lg border border-border bg-muted/30 p-2.5">
+            <div className="flex flex-wrap items-center gap-2 text-[11px]">
+              <span className="font-semibold uppercase tracking-wider text-muted-foreground">
+                Support coverage
+              </span>
+              <span className="tabular-nums font-semibold">{coverage}%</span>
+              <span className="text-muted-foreground">
+                {editable} editable · {preserved} preserved as-is · {unknown} unrecognised
+              </span>
+            </div>
+            {project.importStatus !== "ready" && project.supportReasons?.length ? (
+              <>
+                <div className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Why it is “{STATUS_LABEL[project.importStatus]}”
+                </div>
+                <ul className="mt-1 space-y-0.5">
+                  {project.supportReasons.map((r, i) => (
+                    <li key={i} className="flex items-start gap-1.5 text-xs">
+                      <Info className="mt-0.5 h-3 w-3 shrink-0 text-[var(--orange)]" /> {r}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <div className="mt-1 text-xs text-muted-foreground">
+                Everything in this mod is either editable here or preserved byte-for-byte on export.
+              </div>
+            )}
+          </div>
+
+
           <div className="rounded-lg border border-border bg-muted/30 p-2.5">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               Why these files were grouped
