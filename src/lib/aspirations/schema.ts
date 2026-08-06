@@ -32,6 +32,13 @@ import {
   type UnlockCondition,
 } from "./goals";
 
+import {
+  blankGameplay,
+  collectGameplayRefs,
+  normalizeGameplay,
+  type AspirationGameplay,
+} from "./gameplay";
+
 export type { LocalizedText, ResourceRef };
 
 
@@ -360,7 +367,7 @@ export interface AspirationStrings {
 
 /* ------------------------------------------------------------ the doc -- */
 
-export const ASPIRATION_DOC_VERSION = 2 as const;
+export const ASPIRATION_DOC_VERSION = 3 as const;
 
 export interface AspirationIds {
   /** Immutable canonical project id. Never regenerated. */
@@ -397,6 +404,12 @@ export interface AspirationDoc {
   rewardTrait: ResourceRef | null;
   /** Extra resources the creator explicitly attached (loot, buffs, careers…). */
   connections: ResourceRef[];
+  /**
+   * Part 3: everything that happens because the aspiration progresses —
+   * rewards, loot, buffs, notifications, broadcasters, listeners, wants,
+   * story progression, journal, completion and failure behaviour.
+   */
+  gameplay: AspirationGameplay;
   strings: AspirationStrings;
 
   createdAt: number;
@@ -561,6 +574,7 @@ export function blankAspirationDoc(init?: Partial<AspirationDoc>): AspirationDoc
     milestones: [],
     rewardTrait: null,
     connections: [],
+    gameplay: blankGameplay(),
     strings: blankStrings(),
     createdAt: now,
     updatedAt: now,
@@ -771,6 +785,8 @@ export function collectRefs(doc: AspirationDoc): { path: string; ref: ResourceRe
     if (ref) out.push({ path, ref });
   };
   push("rewardTrait", doc.rewardTrait);
+  for (const g of collectGameplayRefs(doc.gameplay ?? blankGameplay()))
+    out.push({ path: `gameplay.${g.path}`, ref: g.ref });
   doc.connections.forEach((r, i) => push(`connections[${i}]`, r));
   doc.milestones.forEach((m, i) => {
     push(`milestones[${i}].reward`, m.rewardRef);
@@ -784,3 +800,9 @@ export function collectRefs(doc: AspirationDoc): { path: string; ref: ResourceRe
   return out;
 }
 
+
+/** Always returns a usable gameplay bag, even for pre-Part 3 documents. */
+export const ensureGameplay = (doc: AspirationDoc): AspirationGameplay =>
+  normalizeGameplay(doc.gameplay);
+
+export type { AspirationGameplay };

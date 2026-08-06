@@ -8,6 +8,7 @@
  */
 
 import type { Aspiration } from "@/lib/types";
+import { normalizeGameplay } from "./gameplay";
 import {
   ASPIRATION_CATEGORIES,
   ASPIRATION_DOC_VERSION,
@@ -62,6 +63,9 @@ export function migrateAspirationDoc(rec: Aspiration): AspirationDoc {
       version: ASPIRATION_DOC_VERSION,
       displayName: rec.name || state.displayName,
       milestones: normalizeMilestones(state.milestones ?? []),
+      // Part 3 gameplay is normalised on load so older docs gain the empty
+      // rewards/loot/notification workspaces instead of crashing the editor.
+      gameplay: normalizeGameplay(state.gameplay),
     };
   }
 
