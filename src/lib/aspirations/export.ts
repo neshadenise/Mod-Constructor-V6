@@ -153,7 +153,7 @@ function objectiveXml(
     push(1, `</U>`);
   }
 
-  const refs = Object.entries(o.refs).filter(([, r]) => r);
+  const refs = Object.entries(o.refs).filter(([, r]) => Boolean(r)) as [string, ResourceRef][];
   if (refs.length || o.ref) {
     push(1, `<U n="goal_targets">`);
     if (o.ref) push(2, `<T n="target">${esc(refValue(o.ref, ctx))}</T>`);
