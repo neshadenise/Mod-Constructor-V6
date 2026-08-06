@@ -360,7 +360,7 @@ export interface AspirationStrings {
 
 /* ------------------------------------------------------------ the doc -- */
 
-export const ASPIRATION_DOC_VERSION = 1 as const;
+export const ASPIRATION_DOC_VERSION = 2 as const;
 
 export interface AspirationIds {
   /** Immutable canonical project id. Never regenerated. */
