@@ -14,6 +14,7 @@ import {
   dependencyFromImport,
   dependencyFromLibrary,
   matchLibraryByFileName,
+  GAME_MODULES,
 } from "./dependencies";
 import { groupCandidates, type GroupCandidate } from "./grouping";
 import { isStbl, parseStbl, resourceTypeInfo } from "./resource-types";
