@@ -429,23 +429,106 @@ export function blankStrings(): AspirationStrings {
 
 export const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 
-export const makeObjective = (label = "New objective"): AspirationObjective => ({
+export const blankRepeat = (): RepeatRules => ({
+  mode: "one-time",
+  resetOnFailure: false,
+  resetOnTravel: false,
+  resetOnAgeUp: false,
+});
+
+export const blankTimer = (): GoalTimer => ({ mode: "none", hours: 0, window: "" });
+
+export const blankCompletion = (): CompletionRule => ({ mode: "all", count: 1, sequential: false });
+
+/** Default scalar params for an objective type, taken from its field spec. */
+export function defaultParams(type: ObjectiveTypeId): Record<string, GoalParamValue> {
+  const out: Record<string, GoalParamValue> = {};
+  for (const f of objectiveTypeSpec(type).fields) {
+    if (f.kind === "number") out[f.id] = f.min && f.min > 0 ? f.min : 0;
+    else if (f.kind === "toggle") out[f.id] = false;
+    else if (f.kind === "select") out[f.id] = f.options?.[0]?.value ?? "";
+    else if (f.kind === "text") out[f.id] = "";
+  }
+  return out;
+}
+
+export const makeObjective = (
+  label = "New objective",
+  type: ObjectiveTypeId = "custom",
+): AspirationObjective => ({
   id: uid("obj"),
+  uuid: `objective_${uuid()}`,
   label,
+  internalName: "",
+  description: "",
+  type,
+  params: defaultParams(type),
+  refs: {},
   ref: null,
   count: 1,
+  current: 0,
+  progress: objectiveTypeSpec(type).progress,
+  conditions: [],
+  repeat: blankRepeat(),
+  timer: blankTimer(),
+  hidden: false,
+  optional: false,
+  bonus: false,
+  dependsOn: [],
+  children: [],
   notes: "",
 });
 
 export const makeMilestone = (index = 0, title = "New milestone"): AspirationMilestone => ({
   id: uid("ms"),
+  uuid: `milestone_${uuid()}`,
   tier: ROMAN[index] ?? String(index + 1),
   title,
+  internalName: "",
   description: "",
+  icon: "",
   objectives: [],
   rewardRef: null,
+  rewards: [],
   points: 500,
+  hidden: false,
+  order: index,
+  unlockMode: "auto",
+  unlocks: [],
+  completion: blankCompletion(),
+  failures: [],
+  strings: { tooltip: "", journal: "", notification: "" },
+  collapsed: false,
 });
+
+export const makeReward = (type: MilestoneReward["type"] = "buff"): MilestoneReward => ({
+  id: uid("rw"),
+  type,
+  ref: null,
+  amount: type === "money" ? 500 : type === "satisfaction" ? 500 : 0,
+  text: "",
+});
+
+export const makeCondition = (): GoalCondition => ({
+  id: uid("cond"),
+  kind: "age",
+  value: "",
+  negate: false,
+});
+
+export const makeUnlock = (): UnlockCondition => ({
+  id: uid("unl"),
+  kind: "previous-milestone",
+  value: "",
+  negate: false,
+});
+
+export const makeFailure = (): FailureCondition => ({
+  id: uid("fail"),
+  kind: "timer-expired",
+  value: "",
+});
+
 
 export function blankAspirationDoc(init?: Partial<AspirationDoc>): AspirationDoc {
   const now = Date.now();
