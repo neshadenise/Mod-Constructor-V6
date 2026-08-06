@@ -42,11 +42,21 @@ export interface BuilderRecordApi<S> {
 const AUTOSAVE_MS = 1200;
 
 const NEW_EVENT = "mc:builder-new";
+const REVEAL_EVENT = "mc:builder-reveal";
 
 /** Ask the given builder to start a blank entry (used by sidebar "+"). */
 export function requestNewRecord(kind: BuilderKind) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(NEW_EVENT, { detail: kind }));
+}
+
+/** Ask the given builder to open a specific record (Health Inspector, search). */
+export function requestRevealRecord(kind: BuilderKind, id: ID) {
+  if (typeof window === "undefined") return;
+  const fire = () => window.dispatchEvent(new CustomEvent(REVEAL_EVENT, { detail: { kind, id } }));
+  // The builder may not be mounted yet when navigation just started.
+  fire();
+  setTimeout(fire, 120);
 }
 
 export function useBuilderRecord<S>(opts: {
