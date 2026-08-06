@@ -105,6 +105,9 @@ export interface Career {
    */
   coverImage?: string;
 
+  /** Opaque Career Builder draft state (round-trips the full editor). */
+  builderState?: Record<string, unknown>;
+
   branches: CareerBranch[];
   messageOverrides: CareerMessage[];
   workFromHomeEvents: WFHEvent[];
@@ -167,6 +170,8 @@ export interface Trait {
   blockedAges: AgeGate[];
   blockedEmotions: EmotionalWeight[];
   voiceEffect?: string;
+  /** Opaque Trait Builder draft state (round-trips the full editor). */
+  builderState?: Record<string, unknown>;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -247,6 +252,8 @@ export interface Aspiration {
   iconAssetId?: ID;
   milestones: Milestone[];
   rewardTraitId?: ID;
+  /** Opaque Aspiration Builder draft state (round-trips the full editor). */
+  builderState?: Record<string, unknown>;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

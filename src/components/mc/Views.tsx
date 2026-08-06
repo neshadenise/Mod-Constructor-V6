@@ -75,6 +75,8 @@ import { CareerPreview, type CareerPreviewData } from "./preview/CareerPreview";
 import { TraitPreview, type TraitPreviewData } from "./preview/TraitPreview";
 import { AspirationPreview, type AspirationPreviewData } from "./preview/AspirationPreview";
 import { NotificationLibrary } from "./preview/NotificationLibrary";
+import { useBuilderRecord } from "@/lib/builder-record";
+import { BuilderRecordBar } from "./BuilderRecordBar";
 import { ImageField } from "./ImageField";
 import { CoverImageField } from "./CoverImageField";
 
@@ -107,7 +109,6 @@ import { DependencyGraph } from "./views/DependencyGraph";
 import { ActivityTimeline } from "./views/ActivityTimeline";
 import { BuildAnalytics } from "./views/BuildAnalytics";
 import { CommunityLibrary } from "./views/CommunityLibrary";
-import { ConnectChatGPT } from "@/components/mc/views/ConnectChatGPT";
 import { UpdateCenter } from "./views/UpdateCenter";
 import { CreditsContent } from "./CreditsContent";
 
@@ -976,6 +977,49 @@ function CareerBuilder() {
     "identity" | "levels" | "assignments" | "events" | "messages" | "advanced"
   >("identity");
 
+  /* --- Project-bound record (switching projects reloads this builder) --- */
+  type CareerDraft = {
+    name: string; description: string; category: string; careerType: string;
+    icon: string; image: string; coverImage?: string;
+    ages: Record<Age, boolean>; companyNames: string[];
+    ptoEnabled: boolean; ptoInitial: number; ptoLabel: string;
+    availabilityConditions: string[];
+    messages: Record<string, { enabled: boolean; text: string }>;
+    branches: Branch[]; branchId: string;
+  };
+  const snapshotCareer = (): CareerDraft => ({
+    name, description, category, careerType, icon, image, coverImage,
+    ages, companyNames, ptoEnabled, ptoInitial, ptoLabel,
+    availabilityConditions, messages, branches, branchId,
+  });
+  const restoreCareer = (d: CareerDraft) => {
+    setName(d.name); setDescription(d.description); setCategory(d.category);
+    setCareerType(d.careerType); setIcon(d.icon ?? ""); setImage(d.image ?? "");
+    setCoverImage(d.coverImage); setAges(d.ages); setCompanyNames(d.companyNames ?? []);
+    setPtoEnabled(!!d.ptoEnabled); setPtoInitial(d.ptoInitial ?? 0); setPtoLabel(d.ptoLabel ?? "");
+    setAvailabilityConditions(d.availabilityConditions ?? []);
+    setMessages(d.messages ?? {});
+    const bs = d.branches?.length ? d.branches : INITIAL_BRANCHES;
+    setBranches(bs);
+    setBranchId(bs.some((b) => b.id === d.branchId) ? d.branchId : bs[0].id);
+  };
+  const blankCareer = (): CareerDraft => ({
+    name: "New Career", description: "", category: "Technical", careerType: "FullTime",
+    icon: "", image: "", coverImage: undefined,
+    ages: { Child: false, Teen: false, YoungAdult: true, Adult: true, Elder: true },
+    companyNames: [], ptoEnabled: true, ptoInitial: 3, ptoLabel: "Take Vacation Day ({label})",
+    availabilityConditions: [],
+    messages: Object.fromEntries(MESSAGE_KEYS.map((k) => [k, { enabled: false, text: "" }])),
+    branches: INITIAL_BRANCHES, branchId: INITIAL_BRANCHES[0].id,
+  });
+  const record = useBuilderRecord<CareerDraft>({
+    kind: "career",
+    snapshot: snapshotCareer,
+    restore: restoreCareer,
+    blank: blankCareer,
+    title: (d) => d.name,
+  });
+
   // Hydrate the builder when a template is opened here.
   useBuilderSeed<CareerPayload>("career", (p) => {
     setName(p.name);
@@ -1103,14 +1147,16 @@ function CareerBuilder() {
         accent="blue"
         actions={
           <>
-            <GhostBtn icon={Wand2} onClick={() => toast("Applied Astronaut template")}>Template</GhostBtn>
-            <GhostBtn icon={Save} onClick={() => toast.success("Career draft saved")}>Save Draft</GhostBtn>
+            <GhostBtn icon={Plus} onClick={() => record.addNew()}>Add new</GhostBtn>
+            <GhostBtn icon={Save} onClick={() => { record.save(); toast.success("Career saved"); }}>Save</GhostBtn>
             <PrimaryBtn icon={Play} onClick={() => toast.success("Career compiled → epic_careers.package")}>
               Compile
             </PrimaryBtn>
           </>
         }
       />
+
+      <BuilderRecordBar rec={record} noun="career" />
 
       {!advanced && (
         <div className="rounded-lg border border-[var(--blue)]/25 bg-[var(--blue)]/5 px-3 py-2 text-[11px] text-muted-foreground">
@@ -2013,6 +2059,66 @@ function TraitBuilder() {
   const [blacklist, setBlacklist] = useState(["Insomniac", "Hot-Headed"]);
   const [whitelist, setWhitelist] = useState<string[]>([]);
 
+  /* --- Project-bound record --- */
+  type TraitDraft = {
+    name: string; description: string; icon: string; traitType: TraitType;
+    category: TraitCategory; ages: Record<AgeId, boolean>; buffs: TraitBuff[];
+    selectedBuffId: string; blockAging: Record<AgeId, boolean>;
+    blockedEmotions: EmotionV5[]; hideRelationships: boolean; immuneToDeath: boolean;
+    isNonPersisted: boolean; isNPCOnly: boolean; isGlobalTrait: boolean;
+    traitOrigin: string; voiceEffect: string;
+    skillMults: { skill: string; mult: number }[];
+    needMults: { need: string; mult: number }[];
+    relMults: { track: string; mult: number }[];
+    commodities: { commodity: string; weight: number }[];
+    whimSet: string; socialInteractions: string[];
+    buffReplacements: { from: string; to: string }[];
+    proximityBuffs: string[]; lootActionSets: string[];
+    blacklist: string[]; whitelist: string[];
+  };
+  const snapshotTrait = (): TraitDraft => ({
+    name, description, icon, traitType, category, ages, buffs, selectedBuffId,
+    blockAging, blockedEmotions, hideRelationships, immuneToDeath, isNonPersisted,
+    isNPCOnly, isGlobalTrait, traitOrigin, voiceEffect, skillMults, needMults,
+    relMults, commodities, whimSet, socialInteractions, buffReplacements,
+    proximityBuffs, lootActionSets, blacklist, whitelist,
+  });
+  const restoreTrait = (d: TraitDraft) => {
+    setName(d.name); setDescription(d.description); setIcon(d.icon ?? "");
+    setTraitType(d.traitType); setCategory(d.category); setAges(d.ages);
+    setBuffs(d.buffs ?? []); setSelectedBuffId(d.selectedBuffId ?? d.buffs?.[0]?.id ?? "");
+    setBlockAging(d.blockAging); setBlockedEmotions(d.blockedEmotions ?? []);
+    setHideRelationships(!!d.hideRelationships); setImmuneToDeath(!!d.immuneToDeath);
+    setIsNonPersisted(!!d.isNonPersisted); setIsNPCOnly(!!d.isNPCOnly);
+    setIsGlobalTrait(!!d.isGlobalTrait); setTraitOrigin(d.traitOrigin ?? "");
+    setVoiceEffect(d.voiceEffect ?? "None"); setSkillMults(d.skillMults ?? []);
+    setNeedMults(d.needMults ?? []); setRelMults(d.relMults ?? []);
+    setCommodities(d.commodities ?? []); setWhimSet(d.whimSet ?? "");
+    setSocialInteractions(d.socialInteractions ?? []);
+    setBuffReplacements(d.buffReplacements ?? []);
+    setProximityBuffs(d.proximityBuffs ?? []); setLootActionSets(d.lootActionSets ?? []);
+    setBlacklist(d.blacklist ?? []); setWhitelist(d.whitelist ?? []);
+  };
+  const noAges = { infant: false, toddler: false, child: false, teen: false, youngAdult: false, adult: false, elder: false } as Record<AgeId, boolean>;
+  const blankTrait = (): TraitDraft => ({
+    name: "New Trait", description: "", icon: "", traitType: "Personality",
+    category: "Emotional",
+    ages: { ...noAges, child: true, teen: true, youngAdult: true, adult: true, elder: true },
+    buffs: [], selectedBuffId: "", blockAging: { ...noAges },
+    blockedEmotions: [], hideRelationships: false, immuneToDeath: false,
+    isNonPersisted: false, isNPCOnly: false, isGlobalTrait: false,
+    traitOrigin: "", voiceEffect: "None", skillMults: [], needMults: [], relMults: [],
+    commodities: [], whimSet: "", socialInteractions: [], buffReplacements: [],
+    proximityBuffs: [], lootActionSets: [], blacklist: [], whitelist: [],
+  });
+  const record = useBuilderRecord<TraitDraft>({
+    kind: "trait",
+    snapshot: snapshotTrait,
+    restore: restoreTrait,
+    blank: blankTrait,
+    title: (d) => d.name,
+  });
+
   // Hydrate the builder when a template is opened here.
   useBuilderSeed<TraitPayload>("trait", (p) => {
     setName(p.name);
@@ -2113,14 +2219,18 @@ function TraitBuilder() {
         accent="violet"
         actions={
           <>
-            <GhostBtn icon={Wand2} onClick={() => toast("Applied Lucid Dreamer template")}>Template</GhostBtn>
-            <GhostBtn icon={Save} onClick={() => toast.success("Trait saved")}>Save Draft</GhostBtn>
+            <GhostBtn icon={Plus} onClick={() => record.addNew()}>Add new</GhostBtn>
+            <GhostBtn icon={Save} onClick={() => { record.save(); toast.success("Trait saved"); }}>Save</GhostBtn>
             <PrimaryBtn icon={Play} onClick={() => toast.success("Trait compiled → lucid_dreamer.package")}>
               Compile
             </PrimaryBtn>
           </>
         }
       />
+
+      <BuilderRecordBar rec={record} noun="trait" />
+
+
 
       {!advanced && (
         <div className="rounded-lg border border-[var(--violet)]/25 bg-[var(--violet)]/5 px-3 py-2 text-[11px] text-muted-foreground">
@@ -2868,6 +2978,25 @@ function AspirationBuilder() {
 
   const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 
+  /* --- Project-bound record --- */
+  type AspDraft = {
+    name: string; category: string; rewardTrait: string; description: string;
+    tiers: { t: string; title: string; goals: string[]; done: boolean }[];
+  };
+  const record = useBuilderRecord<AspDraft>({
+    kind: "aspiration",
+    snapshot: () => ({ name, category, rewardTrait, description, tiers }),
+    restore: (d) => {
+      setName(d.name); setCategory(d.category); setRewardTrait(d.rewardTrait ?? "");
+      setDescription(d.description ?? ""); setTiers(d.tiers ?? []);
+    },
+    blank: () => ({
+      name: "New Aspiration", category: "Adventure", rewardTrait: "", description: "",
+      tiers: [],
+    }),
+    title: (d) => d.name,
+  });
+
   // Hydrate the builder when a template is opened here.
   useBuilderSeed<AspirationPayload>("aspiration", (p) => {
     setName(p.name);
@@ -2908,11 +3037,13 @@ function AspirationBuilder() {
         accent="teal"
         actions={
           <>
-            <GhostBtn icon={Save}>Save</GhostBtn>
+            <GhostBtn icon={Plus} onClick={() => record.addNew()}>Add new</GhostBtn>
+            <GhostBtn icon={Save} onClick={() => { record.save(); toast.success("Aspiration saved"); }}>Save</GhostBtn>
             <PrimaryBtn icon={Play}>Compile</PrimaryBtn>
           </>
         }
       />
+      <BuilderRecordBar rec={record} noun="aspiration" />
       <Card title="Aspiration">
         <div className="grid grid-cols-2 gap-3">
           <Field label="Name" value={name} onChange={setName} />
@@ -4480,7 +4611,6 @@ export function SectionView({
   if (active === "timeline") return <div className="mx-auto max-w-[1600px] p-6"><ActivityTimeline /></div>;
   if (active === "analytics") return <div className="mx-auto max-w-[1600px] p-6"><BuildAnalytics /></div>;
   if (active === "updates") return <div className="mx-auto max-w-[1600px] p-6"><UpdateCenter /></div>;
-  if (active === "chatgpt") return <div className="mx-auto max-w-[1600px] p-6"><ConnectChatGPT /></div>;
   if (active === "community") return <div className="mx-auto max-w-[1600px] p-6"><CommunityLibrary /></div>;
   if (active === "settings") return <div className="mx-auto max-w-[1600px] p-6"><SettingsView /></div>;
   return null;

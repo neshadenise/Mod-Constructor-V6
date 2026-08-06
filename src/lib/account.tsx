@@ -7,107 +7,92 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export type Account = {
   id: string;
   email: string;
   displayName: string;
-  createdAt: number;
-  lastSignInAt: number;
 };
 
 /**
- * Cloud sync is optional. Until a sync service is configured for the build,
- * accounts are stored on this device only: the app is fully usable signed out,
- * but projects cannot be resumed from another machine.
+ * Cloud sync is available: signing in stores an encrypted-at-rest copy of the
+ * workspace against the account so a build can continue on another device.
+ * The app remains fully usable signed out — everything is saved locally first.
  */
-export const SYNC_CONFIGURED = false;
+export const SYNC_CONFIGURED = true;
 
-export type SyncState = "offline" | "local-account" | "synced";
+export type SyncState = "offline" | "syncing" | "synced" | "error";
 
 type AccountCtx = {
   account: Account | null;
-  accounts: Account[];
+  ready: boolean;
   syncState: SyncState;
-  signIn: (email: string, displayName?: string) => Account;
-  signOut: () => void;
-  forget: (id: string) => void;
+  setSyncState: (s: SyncState) => void;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName?: string) => Promise<void>;
+  signOut: () => Promise<void>;
 };
 
 const Ctx = createContext<AccountCtx | null>(null);
-const KEY = "mc.account.v1";
 
-type Persisted = { accounts: Account[]; activeId: string | null };
-
-function load(): Persisted {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return { accounts: [], activeId: null };
-    const parsed = JSON.parse(raw) as Persisted;
-    return { accounts: parsed.accounts ?? [], activeId: parsed.activeId ?? null };
-  } catch {
-    return { accounts: [], activeId: null };
-  }
+function toAccount(user: { id: string; email?: string | null; user_metadata?: Record<string, unknown> } | null): Account | null {
+  if (!user) return null;
+  const email = user.email ?? "";
+  const meta = user.user_metadata ?? {};
+  const displayName =
+    (typeof meta.display_name === "string" && meta.display_name) ||
+    email.split("@")[0] ||
+    "Modder";
+  return { id: user.id, email, displayName };
 }
 
 export function AccountProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<Persisted>({ accounts: [], activeId: null });
-  const [hydrated, setHydrated] = useState(false);
+  const [account, setAccount] = useState<Account | null>(null);
+  const [ready, setReady] = useState(false);
+  const [syncState, setSyncState] = useState<SyncState>("offline");
 
   useEffect(() => {
-    setState(load());
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-    } catch {
-      /* ignore */
-    }
-  }, [state, hydrated]);
-
-  const signIn = useCallback((email: string, displayName?: string) => {
-    const normalized = email.trim().toLowerCase();
-    const id = `acct_${normalized}`;
-    const account: Account = {
-      id,
-      email: normalized,
-      displayName: displayName?.trim() || normalized.split("@")[0] || "Modder",
-      createdAt: Date.now(),
-      lastSignInAt: Date.now(),
-    };
-    setState((s) => {
-      const existing = s.accounts.find((a) => a.id === id);
-      const merged = existing
-        ? { ...existing, displayName: displayName?.trim() || existing.displayName, lastSignInAt: Date.now() }
-        : account;
-      return {
-        accounts: [merged, ...s.accounts.filter((a) => a.id !== id)],
-        activeId: id,
-      };
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setAccount(toAccount(session?.user ?? null));
+      if (!session) setSyncState("offline");
     });
-    return account;
+    supabase.auth.getSession().then(({ data }) => {
+      setAccount(toAccount(data.session?.user ?? null));
+      setReady(true);
+    });
+    return () => sub.subscription.unsubscribe();
   }, []);
 
-  const signOut = useCallback(() => setState((s) => ({ ...s, activeId: null })), []);
+  const signIn = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error) throw error;
+  }, []);
 
-  const forget = useCallback(
-    (id: string) =>
-      setState((s) => ({
-        accounts: s.accounts.filter((a) => a.id !== id),
-        activeId: s.activeId === id ? null : s.activeId,
-      })),
-    [],
-  );
+  const signUp = useCallback(async (email: string, password: string, displayName?: string) => {
+    const { error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: displayName?.trim() ? { display_name: displayName.trim() } : undefined,
+      },
+    });
+    if (error) throw error;
+  }, []);
 
-  const account = state.accounts.find((a) => a.id === state.activeId) ?? null;
-  const syncState: SyncState = !account ? "offline" : SYNC_CONFIGURED ? "synced" : "local-account";
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    setAccount(null);
+    setSyncState("offline");
+  }, []);
 
   const value = useMemo(
-    () => ({ account, accounts: state.accounts, syncState, signIn, signOut, forget }),
-    [account, state.accounts, syncState, signIn, signOut, forget],
+    () => ({ account, ready, syncState, setSyncState, signIn, signUp, signOut }),
+    [account, ready, syncState, signIn, signUp, signOut],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -120,9 +105,10 @@ export function useAccount() {
 }
 
 export const SYNC_LABEL: Record<SyncState, string> = {
-  offline: "Working offline · this device only",
-  "local-account": "Signed in · device account (cloud sync not configured)",
-  synced: "Signed in · projects sync across devices",
+  offline: "Working offline · saved on this device only",
+  syncing: "Syncing your workspace…",
+  synced: "Signed in · your workspace syncs across devices",
+  error: "Signed in · last sync failed, changes are still saved locally",
 };
 
 export function initials(name: string) {

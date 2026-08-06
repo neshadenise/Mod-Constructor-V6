@@ -21,7 +21,6 @@ export type SectionId =
   | "analytics"
   | "updates"
   | "community"
-  | "chatgpt"
   | "settings";
 
 export const SECTION_LABEL: Record<SectionId, string> = {
@@ -47,7 +46,6 @@ export const SECTION_LABEL: Record<SectionId, string> = {
   analytics: "Build Analytics",
   updates: "Update Center",
   community: "Community Library",
-  chatgpt: "Connect to ChatGPT",
   settings: "Settings",
 };
 
