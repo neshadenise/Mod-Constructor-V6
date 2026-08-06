@@ -18,8 +18,22 @@
  */
 
 import type { LocalizedText, ResourceRef } from "@/lib/traits/schema";
+import {
+  objectiveTypeSpec,
+  type CompletionRule,
+  type FailureCondition,
+  type GoalCondition,
+  type GoalParamValue,
+  type GoalTimer,
+  type MilestoneReward,
+  type ObjectiveTypeId,
+  type ProgressStyle,
+  type RepeatRules,
+  type UnlockCondition,
+} from "./goals";
 
 export type { LocalizedText, ResourceRef };
+
 
 /* ---------------------------------------------------------------- types -- */
 
