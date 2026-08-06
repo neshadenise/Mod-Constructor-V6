@@ -17,14 +17,26 @@ import { keyToString } from "@/lib/modexport/ids";
 import {
   ALL_STRING_FIELDS,
   computeAspirationKeys,
+  computeGameplayKeys,
   ensureStringKeys,
+  notificationStringKeys,
+  type AspirationGameplayKeys,
   type AspirationKeys,
 } from "./ids";
+import {
+  COMPLETION_STAGE_LABEL,
+  rewardKindSpec,
+  rewardsFor,
+  type AspirationGameplay,
+  type RewardCard,
+  type RewardCondition,
+} from "./gameplay";
 import { REWARD_NUMERIC, objectiveTypeSpec } from "./goals";
 import {
   AGE_LABEL,
   aspirationTypeSpec,
   collectRefs,
+  ensureGameplay,
   isVisible,
   objectiveCount,
   type AspirationDoc,
@@ -110,6 +122,39 @@ export function buildAspirationXml(
 
   const reward = refValue(doc.rewardTrait, ctx);
   if (reward) push(1, `<T n="reward">${esc(reward)}</T>`);
+
+  const gameplay = ensureGameplay(doc);
+  const gKeys = computeGameplayKeys(doc);
+  push(1, `<T n="repeat_rule">${gameplay.completion.repeat}</T>`);
+  push(1, `<T n="completion_timing">${gameplay.completion.timing}</T>`);
+  if (gameplay.completion.timing === "delayed")
+    push(1, `<T n="completion_delay">${gameplay.completion.delaySeconds}</T>`);
+  push(1, `<L n="completion_order">`);
+  for (const stage of gameplay.completion.order) push(2, `<T>${stage}</T>`);
+  push(1, `</L>`);
+
+  const completionLoot = gKeys.rewards.filter((k) =>
+    rewardsFor(gameplay, "aspiration").some((r) => r.uuid === k.uuid && r.trigger === "completed"),
+  );
+  if (completionLoot.length) {
+    push(1, `<L n="complete_loot_actions">`);
+    for (const k of completionLoot) push(2, `<T>${k.decimal}<!--${esc(k.tuningName)}--></T>`);
+    push(1, `</L>`);
+  }
+  if (gKeys.listeners.length) {
+    push(1, `<L n="event_listeners">`);
+    for (const k of gKeys.listeners) push(2, `<T>${k.decimal}<!--${esc(k.tuningName)}--></T>`);
+    push(1, `</L>`);
+  }
+  if (gameplay.story.audience !== "player-only") {
+    push(1, `<U n="story_progression">`);
+    push(2, `<T n="audience">${gameplay.story.audience}</T>`);
+    push(2, `<T n="npc_progress">${gameplay.story.npcProgress ? "True" : "False"}</T>`);
+    push(2, `<T n="autonomous">${gameplay.story.autonomousProgress ? "True" : "False"}</T>`);
+    push(2, `<T n="population_weight">${gameplay.story.populationWeight}</T>`);
+    push(2, `<T n="random_chance">${gameplay.story.randomChance}</T>`);
+    push(1, `</U>`);
+  }
 
   if (keys.milestones.length) {
     push(1, `<L n="milestones">`);
@@ -296,6 +341,382 @@ function buildMilestoneXml(
 }
 
 
+
+
+/* ------------------------------------------------------- Part 3: gameplay -- */
+
+const conditionsXml = (
+  conditions: RewardCondition[],
+  push: (indent: number, line: string) => void,
+  indent = 1,
+) => {
+  if (!conditions.length) return;
+  push(indent, `<L n="tests">`);
+  for (const c of conditions)
+    push(indent + 1, `<T n="${c.kind}"${c.negate ? ` invert="True"` : ""}>${esc(c.value)}</T>`);
+  push(indent, `</L>`);
+};
+
+/** One loot action resource per reward card — rewards are never inlined. */
+function rewardXml(
+  reward: RewardCard,
+  ctx: ResolveContext,
+  tuningName: string,
+  decimal: string,
+  gameplay: AspirationGameplay,
+): string {
+  const spec = rewardKindSpec(reward.kind);
+  const L: string[] = [];
+  const push = (indent: number, line: string) => L.push(`${"  ".repeat(indent)}${line}`);
+  push(0, `<?xml version="1.0" encoding="utf-8"?>`);
+  push(
+    0,
+    `<I c="${spec.lootClass}" i="action" m="interactions.utils.loot" n="${esc(tuningName)}" s="${decimal}">`,
+  );
+  push(1, `<T n="reward_kind">${reward.kind}</T>`);
+  push(1, `<T n="scope">${reward.scope}</T>`);
+  push(1, `<T n="trigger">${reward.trigger}</T>`);
+  push(1, `<T n="execution">${reward.execution}</T>`);
+  push(1, `<T n="order">${reward.order}</T>`);
+  if (reward.ownerUuid) push(1, `<T n="owner">${esc(reward.ownerUuid)}</T>`);
+
+  for (const f of spec.fields) {
+    if (f.kind === "ref") {
+      const value = refValue(reward.refs[f.id] ?? null, ctx);
+      if (value) push(1, `<T n="${f.id}">${esc(value)}</T>`);
+      continue;
+    }
+    const raw = reward.params[f.id];
+    if (raw === undefined || raw === "" ) continue;
+    if (f.id === "notificationId") {
+      const note = gameplay.notifications.find((n) => n.uuid === raw);
+      push(1, `<T n="notification">${esc(note?.name ?? String(raw))}</T>`);
+      continue;
+    }
+    const text = typeof raw === "boolean" ? (raw ? "True" : "False") : String(raw);
+    push(1, `<T n="${f.id}">${esc(text)}</T>`);
+  }
+
+  conditionsXml(reward.conditions, push);
+  push(0, `</I>`);
+  return L.join("\n");
+}
+
+function lootXml(
+  loot: AspirationGameplay["loot"][number],
+  ctx: ResolveContext,
+  tuningName: string,
+  decimal: string,
+  gameplay: AspirationGameplay,
+): string {
+  const L: string[] = [];
+  const push = (indent: number, line: string) => L.push(`${"  ".repeat(indent)}${line}`);
+  push(0, `<?xml version="1.0" encoding="utf-8"?>`);
+  push(
+    0,
+    `<I c="LootActions" i="action" m="interactions.utils.loot" n="${esc(tuningName)}" s="${decimal}">`,
+  );
+  push(1, `<T n="trigger">${loot.trigger}</T>`);
+  if (loot.trigger === "custom-event") push(1, `<T n="event">${esc(loot.customEvent)}</T>`);
+  if (loot.ownerUuid) push(1, `<T n="owner">${esc(loot.ownerUuid)}</T>`);
+  if (loot.cooldownHours > 0) push(1, `<T n="cooldown_hours">${loot.cooldownHours}</T>`);
+  push(1, `<L n="operations">`);
+  for (const op of loot.ops) {
+    push(2, `<U>`);
+    push(3, `<T n="type">${op.type}</T>`);
+    const target = refValue(op.ref, ctx);
+    if (target) push(3, `<T n="target">${esc(target)}</T>`);
+    if (op.type === "notification" && op.value) {
+      const note = gameplay.notifications.find((n) => n.uuid === op.value);
+      push(3, `<T n="notification">${esc(note?.name ?? op.value)}</T>`);
+    } else if (op.value) push(3, `<T n="value">${esc(op.value)}</T>`);
+    if (op.amount) push(3, `<T n="amount">${op.amount}</T>`);
+    push(2, `</U>`);
+  }
+  push(1, `</L>`);
+  conditionsXml(loot.conditions, push);
+  push(0, `</I>`);
+  return L.join("\n");
+}
+
+function notificationXml(
+  note: AspirationGameplay["notifications"][number],
+  tuningName: string,
+  decimal: string,
+  stbl: { title: string; body: string },
+): string {
+  const L: string[] = [];
+  const push = (indent: number, line: string) => L.push(`${"  ".repeat(indent)}${line}`);
+  push(0, `<?xml version="1.0" encoding="utf-8"?>`);
+  push(
+    0,
+    `<I c="UiDialogNotification" i="notification" m="ui.ui_dialog_notification" n="${esc(tuningName)}" s="${decimal}">`,
+  );
+  push(1, `<T n="style">${note.style}</T>`);
+  push(1, `<T n="trigger">${note.trigger}</T>`);
+  if (note.localize) {
+    push(1, `<T n="title">0x${stbl.title}<!--${esc(note.title)}--></T>`);
+    push(1, `<T n="text">0x${stbl.body}<!--${esc(note.body)}--></T>`);
+  } else {
+    push(1, `<T n="title">${esc(note.title)}</T>`);
+    push(1, `<T n="text">${esc(note.body)}</T>`);
+  }
+  if (note.icon) push(1, `<T n="icon">${esc(note.icon)}</T>`);
+  if (note.sound) push(1, `<T n="audio_sting">${esc(note.sound)}</T>`);
+  if (note.animation) push(1, `<T n="animation">${esc(note.animation)}</T>`);
+  push(1, `<T n="urgency">${note.priority}</T>`);
+  push(1, `<T n="duration">${note.durationSeconds}</T>`);
+  push(0, `</I>`);
+  return L.join("\n");
+}
+
+function broadcasterXml(
+  b: AspirationGameplay["broadcasters"][number],
+  ctx: ResolveContext,
+  tuningName: string,
+  decimal: string,
+): string {
+  const L: string[] = [];
+  const push = (indent: number, line: string) => L.push(`${"  ".repeat(indent)}${line}`);
+  push(0, `<?xml version="1.0" encoding="utf-8"?>`);
+  push(
+    0,
+    `<I c="BroadcasterRequest" i="broadcaster" m="broadcasters.broadcaster" n="${esc(tuningName)}" s="${decimal}">`,
+  );
+  push(1, `<T n="radius">${b.radius}</T>`);
+  push(1, `<T n="targets">${b.targets}</T>`);
+  if (b.relationshipFilter) push(1, `<T n="relationship_filter">${esc(b.relationshipFilter)}</T>`);
+  const trait = refValue(b.traitRef, ctx);
+  if (trait) push(1, `<T n="trait_filter">${esc(trait)}</T>`);
+  const buff = refValue(b.buffRef, ctx);
+  if (buff) push(1, `<T n="buff">${esc(buff)}</T>`);
+  push(1, `<T n="frequency_hours">${b.frequencyHours}</T>`);
+  push(1, `<T n="duration_hours">${b.durationHours}</T>`);
+  push(1, `<T n="priority">${b.priority}</T>`);
+  conditionsXml(b.conditions, push);
+  push(0, `</I>`);
+  return L.join("\n");
+}
+
+function listenerXml(
+  l: AspirationGameplay["listeners"][number],
+  tuningName: string,
+  decimal: string,
+  gKeys: AspirationGameplayKeys,
+): string {
+  const L: string[] = [];
+  const push = (indent: number, line: string) => L.push(`${"  ".repeat(indent)}${line}`);
+  const lookup = (uuid: string) =>
+    [...gKeys.loot, ...gKeys.rewards, ...gKeys.notifications].find((k) => k.uuid === uuid);
+  push(0, `<?xml version="1.0" encoding="utf-8"?>`);
+  push(
+    0,
+    `<I c="EventListener" i="snippet" m="event_testing.test_events" n="${esc(tuningName)}" s="${decimal}">`,
+  );
+  push(1, `<T n="event">${l.event === "custom-event" ? esc(l.customEvent) : l.event}</T>`);
+  push(1, `<T n="priority">${l.priority}</T>`);
+  if (l.cooldownHours > 0) push(1, `<T n="cooldown_hours">${l.cooldownHours}</T>`);
+  push(1, `<T n="enabled">${l.enabled ? "True" : "False"}</T>`);
+  push(1, `<L n="actions">`);
+  for (const a of l.actions) {
+    const target = lookup(a.targetUuid);
+    push(2, `<U>`);
+    push(3, `<T n="kind">${a.kind}</T>`);
+    push(3, `<T n="target">${esc(target ? target.decimal : a.targetUuid)}</T>`);
+    if (target) push(3, `<T n="target_name">${esc(target.tuningName)}</T>`);
+    if (a.value) push(3, `<T n="value">${esc(a.value)}</T>`);
+    push(2, `</U>`);
+  }
+  push(1, `</L>`);
+  conditionsXml(l.conditions, push);
+  push(0, `</I>`);
+  return L.join("\n");
+}
+
+/** Buffs, wants/fears and journal settings ride on the aspiration snippet. */
+function gameplaySnippetXml(
+  doc: AspirationDoc,
+  ctx: ResolveContext,
+  keys: AspirationKeys,
+  g: AspirationGameplay,
+): string {
+  const L: string[] = [];
+  const push = (indent: number, line: string) => L.push(`${"  ".repeat(indent)}${line}`);
+  push(0, `<?xml version="1.0" encoding="utf-8"?>`);
+  push(
+    0,
+    `<I c="AspirationGameplay" i="snippet" m="aspirations.aspiration_tuning" n="${esc(keys.tuningName)}_gameplay" s="${keys.tuningDecimal}">`,
+  );
+  if (g.buffs.length) {
+    push(1, `<L n="buffs">`);
+    for (const b of g.buffs) {
+      push(2, `<U>`);
+      push(3, `<T n="buff">${esc(refValue(b.ref, ctx))}</T>`);
+      push(3, `<T n="category">${b.category}</T>`);
+      push(3, `<T n="apply_mode">${b.applyMode}</T>`);
+      push(3, `<T n="duration_hours">${b.durationHours}</T>`);
+      push(3, `<T n="mood">${b.mood}</T>`);
+      push(3, `<T n="visible">${b.visible ? "True" : "False"}</T>`);
+      push(3, `<T n="priority">${b.priority}</T>`);
+      push(3, `<T n="remove_on_travel">${b.removeOnTravel ? "True" : "False"}</T>`);
+      push(3, `<T n="remove_on_death">${b.removeOnDeath ? "True" : "False"}</T>`);
+      if (b.removeOnMilestone) push(3, `<T n="remove_on_milestone">${esc(b.removeOnMilestoneUuid)}</T>`);
+      push(2, `</U>`);
+    }
+    push(1, `</L>`);
+  }
+  if (g.wants.length) {
+    push(1, `<L n="wants_and_fears">`);
+    for (const w of g.wants) {
+      push(2, `<U>`);
+      push(3, `<T n="mode">${w.mode}</T>`);
+      const target = refValue(w.ref, ctx);
+      if (target) push(3, `<T n="target">${esc(target)}</T>`);
+      if (w.ownerUuid) push(3, `<T n="owner">${esc(w.ownerUuid)}</T>`);
+      push(3, `<T n="weight">${w.weight}</T>`);
+      push(2, `</U>`);
+    }
+    push(1, `</L>`);
+  }
+  push(1, `<U n="journal">`);
+  push(2, `<T n="enabled">${g.journal.enabled ? "True" : "False"}</T>`);
+  push(2, `<T n="show_current_milestone">${g.journal.showCurrentMilestone ? "True" : "False"}</T>`);
+  push(2, `<T n="show_completed">${g.journal.showCompletedObjectives ? "True" : "False"}</T>`);
+  push(2, `<T n="show_locked">${g.journal.showLockedObjectives ? "True" : "False"}</T>`);
+  push(2, `<T n="show_reward_preview">${g.journal.showRewardPreview ? "True" : "False"}</T>`);
+  push(2, `<T n="show_progress">${g.journal.showProgressPercent ? "True" : "False"}</T>`);
+  if (g.journal.flavorText) push(2, `<T n="flavor_text">${esc(g.journal.flavorText)}</T>`);
+  push(1, `</U>`);
+  if (g.failure.mode !== "none") {
+    push(1, `<U n="failure">`);
+    push(2, `<T n="mode">${g.failure.mode}</T>`);
+    push(2, `<T n="keep_rewards">${g.failure.keepRewards ? "True" : "False"}</T>`);
+    const fl = refValue(g.failure.lootRef, ctx);
+    if (fl) push(2, `<T n="loot">${esc(fl)}</T>`);
+    const fb = refValue(g.failure.buffRef, ctx);
+    if (fb) push(2, `<T n="buff">${esc(fb)}</T>`);
+    if (g.failure.customBehavior) push(2, `<T n="custom">${esc(g.failure.customBehavior)}</T>`);
+    push(1, `</U>`);
+  }
+  push(0, `</I>`);
+  return L.join("\n");
+}
+
+/** Every Part 3 resource, as separate files with their own resource keys. */
+export function buildGameplayFiles(
+  doc: AspirationDoc,
+  ctx: ResolveContext,
+  keys: AspirationKeys,
+): AspirationExportFile[] {
+  const g = ensureGameplay(doc);
+  const gKeys = computeGameplayKeys(doc);
+  const files: AspirationExportFile[] = [];
+
+  gKeys.rewards.forEach((k) => {
+    const reward = g.rewards.find((r) => r.uuid === k.uuid);
+    if (!reward || !reward.enabled) return;
+    files.push({
+      name: `${k.tuningName.replace(":", "_")}.xml`,
+      kind: "tuning",
+      contents: rewardXml(reward, ctx, k.tuningName, k.decimal, g),
+      resourceKey: keyToString(k.key),
+    });
+  });
+
+  gKeys.loot.forEach((k) => {
+    const loot = g.loot.find((l) => l.uuid === k.uuid);
+    if (!loot || !loot.enabled) return;
+    files.push({
+      name: `${k.tuningName.replace(":", "_")}.xml`,
+      kind: "tuning",
+      contents: lootXml(loot, ctx, k.tuningName, k.decimal, g),
+      resourceKey: keyToString(k.key),
+    });
+  });
+
+  gKeys.notifications.forEach((k) => {
+    const note = g.notifications.find((n) => n.uuid === k.uuid);
+    if (!note) return;
+    files.push({
+      name: `${k.tuningName.replace(":", "_")}.xml`,
+      kind: "tuning",
+      contents: notificationXml(
+        note,
+        k.tuningName,
+        k.decimal,
+        notificationStringKeys(doc, note.uuid, note.name),
+      ),
+      resourceKey: keyToString(k.key),
+    });
+  });
+
+  gKeys.broadcasters.forEach((k) => {
+    const b = g.broadcasters.find((x) => x.uuid === k.uuid);
+    if (!b) return;
+    files.push({
+      name: `${k.tuningName.replace(":", "_")}.xml`,
+      kind: "tuning",
+      contents: broadcasterXml(b, ctx, k.tuningName, k.decimal),
+      resourceKey: keyToString(k.key),
+    });
+  });
+
+  gKeys.listeners.forEach((k) => {
+    const l = g.listeners.find((x) => x.uuid === k.uuid);
+    if (!l || !l.enabled) return;
+    files.push({
+      name: `${k.tuningName.replace(":", "_")}.xml`,
+      kind: "tuning",
+      contents: listenerXml(l, k.tuningName, k.decimal, gKeys),
+      resourceKey: keyToString(k.key),
+    });
+  });
+
+  if (g.buffs.length || g.wants.length || g.journal.enabled || g.failure.mode !== "none") {
+    files.push({
+      name: `${keys.tuningName.replace(":", "_")}_gameplay.xml`,
+      kind: "tuning",
+      contents: gameplaySnippetXml(doc, ctx, keys, g),
+    });
+  }
+
+  return files;
+}
+
+/** Notification strings join the aspiration's STBL table. */
+export function gameplayStblEntries(doc: AspirationDoc) {
+  const g = ensureGameplay(doc);
+  return g.notifications
+    .filter((n) => n.localize)
+    .flatMap((n) => {
+      const k = notificationStringKeys(doc, n.uuid, n.name);
+      const rows: { key: string; field: string; value: string }[] = [];
+      if (n.title.trim()) rows.push({ key: `0x${k.title}`, field: `note_title_${n.name}`, value: n.title });
+      if (n.body.trim()) rows.push({ key: `0x${k.body}`, field: `note_body_${n.name}`, value: n.body });
+      return rows;
+    });
+}
+
+/** Human-readable execution order, used by the build report and the preview. */
+export function completionTimeline(doc: AspirationDoc): string[] {
+  const g = ensureGameplay(doc);
+  return g.completion.order.map((stage) => {
+    const count =
+      stage === "rewards"
+        ? rewardsFor(g, "aspiration").length
+        : stage === "loot"
+          ? g.loot.filter((l) => l.trigger === "aspiration-completed").length
+          : stage === "buffs"
+            ? g.buffs.length
+            : stage === "notifications"
+              ? g.notifications.filter((n) => n.trigger === "aspiration").length
+              : stage === "broadcasters"
+                ? g.broadcasters.length
+                : 1;
+    return `${COMPLETION_STAGE_LABEL[stage]} (${count})`;
+  });
+}
+
 /* --------------------------------------------------------------- STBL -- */
 
 export function buildStblEntries(doc: AspirationDoc) {
@@ -330,11 +751,19 @@ export function exportAspiration(
       resourceKey: keyToString(keys.tuning),
     });
     files.push(...buildMilestoneXml(doc, ctx, keys));
+    files.push(...buildGameplayFiles(doc, ctx, keys));
 
     files.push({
       name: `${keys.tuningName.replace(":", "_")}.stbl.json`,
       kind: "stbl",
-      contents: JSON.stringify({ locale: "en-US", entries: buildStblEntries(doc) }, null, 2),
+      contents: JSON.stringify(
+        {
+          locale: "en-US",
+          entries: [...buildStblEntries(doc), ...gameplayStblEntries(doc)],
+        },
+        null,
+        2,
+      ),
     });
   } else {
     blockers.push(...hardErrors.map((e) => e.message));
@@ -423,6 +852,7 @@ function buildReport(
     `- Type: ${aspirationTypeSpec(doc.aspirationType).label} → ${aspirationTypeSpec(doc.aspirationType).gameAspirationType}`,
     `- Milestones: ${doc.milestones.length} · Objectives: ${objectiveCount(doc)}`,
     `- Required packs: ${packs.length ? packs.join(", ") : "base game only"}`,
+    `- Completion order: ${completionTimeline(doc).join(" → ")}`,
     `- Loadable in-game: ${loadable ? "yes" : "NO"}`,
     "",
     `## Validation`,
