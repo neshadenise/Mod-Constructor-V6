@@ -60,7 +60,9 @@ export function AccountMenu() {
       push({ kind: "error", title: "Enter a valid email address" });
       return;
     }
-    if (!strength.ok) {
+    // Strength rules apply to new passwords only — existing accounts may have
+    // been created before the policy and must still be able to sign in.
+    if (panel === "signup" && !strength.ok) {
       push({
         kind: "error",
         title: "Password is not strong enough",
@@ -68,6 +70,11 @@ export function AccountMenu() {
       });
       return;
     }
+    if (panel === "signin" && password.length === 0) {
+      push({ kind: "error", title: "Enter your password" });
+      return;
+    }
+
     setBusy(true);
     try {
       if (panel === "signup") {
