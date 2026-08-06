@@ -29,6 +29,15 @@ type CloudSyncApi = {
 const Ctx = createContext<CloudSyncApi>({ lastSyncedAt: null, syncNow: async () => {} });
 
 const PUSH_DEBOUNCE_MS = 4000;
+const PUSH_KEY = "mc.cloud.lastPush";
+
+function lastLocalPush(): number {
+  try {
+    return Number(localStorage.getItem(PUSH_KEY) ?? 0);
+  } catch {
+    return 0;
+  }
+}
 
 export function CloudSyncProvider({ children }: { children: ReactNode }) {
   const { account, setSyncState } = useAccount();
@@ -44,14 +53,20 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase
       .from("workspace_state")
       .upsert(
-        { user_id: account.id, data: stateRef.current as unknown as Record<string, unknown> },
+        { user_id: account.id, data: stateRef.current } as never,
         { onConflict: "user_id" },
       );
     if (error) {
       setSyncState("error");
       return;
     }
-    setLastSyncedAt(Date.now());
+    const at = Date.now();
+    try {
+      localStorage.setItem(PUSH_KEY, String(at));
+    } catch {
+      /* storage unavailable — sync still works for this session */
+    }
+    setLastSyncedAt(at);
     setSyncState("synced");
   }, [account, setSyncState]);
 
@@ -75,7 +90,7 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
       }
       const remote = data?.data as AppState | undefined;
       const remoteAt = data?.updated_at ? Date.parse(data.updated_at) : 0;
-      const localAt = stateRef.current.updatedAt ?? 0;
+      const localAt = lastLocalPush();
       if (remote && remoteAt > localAt) {
         store.replaceState(remote);
         setLastSyncedAt(Date.now());

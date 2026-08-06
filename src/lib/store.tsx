@@ -415,6 +415,9 @@ export interface StoreAPI {
     };
   };
 
+  /** Replace the entire workspace (used by cloud sync when pulling a newer copy). */
+  replaceState: (next: AppState) => void;
+
   // Danger zone
   resetDemoData: () => Promise<void>;
 }
@@ -1202,6 +1205,10 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
 
   /* ------------- Reset ------------- */
 
+  const replaceState: StoreAPI["replaceState"] = useCallback((next) => {
+    setState(backfillDemoContent({ ...next, packModules: next.packModules ?? [] }));
+  }, []);
+
   const resetDemoData: StoreAPI["resetDemoData"] = useCallback(async () => {
     await adapter.clear();
     setState(makeDemoState());
@@ -1229,6 +1236,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
     toggleFavorite, markRecent,
     updateSettings,
     exportBundle, importBundle, mergeBundleIntoProject,
+    replaceState,
     resetDemoData,
   }), [
     state, adapter, hydrated,
@@ -1250,6 +1258,7 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
     toggleFavorite, markRecent,
     updateSettings,
     exportBundle, importBundle, mergeBundleIntoProject,
+    replaceState,
     resetDemoData,
   ]);
 
