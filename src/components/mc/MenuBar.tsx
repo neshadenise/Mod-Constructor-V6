@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { CreditsContent } from "@/components/mc/CreditsContent";
 import { useImportPackage } from "@/components/mc/ImportPackageDialog";
+import { useActiveProject } from "@/lib/store";
 
 
 type MenuDef = {
