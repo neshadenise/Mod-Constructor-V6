@@ -382,62 +382,91 @@ export async function analyzeUpload(
   }
 
   stage("Parsing supported resources");
+  const SNIFF_LIMIT = 8 * 1024 * 1024;
   for (const a of analyzed) {
     if (!a.component.resources?.length) continue;
     const pkg = readDbpf(a.bytes);
     for (const resource of a.component.resources) {
       const entry = pkg.entries[resource.originalIndex];
       if (!entry) continue;
-      if (resource.editability !== "editable") {
-        // Recognised-but-binary resources still get a readable label so the
-        // review table never shows an anonymous row.
-        const info = resourceTypeInfo(resource.key.type);
+      const info = resourceTypeInfo(resource.key.type);
+      const known = isKnownResourceType(resource.key.type);
+
+      // Very large recognised binaries are labelled from the type table only;
+      // decompressing them buys nothing because they are preserved anyway.
+      if (known && !info.decodable && resource.memSize && resource.memSize > SNIFF_LIMIT) {
+        resource.editability = "read-only";
         resource.subtype ??= info.category;
         resource.name ??= `${info.label} · ${resource.key.instance}`;
-        if (info.preservable && !resource.notes)
-          resource.notes = "Recognised binary format — copied through unchanged on export.";
+        resource.notes ??= "Recognised binary format — copied through unchanged on export.";
         continue;
       }
 
       try {
         const payload = await readDbpfResource(entry);
-        if (isStbl(payload)) {
+        const format = sniffFormat(payload);
+
+        if (format === "stbl" && isStbl(payload)) {
           const strings = parseStbl(payload);
           resource.strings = strings;
+          resource.editability = "editable";
           resource.subtype = "String table";
           resource.name = `${strings.length} strings`;
           strings.forEach((s) => a.stblKeys.add(s.key));
-        } else if (looksLikeText(payload) && isXmlText(utf8(payload.subarray(0, 256)))) {
+        } else if (format === "xml" && isXmlText(utf8(payload.subarray(0, 256)))) {
           const text = utf8(payload);
           const parsed = parseTuning(text);
           resource.text = text;
+          resource.editability = "editable";
           resource.subtype = parsed.instanceType ?? "tuning";
           resource.name = parsed.name ?? resource.key.instance;
+          if (!known) resource.notes = "XML detected from the payload — editable here.";
           a.tunings.push({ resourceId: resource.id, parsed });
           if (parsed.modulePath)
             a.candidate.tuningModules = [...new Set([...(a.candidate.tuningModules ?? []), parsed.modulePath])];
           for (const ref of parsed.references)
             if (ref.kind === "module")
               a.candidate.tuningModules = [...new Set([...(a.candidate.tuningModules ?? []), ref.value])];
+        } else if (format === "text" && looksLikeText(payload)) {
+          resource.text = utf8(payload);
+          resource.editability = "editable";
+          resource.subtype = "text";
+          resource.name ??= `${info.label} · ${resource.key.instance}`;
+        } else if (format === "binary" && !known) {
+          // Genuinely unidentifiable payload under an unknown type id.
+          resource.editability = "preserved-unsupported";
+          resource.subtype ??= "binary";
+          resource.name ??= `${info.label} · ${resource.key.instance}`;
+          resource.notes = "Unidentified binary payload — copied through unchanged on export.";
         } else {
           resource.editability = "read-only";
-          resource.notes = "Binary payload preserved as-is.";
+          resource.subtype ??= known ? info.category : format;
+          resource.name ??= known
+            ? `${info.label} · ${resource.key.instance}`
+            : `${sniffedFormatLabel(format)} · ${resource.key.instance}`;
+          resource.notes ??= known
+            ? "Recognised binary format — copied through unchanged on export."
+            : `${sniffedFormatLabel(format)} detected from the payload — preserved byte-for-byte on export.`;
         }
       } catch (e) {
-        resource.editability = "preserved-unsupported";
+        // A payload we cannot even decompress is still exported verbatim.
+        resource.editability = known && info.preservable ? "read-only" : "preserved-unsupported";
+        resource.subtype ??= info.category;
+        resource.name ??= `${info.label} · ${resource.key.instance}`;
         resource.notes = `Preserved unchanged: ${(e as Error).message}`;
       }
-      if (resourceTypeInfo(resource.key.type).category === "simdata")
-        a.simdataInstances.add(resource.key.instance);
+      if (info.category === "simdata") a.simdataInstances.add(resource.key.instance);
     }
     for (const r of a.component.resources)
       if (resourceTypeInfo(r.key.type).category === "simdata") a.simdataInstances.add(r.key.instance);
+    a.component.isEditable = a.component.resources.some((r) => r.editability === "editable");
     // A package is fully handled when every resource is either editable or a
     // recognised binary we round-trip byte-for-byte. Only genuinely unknown
     // formats leave it partially parsed.
     a.component.parseStatus = a.component.resources.some((r) => r.editability === "preserved-unsupported")
       ? "partially-parsed"
       : "parsed";
+
 
   }
 
