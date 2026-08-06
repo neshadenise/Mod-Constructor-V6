@@ -60,6 +60,21 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
   const { account, setSyncState } = useAccount();
   const store = useStore();
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  const [autoSync, setAutoSyncState] = useState(true);
+
+  useEffect(() => {
+    setAutoSyncState(readAutoSync());
+  }, []);
+
+  const setAutoSync = useCallback((v: boolean) => {
+    setAutoSyncState(v);
+    try {
+      localStorage.setItem(AUTO_KEY, v ? "on" : "off");
+    } catch {
+      /* storage unavailable — preference applies for this session only */
+    }
+  }, []);
+
   const pulledFor = useRef<string | null>(null);
   const stateRef = useRef(store.state);
   stateRef.current = store.state;
