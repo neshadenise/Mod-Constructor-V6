@@ -11,7 +11,7 @@ import { keyToString } from "@/lib/modexport/ids";
 import { canSerializeSimData, requiresSimData } from "@/lib/modexport/simdata";
 import { computeAspirationKeys, computeGameplayKeys, ensureStringKeys, orphanStrings } from "./ids";
 import { exportAspiration, type AspirationExportFile } from "./export";
-import { ensureGameplay, objectiveCount, type AspirationDoc } from "./schema";
+import { ensureGameplay, type AspirationDoc, type ResourceRef } from "./schema";
 import { externalDependencies, requiredPacks, type ResolveContext } from "./resolver";
 import { validateAspiration, type AspirationValidation } from "./validate";
 import { compileTestSetXml, computeTestSetKeys, validateTestSet } from "@/lib/requirements/compile";
@@ -108,58 +108,64 @@ export function dependencyGraph(doc: AspirationDoc): DependencyGraph {
   add(root, doc.displayName || "Aspiration", "Aspiration");
 
   for (const m of doc.milestones) {
-    const mid = `milestone:${m.id}`;
+    const mid = `milestone:${m.uuid}`;
     add(mid, m.title || "Milestone", "Milestone");
     link(root, mid);
     for (const o of m.objectives) {
-      const oid = `objective:${o.id}`;
-      add(oid, o.title || "Objective", "Objective");
+      const oid = `objective:${o.uuid}`;
+      add(oid, o.label || "Objective", "Objective");
       link(mid, oid);
     }
   }
 
   const g = ensureGameplay(doc);
+  const refName = (ref: ResourceRef | null | undefined) => ref?.tuningName || ref?.label || "";
+  const refKind = (ref: ResourceRef | null | undefined) => ref?.resourceKind ?? "Resource";
+
+  const linkRefs = (from: string, refs: (ResourceRef | null | undefined)[]) => {
+    for (const ref of refs) {
+      const name = refName(ref);
+      if (!name) continue;
+      const target = `resource:${name}`;
+      add(target, name, refKind(ref));
+      link(from, target);
+    }
+  };
+
   for (const r of g.rewards) {
     const id = `reward:${r.id}`;
-    add(id, r.label || r.kind, "Reward");
+    add(id, r.name || r.kind, "Reward");
     const owner =
-      r.scope === "milestone" && r.scopeId
-        ? `milestone:${r.scopeId}`
-        : r.scope === "objective" && r.scopeId
-          ? `objective:${r.scopeId}`
+      r.scope === "milestone" && r.ownerUuid
+        ? `milestone:${r.ownerUuid}`
+        : r.scope === "objective" && r.ownerUuid
+          ? `objective:${r.ownerUuid}`
           : root;
     link(owner, id);
-    if (r.ref?.resourceName) {
-      const target = `resource:${r.ref.resourceName}`;
-      add(target, r.ref.resourceName, r.ref.resourceKind ?? "Resource");
-      link(id, target);
-    }
+    linkRefs(id, Object.values(r.refs ?? {}));
   }
   for (const l of g.loot) {
     const id = `loot:${l.id}`;
-    add(id, l.label || "Loot", "Loot");
+    add(id, l.name || "Loot", "Loot");
     link(root, id);
-    for (const op of l.ops) {
-      if (!op.ref?.resourceName) continue;
-      const target = `resource:${op.ref.resourceName}`;
-      add(target, op.ref.resourceName, op.ref.resourceKind ?? "Resource");
-      link(id, target);
-    }
+    linkRefs(id, l.ops.map((op) => op.ref));
   }
   for (const b of g.buffs) {
     const id = `buff:${b.id}`;
-    add(id, b.label || "Buff", "Buff");
+    add(id, b.name || "Buff", "Buff");
     link(root, id);
+    linkRefs(id, [b.ref]);
   }
   for (const n of g.notifications) {
     const id = `notification:${n.id}`;
-    add(id, n.title?.text || n.label || "Notification", "Notification");
+    add(id, n.name || n.title || "Notification", "Notification");
     link(root, id);
   }
   for (const b of g.broadcasters) {
     const id = `broadcaster:${b.id}`;
-    add(id, b.label || "Broadcaster", "Broadcaster");
+    add(id, b.name || "Broadcaster", "Broadcaster");
     link(root, id);
+    linkRefs(id, [b.buffRef]);
   }
 
   return { nodes, edges, cycles: findCycles(nodes, edges) };
@@ -195,14 +201,19 @@ export function unusedResources(doc: AspirationDoc): string[] {
   const g = ensureGameplay(doc);
   const out: string[] = [];
   const referenced = new Set<string>();
-  for (const r of g.rewards) if (r.ref?.resourceName) referenced.add(r.ref.resourceName);
-  for (const l of g.loot) for (const op of l.ops) if (op.ref?.resourceName) referenced.add(op.ref.resourceName);
+  const note = (ref: { tuningName?: string; label?: string } | null | undefined) => {
+    const name = ref?.tuningName || ref?.label;
+    if (name) referenced.add(name);
+  };
+  for (const r of g.rewards) Object.values(r.refs ?? {}).forEach(note);
+  for (const l of g.loot) l.ops.forEach((op) => note(op.ref));
 
-  for (const b of g.buffs)
-    if (!g.loot.some((l) => l.ops.some((o) => o.ref?.resourceName === b.label)) && !referenced.has(b.label))
-      out.push(`Buff "${b.label || b.id}" is never applied.`);
+  for (const b of g.buffs) {
+    const name = b.ref?.tuningName || b.ref?.label || b.name;
+    if (name && !referenced.has(name)) out.push(`Buff "${b.name || name}" is never applied by loot or a reward.`);
+  }
   for (const n of g.notifications)
-    if (!n.trigger) out.push(`Notification "${n.label || n.id}" has no trigger.`);
+    if (!n.trigger) out.push(`Notification "${n.name || n.id}" has no trigger.`);
   for (const s of orphanStrings(doc)) if (s.text.trim()) out.push(`String "${s.field}" is not referenced.`);
   if (!doc.icon) out.push("No icon assigned — the game shows a placeholder.");
   return out;
@@ -348,7 +359,7 @@ export function runExportPipeline(
     packageBytes,
     durationMs: Date.now() - started,
     requiredPacks: packs,
-    requiredMods: mods.map((m) => ({ name: m.name ?? String(m), required: Boolean(m.required) })),
+    requiredMods: mods.map((m) => ({ name: `${m.creator} — ${m.modName}`, required: m.required })),
     unused,
     duplicateIds,
     manifest,
