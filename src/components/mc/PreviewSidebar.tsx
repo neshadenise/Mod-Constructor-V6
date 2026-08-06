@@ -158,30 +158,46 @@ export function PreviewSidebar({
   const project = useActiveProject();
   const { navigate } = useAppNavigation();
 
-  const kind: PreviewKind = SECTION_KIND[active] ?? "project";
-  const meta = KIND_LABEL[kind];
+  const sectionKind: PreviewKind = SECTION_KIND[active] ?? "project";
+  /** On project-level screens the dropdown spans every builder in the mod. */
+  const browsing = sectionKind === "project";
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [nonce, setNonce] = useState(0);
   const [expanded, setExpanded] = useState(false);
-  const [scene, setScene] = useState<string>(SCENES[kind][0]);
-  useEffect(() => setScene(SCENES[kind][0]), [kind]);
 
   const records = useMemo(() => {
     const pid = project?.id;
     const scoped = <T extends { projectId?: string }>(rows: T[]) =>
       pid ? rows.filter((r) => r.projectId === pid) : [];
-    if (kind === "career") return scoped(store.state.careers).map((c) => ({ id: c.id, name: c.name }));
-    if (kind === "trait") return scoped(store.state.traits).map((t) => ({ id: t.id, name: t.name }));
-    if (kind === "aspiration") return scoped(store.state.aspirations).map((a) => ({ id: a.id, name: a.name }));
-    if (kind === "notification") return scoped(store.state.notifications).map((n) => ({ id: n.id, name: n.name }));
-    if (kind === "asset") return scoped(store.state.assets).map((a) => ({ id: a.id, name: a.name }));
-    return [];
-  }, [kind, project?.id, store.state]);
+    const of = (k: PreviewKind, rows: { id: string; name: string }[]) =>
+      rows.map((r) => ({ key: `${k}:${r.id}`, id: r.id, kind: k, name: r.name }));
 
-  const [pickedId, setPickedId] = useState<string | null>(null);
-  const currentId = records.some((r) => r.id === pickedId) ? pickedId! : records[0]?.id ?? null;
-  useEffect(() => setPickedId(null), [kind, project?.id]);
+    if (browsing)
+      return [
+        ...of("career", scoped(store.state.careers).map((c) => ({ id: c.id, name: c.name }))),
+        ...of("trait", scoped(store.state.traits).map((t) => ({ id: t.id, name: t.name }))),
+        ...of("aspiration", scoped(store.state.aspirations).map((a) => ({ id: a.id, name: a.name }))),
+      ];
+    if (sectionKind === "career") return of("career", scoped(store.state.careers).map((c) => ({ id: c.id, name: c.name })));
+    if (sectionKind === "trait") return of("trait", scoped(store.state.traits).map((t) => ({ id: t.id, name: t.name })));
+    if (sectionKind === "aspiration") return of("aspiration", scoped(store.state.aspirations).map((a) => ({ id: a.id, name: a.name })));
+    if (sectionKind === "notification") return of("notification", scoped(store.state.notifications).map((n) => ({ id: n.id, name: n.name })));
+    if (sectionKind === "asset") return of("asset", scoped(store.state.assets).map((a) => ({ id: a.id, name: a.name })));
+    return [];
+  }, [sectionKind, browsing, project?.id, store.state]);
+
+  const [pickedKey, setPickedKey] = useState<string | null>(null);
+  useEffect(() => setPickedKey(null), [sectionKind, project?.id]);
+
+  const current = records.find((r) => r.key === pickedKey) ?? records[0] ?? null;
+  const currentId = current?.id ?? null;
+  const kind: PreviewKind = current?.kind ?? sectionKind;
+  const meta = KIND_LABEL[kind];
+
+  const [scene, setScene] = useState<string>(SCENES[kind][0]!);
+  useEffect(() => setScene(SCENES[kind][0]!), [kind]);
+
 
   if (!open) {
     return (
@@ -249,15 +265,15 @@ export function PreviewSidebar({
           <Empty text="Select a project to preview its content." />
         ) : (
           <>
-            {kind !== "project" && records.length > 1 && (
+            {records.length > 0 && (
               <select
-                value={currentId ?? ""}
-                onChange={(e) => setPickedId(e.target.value)}
+                value={current?.key ?? ""}
+                onChange={(e) => setPickedKey(e.target.value)}
                 className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
               >
                 {records.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
+                  <option key={r.key} value={r.key}>
+                    {browsing ? `${KIND_LABEL[r.kind].label} · ${r.name}` : r.name}
                   </option>
                 ))}
               </select>

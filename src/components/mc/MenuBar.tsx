@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { CreditsContent } from "@/components/mc/CreditsContent";
 import { useImportPackage } from "@/components/mc/ImportPackageDialog";
+import { useActiveProject } from "@/lib/store";
 
 
 type MenuDef = {
@@ -22,6 +23,7 @@ export function MenuBar() {
   const [creditsOpen, setCreditsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const importer = useImportPackage();
+  const project = useActiveProject();
 
 
   useEffect(() => {
@@ -154,7 +156,9 @@ export function MenuBar() {
       </div>
 
       <div className="ml-auto flex items-center gap-1 text-muted-foreground">
-        <span className="mr-2 font-mono text-[10.5px]">Mod Constructor V6 — Epic Careers Overhaul</span>
+        <span className="mr-2 max-w-[360px] truncate font-mono text-[10.5px]">
+          Mod Constructor V6 — {project ? `${project.name} · v${project.version}` : "No project open"}
+        </span>
         <WinBtn>
           <Minus className="h-3 w-3" />
         </WinBtn>
