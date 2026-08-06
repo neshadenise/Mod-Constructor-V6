@@ -17,7 +17,14 @@ import {
   GAME_MODULES,
 } from "./dependencies";
 import { groupCandidates, type GroupCandidate } from "./grouping";
-import { isStbl, parseStbl, resourceTypeInfo } from "./resource-types";
+import {
+  isKnownResourceType,
+  isStbl,
+  parseStbl,
+  resourceTypeInfo,
+  sniffFormat,
+  sniffedFormatLabel,
+} from "./resource-types";
 import { isXmlText, parseTuning, type ParsedTuning } from "./tuning";
 import { parseScriptArchive } from "./ts4script";
 import {
