@@ -17,6 +17,7 @@ import { InspectorHistoryProvider } from "@/lib/inspector-history";
 import { StoreProvider } from "@/lib/store";
 import { ExplorerProvider } from "@/lib/explorer";
 import { AccountProvider } from "@/lib/account";
+import { CloudSyncProvider } from "@/lib/cloud-sync";
 import { TabsProvider, useTabs } from "@/lib/tabs";
 import { TabStrip } from "@/components/mc/TabStrip";
 import { PreviewSidebar, usePreviewPanel, PREVIEW_WIDTH } from "@/components/mc/PreviewSidebar";
@@ -83,6 +84,7 @@ function FullApp() {
     <AppHostProvider>
       <AccountProvider>
       <StoreProvider>
+        <CloudSyncProvider>
         <ExplorerProvider>
         <NotificationsProvider>
           <InspectorHistoryProvider>
@@ -92,6 +94,7 @@ function FullApp() {
           </InspectorHistoryProvider>
         </NotificationsProvider>
         </ExplorerProvider>
+        </CloudSyncProvider>
       </StoreProvider>
       </AccountProvider>
     </AppHostProvider>
