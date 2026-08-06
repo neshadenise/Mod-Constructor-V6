@@ -10,7 +10,7 @@ import {
   FolderTree, Folder, FolderOpen, File as FileIcon, FileImage, FileCode2, FileText, Package,
   ChevronRight, ChevronDown, Search, Plus, Upload, Copy, Scissors, ClipboardPaste, Pencil,
   Trash2, Download, ArrowRightLeft, LayoutGrid, List, ArrowUpDown, RotateCcw, RefreshCw,
-  AlertTriangle, Home, X, Save,
+  AlertTriangle, Home, X, Save, ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -20,11 +20,55 @@ import {
 } from "@/components/ui/context-menu";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
+import { useAppNavigation } from "@/lib/navigation";
+import { requestRevealRecord, type BuilderKind } from "@/lib/builder-record";
 import {
   useExplorer, sortItems, fileCategory, formatBytes, isPreviewableImage, isPreviewableText,
   readFilePayload, splitName, extensionOf,
   type ProjectExplorerItem, type SortKey,
 } from "@/lib/explorer";
+
+/* ------------------------- builder resolution -------------------------- */
+
+const BUILDER_LABEL: Record<BuilderKind, string> = {
+  career: "Career Builder",
+  trait: "Trait Builder",
+  aspiration: "Aspiration Builder",
+};
+
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+export type BuilderTarget = { kind: BuilderKind; id?: string; label: string };
+
+/**
+ * Work out which builder (and which record) a file belongs to, so "Open"
+ * can take the user straight there. Matches a saved record by name first,
+ * then falls back to the folder the file lives in.
+ */
+function resolveBuilderTarget(
+  item: ProjectExplorerItem,
+  path: string,
+  records: { kind: BuilderKind; id: string; name: string }[],
+): BuilderTarget | null {
+  if (item.itemType === "folder") {
+    const p = norm(item.name);
+    if (p.startsWith("career")) return { kind: "career", label: BUILDER_LABEL.career };
+    if (p.startsWith("trait") || p.startsWith("buff")) return { kind: "trait", label: BUILDER_LABEL.trait };
+    if (p.startsWith("aspiration")) return { kind: "aspiration", label: BUILDER_LABEL.aspiration };
+    return null;
+  }
+
+  const base = norm(splitName(item.name).base);
+  const hit = records.find((r) => norm(r.name) === base) ?? records.find((r) => base.includes(norm(r.name)) && norm(r.name).length > 3);
+  if (hit) return { kind: hit.kind, id: hit.id, label: BUILDER_LABEL[hit.kind] };
+
+  const p = norm(path);
+  if (p.includes("career")) return { kind: "career", label: BUILDER_LABEL.career };
+  if (p.includes("trait") || p.includes("buff")) return { kind: "trait", label: BUILDER_LABEL.trait };
+  if (p.includes("aspiration")) return { kind: "aspiration", label: BUILDER_LABEL.aspiration };
+  return null;
+}
+
 
 /* ------------------------------ helpers -------------------------------- */
 
