@@ -432,9 +432,13 @@ export async function analyzeUpload(
     }
     for (const r of a.component.resources)
       if (resourceTypeInfo(r.key.type).category === "simdata") a.simdataInstances.add(r.key.instance);
-    a.component.parseStatus = a.component.resources.some((r) => r.editability === "editable")
-      ? "parsed"
-      : "partially-parsed";
+    // A package is fully handled when every resource is either editable or a
+    // recognised binary we round-trip byte-for-byte. Only genuinely unknown
+    // formats leave it partially parsed.
+    a.component.parseStatus = a.component.resources.some((r) => r.editability === "preserved-unsupported")
+      ? "partially-parsed"
+      : "parsed";
+
   }
 
   stage("Grouping mod components");
