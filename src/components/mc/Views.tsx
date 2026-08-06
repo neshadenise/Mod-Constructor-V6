@@ -2018,7 +2018,7 @@ const EMOTION_ICON: Record<EmotionV5, string> = {
   Stressed: "😰", Uncomfortable: "😖", Scared: "😱",
 };
 
-function TraitBuilder() {
+function LegacyTraitBuilder() {
   const { advanced } = useAdvanced();
   const [tab, setTab] = useState<TraitTab>("identity");
 

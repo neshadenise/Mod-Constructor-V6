@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 import { useStore, useActiveProject } from "@/lib/store";
 import { useBuilderRecord } from "@/lib/builder-record";
 import { useBuilderSeed } from "@/lib/builder-seed";
-import { useAdvancedMode } from "@/lib/advanced-mode";
+import { useAdvanced } from "@/lib/advanced-mode";
 import { migrateTraitDoc } from "@/lib/traits/migrate";
 import { blankTraitDoc, sanitizeInternalName, type TraitDoc, type TraitSectionId } from "@/lib/traits/schema";
 import { validateTrait } from "@/lib/traits/validate";
@@ -68,7 +68,7 @@ export function TraitBuilder() {
   const store = useStore();
   const project = useActiveProject();
   const ctx = useResolveContext();
-  const { advanced } = useAdvancedMode();
+  const { advanced } = useAdvanced();
 
   const [doc, setDoc] = useState<TraitDoc>(() => blankTraitDoc());
   const [section, setSection] = useState<TraitSectionId>("identity");
@@ -259,7 +259,7 @@ export function TraitBuilder() {
             <ValidationSection
               {...sectionProps}
               onJump={(issue) => {
-                setSection(issue.section);
+                setSection(issue.section as TraitSectionId);
                 setFocus(issue.target);
               }}
             />
