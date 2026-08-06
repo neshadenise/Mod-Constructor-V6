@@ -284,14 +284,17 @@ export function computeProjectHealth({ scope, issues, builds = [] }: HealthInput
       section: "projects",
     });
   }
+  const careerIds = new Set(careers.map((c) => c.id));
   for (const r of gateable.filter((x) => (x.ageGates ?? []).length === 0)) {
+    const isCareer = careerIds.has(r.id);
     findings.push({
       id: `compat-age-${r.id}`,
       severity: "warning",
       category: "compatibility",
       title: `"${r.name}" is not available to any age group`,
       fix: "Pick at least one age gate, or the game will never offer it.",
-      section: "careers" in r ? "career" : "trait",
+      section: isCareer ? "career" : "trait",
+      record: { kind: isCareer ? "career" : "trait", id: r.id },
     });
   }
   const requiredPacks = new Set(packModules.map((m) => m.requiredPack).filter(Boolean) as string[]);
