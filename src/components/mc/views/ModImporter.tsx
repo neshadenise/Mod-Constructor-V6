@@ -41,6 +41,7 @@ import {
   type ModProject,
 } from "@/lib/modimport/types";
 import { buildImportFiles } from "@/lib/modimport/save-to-project";
+import { clearImportSession, loadImportSession, saveImportSession } from "@/lib/modimport/session-store";
 import { useExplorer } from "@/lib/explorer";
 import { useActiveProject } from "@/lib/store";
 import { FolderTree } from "lucide-react";
