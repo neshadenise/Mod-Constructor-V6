@@ -45,13 +45,33 @@ export function sanitizeFileName(input: string, fallback = "Mod"): NameCheck {
   return { name, ok: problems.length === 0, problems };
 }
 
-export function versionedName(base: string, extension: string, version?: string) {
-  const clean = sanitizeFileName(base).name.replace(/\.[^.]+$/, "");
+/**
+ * Normalizes a creator handle into a filename-safe prefix:
+ * "Nesha Denise!" -> "NeshaDenise".
+ */
+export function normalizeCreatorPrefix(input: string): string {
+  return input.replace(/[^A-Za-z0-9_-]+/g, "").slice(0, 40);
+}
+
+/**
+ * Applies the `CreatorName_ModTitle` convention. Blank prefixes are a no-op,
+ * and a title that already starts with the prefix is never prefixed twice.
+ */
+export function applyCreatorPrefix(base: string, prefix?: string): string {
+  const clean = normalizeCreatorPrefix(prefix ?? "");
+  if (!clean) return base;
+  const stripped = base.replace(/^[\s_-]+/, "");
+  if (stripped.toLowerCase().startsWith(clean.toLowerCase())) return stripped;
+  return `${clean}_${stripped}`;
+}
+
+export function versionedName(base: string, extension: string, version?: string, prefix?: string) {
+  const clean = applyCreatorPrefix(sanitizeFileName(base).name.replace(/\.[^.]+$/, ""), prefix);
   const v = version ? `_v${version.replace(/^v/i, "")}` : "";
   return sanitizeFileName(`${clean}${v}.${extension.replace(/^\./, "")}`).name;
 }
 
-export function folderName(base: string, version?: string) {
-  const clean = sanitizeFileName(base).name.replace(/\.[^.]+$/, "");
+export function folderName(base: string, version?: string, prefix?: string) {
+  const clean = applyCreatorPrefix(sanitizeFileName(base).name.replace(/\.[^.]+$/, ""), prefix);
   return version ? `${clean}_v${version.replace(/^v/i, "")}` : clean;
 }

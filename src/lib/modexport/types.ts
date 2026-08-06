@@ -56,6 +56,12 @@ export interface ExportRequest {
   onlyModified?: boolean;
   /** Appends the project version to generated filenames. */
   versionedFileNames?: boolean;
+  /**
+   * Creator handle prefixed onto generated file and folder names
+   * ("NeshaDenise_DancerCareer.package"). Affects file names only — never
+   * tuning names, instance ids, or resource keys.
+   */
+  creatorPrefix?: string;
 
   conflictPolicy: ConflictPolicy;
 

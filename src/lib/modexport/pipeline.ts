@@ -244,7 +244,7 @@ export async function runExport(opts: ExportRunOptions): Promise<ExportJob> {
     if (opts.request.exportType === "validation-report") {
       stage(job, "assembling-files", 80, opts);
       const bytes = enc.encode(JSON.stringify({ project: snapshot.projectName, ...report }, null, 2));
-      job.outputFiles = [await toExportedFile(versionedName(snapshot.projectName, "validation.json", snapshot.projectVersion), "report", bytes, false, true)];
+      job.outputFiles = [await toExportedFile(versionedName(snapshot.projectName, "validation.json", snapshot.projectVersion, opts.request.creatorPrefix), "report", bytes, false, true)];
       stage(job, "ready", 100, opts);
       job.completedAt = new Date().toISOString();
       return job;
@@ -263,7 +263,7 @@ export async function runExport(opts: ExportRunOptions): Promise<ExportJob> {
       if (!snapshot.projectSource)
         return fail(job, { code: "NOTHING_TO_EXPORT", message: "No builder project is available to export as source." }, opts);
       const bytes = enc.encode(JSON.stringify(snapshot.projectSource, null, 2));
-      job.outputFiles = [await toExportedFile(versionedName(snapshot.projectName, "ts4builder", snapshot.projectVersion), "project-source", bytes, false, true)];
+      job.outputFiles = [await toExportedFile(versionedName(snapshot.projectName, "ts4builder", snapshot.projectVersion, opts.request.creatorPrefix), "project-source", bytes, false, true)];
       stage(job, "ready", 100, opts);
       job.completedAt = new Date().toISOString();
       return job;
@@ -377,7 +377,7 @@ export async function runExport(opts: ExportRunOptions): Promise<ExportJob> {
 
     if (opts.request.includeProjectSource && snapshot.projectSource) {
       const bytes = enc.encode(JSON.stringify(snapshot.projectSource, null, 2));
-      extras.push(await toExportedFile(versionedName(snapshot.projectName, "ts4builder", snapshot.projectVersion), "project-source", bytes, false, true));
+      extras.push(await toExportedFile(versionedName(snapshot.projectName, "ts4builder", snapshot.projectVersion, opts.request.creatorPrefix), "project-source", bytes, false, true));
     }
     if (opts.request.includeDocumentation) {
       const readme = enc.encode(buildReadme(snapshot, files));
@@ -395,7 +395,7 @@ export async function runExport(opts: ExportRunOptions): Promise<ExportJob> {
     let outputs = [...files, ...extras];
 
     if (opts.request.exportType === "complete-mod") {
-      const root = folderName(opts.request.outputName || snapshot.projectName, opts.request.versionedFileNames ? snapshot.projectVersion : undefined);
+      const root = folderName(opts.request.outputName || snapshot.projectName, opts.request.versionedFileNames ? snapshot.projectVersion : undefined, opts.request.creatorPrefix);
       const zipEntries = outputs.map((f) => {
         const component = snapshot.components.find((c) => c.fileName === f.name);
         const optional = component?.optional ? "Optional/" : "";
@@ -409,7 +409,7 @@ export async function runExport(opts: ExportRunOptions): Promise<ExportJob> {
       if (!zipVerify.ok)
         return fail(job, { code: "ZIP_VERIFY_FAILED", message: `Mod ZIP failed verification: ${zipVerify.notes.join(" ")}` }, opts);
       outputs = [
-        await toExportedFile(versionedName(opts.request.outputName || snapshot.projectName, "zip", opts.request.versionedFileNames ? snapshot.projectVersion : undefined), "zip", zipBytes, false, true, zipVerify.notes),
+        await toExportedFile(versionedName(opts.request.outputName || snapshot.projectName, "zip", opts.request.versionedFileNames ? snapshot.projectVersion : undefined, opts.request.creatorPrefix), "zip", zipBytes, false, true, zipVerify.notes),
         ...outputs,
       ];
     }

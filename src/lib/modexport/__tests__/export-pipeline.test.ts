@@ -8,7 +8,13 @@ import { runExport } from "@/lib/modexport/pipeline";
 import { buildSnapshot } from "@/lib/modexport/snapshot";
 import { ResourceIdService, TYPE_TUNING, normalizeKey } from "@/lib/modexport/ids";
 import { mergeLocalization, checkReferences } from "@/lib/modexport/stbl";
-import { sanitizeFileName } from "@/lib/modexport/filenames";
+import {
+  applyCreatorPrefix,
+  folderName,
+  normalizeCreatorPrefix,
+  sanitizeFileName,
+  versionedName,
+} from "@/lib/modexport/filenames";
 import { exportScriptComponent, verifyScriptArchive } from "@/lib/modexport/scripts";
 import { DEFAULT_EXPORT_REQUEST, type ExportRequest } from "@/lib/modexport/types";
 import type { Aspiration, Career, Project, Trait } from "@/lib/types";
@@ -260,6 +266,47 @@ describe("file names", () => {
     expect(sanitizeFileName("CON.package").name.startsWith("_")).toBe(true);
     expect(sanitizeFileName("evil.exe").name.endsWith(".txt")).toBe(true);
     expect(sanitizeFileName("Nesha_Dancer_v1.2.0.package").ok).toBe(true);
+  });
+});
+
+describe("creator prefix", () => {
+  it("normalizes a handle into a filename-safe prefix", () => {
+    expect(normalizeCreatorPrefix("Nesha Denise!")).toBe("NeshaDenise");
+    expect(normalizeCreatorPrefix("")).toBe("");
+  });
+
+  it("applies the prefix once and never twice", () => {
+    expect(applyCreatorPrefix("DancerCareer", "NeshaDenise")).toBe("NeshaDenise_DancerCareer");
+    expect(applyCreatorPrefix("NeshaDenise_DancerCareer", "NeshaDenise")).toBe("NeshaDenise_DancerCareer");
+    expect(applyCreatorPrefix("DancerCareer", "")).toBe("DancerCareer");
+    expect(applyCreatorPrefix("DancerCareer", undefined)).toBe("DancerCareer");
+  });
+
+  it("combines with versioned file names", () => {
+    // Titles keep their own spacing/branding; only the prefix is normalized.
+    expect(versionedName("Dancer Career", "package", "1.2.0", "Nesha Denise")).toBe(
+      "NeshaDenise_Dancer Career_v1.2.0.package",
+    );
+    expect(folderName("Dancer Career", "1.2.0", "NeshaDenise")).toBe("NeshaDenise_Dancer Career_v1.2.0");
+    expect(versionedName("Dancer Career", "package", undefined)).toBe("Dancer Career.package");
+  });
+
+  it("prefixes exported files without touching internal tuning ids", async () => {
+    const plain = await runExport({ request: request({ exportType: "package-only" }), builder: builderContent() });
+    const prefixed = await runExport({
+      request: request({ exportType: "package-only", creatorPrefix: "NeshaDenise" }),
+      builder: builderContent(),
+    });
+    const plainPkg = plain.outputFiles.find((f) => f.kind === "package")!;
+    const prefixedPkg = prefixed.outputFiles.find((f) => f.kind === "package")!;
+
+    expect(prefixedPkg.name.startsWith("NeshaDenise_")).toBe(true);
+    expect(plainPkg.name.startsWith("NeshaDenise_")).toBe(false);
+
+    // Same resources, same instance ids — only the file name changed.
+    const a = readDbpf(plainPkg.bytes).entries.map((e) => e.instance.toString(16)).sort();
+    const b = readDbpf(prefixedPkg.bytes).entries.map((e) => e.instance.toString(16)).sort();
+    expect(b).toEqual(a);
   });
 });
 

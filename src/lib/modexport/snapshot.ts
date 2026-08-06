@@ -202,6 +202,7 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
       request.outputName || builder.project.name,
       "package",
       request.versionedFileNames ? builder.project.version : undefined,
+      request.creatorPrefix,
     );
     const component: ExportComponentSnapshot = {
       id: componentId,
