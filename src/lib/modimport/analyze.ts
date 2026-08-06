@@ -312,7 +312,10 @@ export async function analyzeUpload(
             editability:
               info.decodable && compression !== "internal" && compression !== "unknown"
                 ? "editable"
-                : "preserved-unsupported",
+                : info.preservable
+                  ? "read-only"
+                  : "preserved-unsupported",
+
             originalIndex: e.index,
           } satisfies ImportedResource;
         });
