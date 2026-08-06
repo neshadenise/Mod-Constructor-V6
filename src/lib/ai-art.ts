@@ -10,11 +10,13 @@
  */
 
 export const TS4_ICON_STYLE =
-  "Sims 4 style game UI icon: single centered subject, glossy vector illustration, " +
-  "soft studio lighting, subtle inner glow and rim light, clean saturated palette with " +
-  "teal/green accents, rounded friendly shapes, thick smooth outlines, plumbob-adjacent " +
-  "aspiration icon aesthetic, flat background circle, no text, no watermark, no letters, " +
-  "centered composition, crisp at small sizes";
+  "The Sims 4 style game UI icon, cartoon vector artwork: one single centered symbolic subject " +
+  "fitting entirely inside a square frame with even padding on all sides, fully transparent " +
+  "background (alpha, no backdrop, no circle, no card, no shadow plate), icon only. " +
+  "Simlish-style abstract sigil language only — absolutely no words, no letters, no numbers, " +
+  "no real-world text, no watermark, no signature. Glossy cartoon shading, soft rim light, " +
+  "clean saturated palette with teal/green plumbob accents, rounded friendly shapes, thick " +
+  "smooth outlines, crisp and readable at small sizes, symmetrical square composition";
 
 export const TS4_COVER_STYLE =
   "Sims 4 style career cover art: stylized 3D life-simulation render, cheerful cartoon " +
