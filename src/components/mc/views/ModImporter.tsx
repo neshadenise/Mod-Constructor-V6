@@ -41,6 +41,7 @@ import {
   type ModProject,
 } from "@/lib/modimport/types";
 import { buildImportFiles } from "@/lib/modimport/save-to-project";
+import { clearImportSession, loadImportSession, saveImportSession } from "@/lib/modimport/session-store";
 import { useExplorer } from "@/lib/explorer";
 import { useActiveProject } from "@/lib/store";
 import { FolderTree } from "lucide-react";
@@ -80,9 +81,51 @@ export function ModImporter() {
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState<string>("");
   const [dragging, setDragging] = useState(false);
+  const [restoredAt, setRestoredAt] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const bytesRef = useRef<Map<string, Uint8Array>>(new Map());
   const ex = useExplorer();
   const activeProject = useActiveProject();
+
+  /* Bring back the last import: reloading or updating the app must never
+     throw away work that is already analysed. */
+  useEffect(() => {
+    let alive = true;
+    loadImportSession()
+      .then((saved) => {
+        if (!alive) return;
+        if (saved) {
+          bytesRef.current = saved.bytes;
+          setSession(saved.session);
+          setProjects(saved.projects);
+          setRestoredAt(saved.savedAt);
+        }
+        setHydrated(true);
+      })
+      .catch(() => setHydrated(true));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  /* Keep the stored copy in step with every edit (merge, split, rename). */
+  useEffect(() => {
+    if (!hydrated || !session) return;
+    const t = setTimeout(() => {
+      void saveImportSession(session, projects, bytesRef.current);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [hydrated, session, projects]);
+
+  const clearImport = useCallback(() => {
+    setSession(null);
+    setProjects([]);
+    setRestoredAt(null);
+    bytesRef.current = new Map();
+    void clearImportSession();
+    toast("Import cleared");
+  }, []);
+
 
   /** Write an imported mod into the current project's assets so it can be
    *  opened and edited in the Project Explorer like any other file. */
@@ -260,6 +303,26 @@ export function ModImporter() {
           executed
         </div>
       </header>
+
+      {session && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-[11px]">
+          <CheckCircle2 className="h-3.5 w-3.5 text-[var(--green)]" />
+          <span className="font-semibold">Your import is saved on this device.</span>
+          <span className="text-muted-foreground">
+            {restoredAt
+              ? `Restored from ${new Date(restoredAt).toLocaleString()} — reloads and app updates keep it.`
+              : "It will still be here after a reload or an app update."}
+          </span>
+          <button
+            onClick={clearImport}
+            className="ml-auto inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 font-semibold text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          >
+            <Trash2 className="h-3 w-3" /> Clear import
+          </button>
+        </div>
+      )}
+
+
 
       <div
         onDragOver={(e) => {
@@ -799,7 +862,7 @@ function ProjectCard({
 export function ImportEmptyHint() {
   return (
     <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-      <Trash2 className="h-3 w-3" /> Import sessions are kept in memory only and clear when you reload.
+      <ShieldCheck className="h-3 w-3" /> Imports are saved on this device and reopen where you left off.
     </div>
   );
 }
