@@ -101,13 +101,21 @@ const COMPARISONS: GoalField["options"] = [
   { value: "lt", label: "Less than (<)" },
 ];
 
-const num = (
+const num = (id: string, label: string, extra: Partial<GoalField> = {}): GoalField => ({
+  id,
+  label,
+  kind: "number",
+  min: 0,
+  step: 1,
+  ...extra,
+});
+
+const ref = (
   id: string,
   label: string,
+  expects: string,
   extra: Partial<GoalField> = {},
-): GoalField => ({ id, label, kind: "number", min: 0, step: 1, ...extra });
-
-const ref = (id: string, label: string, expects: string, extra: Partial<GoalField> = {}): GoalField => ({
+): GoalField => ({
   id,
   label,
   kind: "ref",
@@ -125,7 +133,10 @@ export const OBJECTIVE_TYPES: ObjectiveTypeSpec[] = [
     connects: ["Statistic"],
     progress: "bar",
     fields: [
-      ref("statistic", "Statistic", "Statistic", { required: true, hint: "Hunger, Fun, Confidence, a custom statistic…" }),
+      ref("statistic", "Statistic", "Statistic", {
+        required: true,
+        hint: "Hunger, Fun, Confidence, a custom statistic…",
+      }),
       num("minimum", "Minimum"),
       num("maximum", "Maximum"),
       num("target", "Target value", { required: true }),
@@ -154,7 +165,12 @@ export const OBJECTIVE_TYPES: ObjectiveTypeSpec[] = [
       num("targetLevel", "Target level", { min: 1, max: 20, required: true }),
       num("minimumLevel", "Minimum level", { min: 0, max: 20 }),
       num("maximumLevel", "Maximum level", { min: 0, max: 20 }),
-      { id: "gainMethod", label: "Gain method", kind: "text", hint: "Optional — restrict how the skill may be raised." },
+      {
+        id: "gainMethod",
+        label: "Gain method",
+        kind: "text",
+        hint: "Optional — restrict how the skill may be raised.",
+      },
       { id: "pack", label: "Pack requirement", kind: "text" },
     ],
   },
@@ -802,24 +818,133 @@ export interface ObjectiveTemplate {
 }
 
 export const OBJECTIVE_TEMPLATES: ObjectiveTemplate[] = [
-  { id: "skill-level", label: "Reach Skill Level", type: "skill", description: "Raise a skill to a target level.", params: { targetLevel: 5 } },
-  { id: "earn-money", label: "Earn Money", type: "statistic", description: "Earn a total amount of Simoleons.", params: { target: 5000, comparison: "gte" }, progress: "bar" },
-  { id: "meet-sims", label: "Meet Sims", type: "social", description: "Introduce yourself to new Sims.", params: { times: 10, uniqueSims: true } },
-  { id: "make-friends", label: "Make Friends", type: "relationship", description: "Become friends with several Sims.", params: { relationshipType: "friendship", value: 50, simCount: 3 } },
-  { id: "cook-meals", label: "Cook Meals", type: "crafting", description: "Prepare meals of any kind.", params: { craftCount: 10 } },
-  { id: "paint-paintings", label: "Paint Paintings", type: "crafting", description: "Finish paintings on an easel.", params: { craftCount: 5 } },
-  { id: "harvest-crops", label: "Harvest Crops", type: "harvest", description: "Harvest produce from plants.", params: { count: 20 } },
-  { id: "travel-worlds", label: "Travel Worlds", type: "travel", description: "Visit different worlds.", params: { visits: 5, uniqueWorlds: true } },
-  { id: "become-famous", label: "Become Famous", type: "statistic", description: "Raise fame to a target level.", params: { target: 3, comparison: "gte" } },
-  { id: "graduate", label: "Graduate University", type: "event", description: "Complete a university degree.", params: { eventKind: "custom", event: "Graduation", count: 1 } },
-  { id: "promotion", label: "Complete Career Promotion", type: "career", description: "Earn a promotion in a career.", params: { promotionRequired: true, promotionCount: 1 } },
-  { id: "collect-objects", label: "Collect Objects", type: "collection", description: "Gather pieces of a collection.", params: { pieces: 5 } },
-  { id: "exercise", label: "Exercise", type: "interaction", description: "Work out repeatedly.", params: { times: 8 } },
-  { id: "lose-weight", label: "Lose Weight", type: "statistic", description: "Reduce a body statistic.", params: { comparison: "lte", target: 25 } },
-  { id: "read-books", label: "Read Books", type: "interaction", description: "Read books to completion.", params: { times: 5 } },
-  { id: "watch-tv", label: "Watch TV", type: "interaction", description: "Watch television for a while.", params: { times: 3 } },
-  { id: "use-computer", label: "Use Computer", type: "interaction", description: "Use a computer for any task.", params: { times: 5 } },
-  { id: "custom", label: "Custom", type: "custom", description: "Start from an empty custom test goal.", params: {} },
+  {
+    id: "skill-level",
+    label: "Reach Skill Level",
+    type: "skill",
+    description: "Raise a skill to a target level.",
+    params: { targetLevel: 5 },
+  },
+  {
+    id: "earn-money",
+    label: "Earn Money",
+    type: "statistic",
+    description: "Earn a total amount of Simoleons.",
+    params: { target: 5000, comparison: "gte" },
+    progress: "bar",
+  },
+  {
+    id: "meet-sims",
+    label: "Meet Sims",
+    type: "social",
+    description: "Introduce yourself to new Sims.",
+    params: { times: 10, uniqueSims: true },
+  },
+  {
+    id: "make-friends",
+    label: "Make Friends",
+    type: "relationship",
+    description: "Become friends with several Sims.",
+    params: { relationshipType: "friendship", value: 50, simCount: 3 },
+  },
+  {
+    id: "cook-meals",
+    label: "Cook Meals",
+    type: "crafting",
+    description: "Prepare meals of any kind.",
+    params: { craftCount: 10 },
+  },
+  {
+    id: "paint-paintings",
+    label: "Paint Paintings",
+    type: "crafting",
+    description: "Finish paintings on an easel.",
+    params: { craftCount: 5 },
+  },
+  {
+    id: "harvest-crops",
+    label: "Harvest Crops",
+    type: "harvest",
+    description: "Harvest produce from plants.",
+    params: { count: 20 },
+  },
+  {
+    id: "travel-worlds",
+    label: "Travel Worlds",
+    type: "travel",
+    description: "Visit different worlds.",
+    params: { visits: 5, uniqueWorlds: true },
+  },
+  {
+    id: "become-famous",
+    label: "Become Famous",
+    type: "statistic",
+    description: "Raise fame to a target level.",
+    params: { target: 3, comparison: "gte" },
+  },
+  {
+    id: "graduate",
+    label: "Graduate University",
+    type: "event",
+    description: "Complete a university degree.",
+    params: { eventKind: "custom", event: "Graduation", count: 1 },
+  },
+  {
+    id: "promotion",
+    label: "Complete Career Promotion",
+    type: "career",
+    description: "Earn a promotion in a career.",
+    params: { promotionRequired: true, promotionCount: 1 },
+  },
+  {
+    id: "collect-objects",
+    label: "Collect Objects",
+    type: "collection",
+    description: "Gather pieces of a collection.",
+    params: { pieces: 5 },
+  },
+  {
+    id: "exercise",
+    label: "Exercise",
+    type: "interaction",
+    description: "Work out repeatedly.",
+    params: { times: 8 },
+  },
+  {
+    id: "lose-weight",
+    label: "Lose Weight",
+    type: "statistic",
+    description: "Reduce a body statistic.",
+    params: { comparison: "lte", target: 25 },
+  },
+  {
+    id: "read-books",
+    label: "Read Books",
+    type: "interaction",
+    description: "Read books to completion.",
+    params: { times: 5 },
+  },
+  {
+    id: "watch-tv",
+    label: "Watch TV",
+    type: "interaction",
+    description: "Watch television for a while.",
+    params: { times: 3 },
+  },
+  {
+    id: "use-computer",
+    label: "Use Computer",
+    type: "interaction",
+    description: "Use a computer for any task.",
+    params: { times: 5 },
+  },
+  {
+    id: "custom",
+    label: "Custom",
+    type: "custom",
+    description: "Start from an empty custom test goal.",
+    params: {},
+  },
 ];
 
 /* --------------------------------------------------------- picker mapping -- */

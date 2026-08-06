@@ -313,9 +313,9 @@ export function MilestoneBuilder({
   const selectedMilestone = doc.milestones.find((m) => m.id === selection?.msId) ?? null;
   const selectedObjective =
     selection?.type === "objective" && selectedMilestone
-      ? ([...selectedMilestone.objectives].flatMap((o) => [o, ...o.children]).find(
-          (o) => o.id === selection.objId,
-        ) ?? null)
+      ? ([...selectedMilestone.objectives]
+          .flatMap((o) => [o, ...o.children])
+          .find((o) => o.id === selection.objId) ?? null)
       : null;
 
   /* ------------------------------------------------------------ render -- */
@@ -412,7 +412,9 @@ export function MilestoneBuilder({
                           <span className="min-w-0 flex-1 truncate text-[12px] font-semibold">
                             {m.title || `Milestone ${i + 1}`}
                           </span>
-                          {m.hidden && <EyeOff className="h-3 w-3 shrink-0 text-muted-foreground" />}
+                          {m.hidden && (
+                            <EyeOff className="h-3 w-3 shrink-0 text-muted-foreground" />
+                          )}
                           {msIssues.length > 0 && (
                             <span
                               className={cn(
@@ -655,13 +657,17 @@ function MilestoneInspector({
           <Field label="Tooltip">
             <TextInput
               value={m.strings.tooltip}
-              onChange={(e) => onChange((x) => ({ ...x, strings: { ...x.strings, tooltip: e.target.value } }))}
+              onChange={(e) =>
+                onChange((x) => ({ ...x, strings: { ...x.strings, tooltip: e.target.value } }))
+              }
             />
           </Field>
           <Field label="Journal text">
             <TextInput
               value={m.strings.journal}
-              onChange={(e) => onChange((x) => ({ ...x, strings: { ...x.strings, journal: e.target.value } }))}
+              onChange={(e) =>
+                onChange((x) => ({ ...x, strings: { ...x.strings, journal: e.target.value } }))
+              }
             />
           </Field>
           <Field label="Completion notification">
@@ -703,7 +709,10 @@ function MilestoneInspector({
         subtitle="How this milestone becomes available."
         actions={
           m.unlockMode === "conditions" ? (
-            <Btn icon={Plus} onClick={() => onChange((x) => ({ ...x, unlocks: [...x.unlocks, makeUnlock()] }))}>
+            <Btn
+              icon={Plus}
+              onClick={() => onChange((x) => ({ ...x, unlocks: [...x.unlocks, makeUnlock()] }))}
+            >
               Condition
             </Btn>
           ) : undefined
@@ -738,7 +747,10 @@ function MilestoneInspector({
                     </Field>
                   </div>
                   <div className="min-w-[140px] flex-1">
-                    <Field label="Value" hint="Milestone name, level, tuning name — as the condition needs.">
+                    <Field
+                      label="Value"
+                      hint="Milestone name, level, tuning name — as the condition needs."
+                    >
                       <TextInput
                         value={u.value}
                         onChange={(e) =>
@@ -802,7 +814,9 @@ function MilestoneInspector({
               <NumberInput
                 value={m.completion.count}
                 min={1}
-                onChange={(v) => onChange((x) => ({ ...x, completion: { ...x.completion, count: v } }))}
+                onChange={(v) =>
+                  onChange((x) => ({ ...x, completion: { ...x.completion, count: v } }))
+                }
               />
             </Field>
           </div>
@@ -827,7 +841,10 @@ function MilestoneInspector({
         title="Completion rewards"
         subtitle="Granted the moment the milestone completes."
         actions={
-          <Btn icon={Gift} onClick={() => onChange((x) => ({ ...x, rewards: [...x.rewards, makeReward()] }))}>
+          <Btn
+            icon={Gift}
+            onClick={() => onChange((x) => ({ ...x, rewards: [...x.rewards, makeReward()] }))}
+          >
             Reward
           </Btn>
         }
@@ -903,7 +920,10 @@ function MilestoneInspector({
                   </Btn>
                 </div>
                 <div className="mt-2">
-                  <Field label="Notes / custom payload" hint="Free text carried into the build report.">
+                  <Field
+                    label="Notes / custom payload"
+                    hint="Free text carried into the build report."
+                  >
                     <TextInput
                       value={r.text}
                       onChange={(e) =>
@@ -927,7 +947,10 @@ function MilestoneInspector({
         title="Failure conditions"
         subtitle="Optional. What resets or fails this milestone."
         actions={
-          <Btn icon={Plus} onClick={() => onChange((x) => ({ ...x, failures: [...x.failures, makeFailure()] }))}>
+          <Btn
+            icon={Plus}
+            onClick={() => onChange((x) => ({ ...x, failures: [...x.failures, makeFailure()] }))}
+          >
             Condition
           </Btn>
         }
@@ -1073,7 +1096,10 @@ function ObjectiveInspector({
       <Panel title="Objective" subtitle={spec.hint}>
         <div className="grid gap-3 md:grid-cols-2">
           <Field label="Objective name" hint="Player-facing. Localised automatically.">
-            <TextInput value={o.label} onChange={(e) => onChange((x) => ({ ...x, label: e.target.value }))} />
+            <TextInput
+              value={o.label}
+              onChange={(e) => onChange((x) => ({ ...x, label: e.target.value }))}
+            />
           </Field>
           <Field label="Internal name" hint="Unique. Derived from the name when left empty.">
             <TextInput
@@ -1140,14 +1166,21 @@ function ObjectiveInspector({
         )}
       </Panel>
 
-      <Panel title={`${spec.label} settings`} subtitle="Every field here is written into the goal tuning.">
+      <Panel
+        title={`${spec.label} settings`}
+        subtitle="Every field here is written into the goal tuning."
+      >
         <div className="grid gap-3 md:grid-cols-2">{spec.fields.map(renderField)}</div>
       </Panel>
 
       <Panel title="Progress tracking" subtitle="How the goal counts, and how the player sees it.">
         <div className="grid gap-3 md:grid-cols-3">
           <Field label="Target value">
-            <NumberInput value={o.count} min={0} onChange={(v) => onChange((x) => ({ ...x, count: v }))} />
+            <NumberInput
+              value={o.count}
+              min={0}
+              onChange={(v) => onChange((x) => ({ ...x, count: v }))}
+            />
           </Field>
           <Field label="Preview current value" hint="Editor preview only. Never exported.">
             <NumberInput
@@ -1166,7 +1199,10 @@ function ObjectiveInspector({
         </div>
         <div className="mt-3">
           <div className="h-2 overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${pct}%` }}
+            />
           </div>
           <p className="mt-1 text-[10.5px] text-muted-foreground">
             {o.current} / {o.count} · {pct}% · {o.progress}
@@ -1196,7 +1232,12 @@ function ObjectiveInspector({
         title="Conditions"
         subtitle="Extra tests that must pass for progress to count."
         actions={
-          <Btn icon={Plus} onClick={() => onChange((x) => ({ ...x, conditions: [...x.conditions, makeCondition()] }))}>
+          <Btn
+            icon={Plus}
+            onClick={() =>
+              onChange((x) => ({ ...x, conditions: [...x.conditions, makeCondition()] }))
+            }
+          >
             Condition
           </Btn>
         }
@@ -1219,7 +1260,10 @@ function ObjectiveInspector({
                           ),
                         }))
                       }
-                      options={CONDITION_KINDS.map((k) => ({ value: k, label: CONDITION_LABEL[k] }))}
+                      options={CONDITION_KINDS.map((k) => ({
+                        value: k,
+                        label: CONDITION_LABEL[k],
+                      }))}
                     />
                   </Field>
                 </div>
@@ -1303,7 +1347,9 @@ function ObjectiveInspector({
             <Field label="Window" hint='e.g. "8:00–17:00", "Winter", "Harvestfest".'>
               <TextInput
                 value={o.timer.window}
-                onChange={(e) => onChange((x) => ({ ...x, timer: { ...x.timer, window: e.target.value } }))}
+                onChange={(e) =>
+                  onChange((x) => ({ ...x, timer: { ...x.timer, window: e.target.value } }))
+                }
               />
             </Field>
           </div>
@@ -1311,7 +1357,9 @@ function ObjectiveInspector({
         <div className="mt-3 grid gap-2 md:grid-cols-3">
           <Toggle
             checked={o.repeat.resetOnFailure}
-            onChange={(v) => onChange((x) => ({ ...x, repeat: { ...x.repeat, resetOnFailure: v } }))}
+            onChange={(v) =>
+              onChange((x) => ({ ...x, repeat: { ...x.repeat, resetOnFailure: v } }))
+            }
             label="Reset on failure"
           />
           <Toggle
@@ -1485,7 +1533,9 @@ function JournalPreview({ doc }: { doc: AspirationDoc }) {
                 <div className="flex items-center gap-2">
                   <ListChecks className="h-3.5 w-3.5 text-primary" />
                   <span className="min-w-0 flex-1 truncate text-[12px] font-semibold">
-                    {m.hidden && !finished ? "??? Hidden milestone" : m.title || `Milestone ${i + 1}`}
+                    {m.hidden && !finished
+                      ? "??? Hidden milestone"
+                      : m.title || `Milestone ${i + 1}`}
                   </span>
                   {m.points > 0 && <Badge tone="accent">{m.points} pts</Badge>}
                   {finished && <Badge tone="ok">complete</Badge>}
