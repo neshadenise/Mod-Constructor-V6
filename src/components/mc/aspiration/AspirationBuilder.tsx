@@ -27,7 +27,7 @@ import { useStore, useActiveProject } from "@/lib/store";
 import { useBuilderRecord, requestRevealRecord } from "@/lib/builder-record";
 import { useBuilderSeed } from "@/lib/builder-seed";
 import { useAdvanced } from "@/lib/advanced-mode";
-import { useNavigation } from "@/lib/navigation";
+import { useAppNavigation } from "@/lib/navigation";
 import { migrateAspirationDoc } from "@/lib/aspirations/migrate";
 import {
   blankAspirationDoc,
@@ -72,7 +72,7 @@ export function AspirationBuilder() {
   const project = useActiveProject();
   const ctx = useResolveContext();
   const { advanced } = useAdvanced();
-  const nav = useNavigation();
+  const nav = useAppNavigation();
 
   const [doc, setDoc] = useState<AspirationDoc>(() => blankAspirationDoc());
   const [section, setSection] = useState<SectionId>("identity");
@@ -227,7 +227,7 @@ export function AspirationBuilder() {
         onOpen={openAspiration}
         onCreate={createAspiration}
         onCreateFromTemplate={createFromTemplate}
-        onImport={() => nav.go("package-importer")}
+        onImport={() => nav.navigate("importer")}
         onDuplicate={duplicate}
         onRename={rename}
         onDelete={(id) => {
@@ -307,7 +307,7 @@ export function AspirationBuilder() {
               {...sectionProps}
               onOpen={(kind, id) => {
                 if (kind === "trait" || kind === "career" || kind === "aspiration") {
-                  nav.go(kind);
+                  nav.navigate(kind);
                   requestRevealRecord(kind, id);
                 }
               }}
