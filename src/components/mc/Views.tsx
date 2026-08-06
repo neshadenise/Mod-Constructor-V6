@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ID } from "@/lib/types";
 import { BUFF_TRIGGER_LABEL } from "@/lib/types";
 
+import { TraitBuilder } from "@/components/mc/trait/TraitBuilder";
 import { useBuilderSeed } from "@/lib/builder-seed";
+
 import type {
   CareerPayload,
   TraitPayload,
