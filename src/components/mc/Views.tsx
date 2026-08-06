@@ -103,6 +103,7 @@ import { AssetManager } from "./views/AssetManager";
 import { IconLibraryView } from "./views/IconLibraryView";
 
 import { ReferenceViewer } from "./views/ReferenceViewer";
+import { GameDataView } from "./views/GameDataView";
 import { ValidationCenter } from "./views/ValidationCenter";
 import { TemplatesGallery } from "./views/TemplatesGallery";
 import { SnippetsLibrary } from "./views/SnippetsLibrary";
@@ -4702,6 +4703,7 @@ export function SectionView({
     );
   if (active === "explorer") return <div className="mx-auto max-w-[1600px] p-6"><ProjectExplorer /></div>;
   if (active === "reference") return <div className="mx-auto max-w-[1600px] p-6"><ReferenceViewer /></div>;
+  if (active === "gamedata") return <div className="mx-auto max-w-[1600px] p-6"><GameDataView /></div>;
   if (active === "career") return <div className="mx-auto max-w-[1600px] p-6"><RequireProject><CareerBuilder /></RequireProject></div>;
   if (active === "trait") return <div className="mx-auto max-w-[1600px] p-6"><RequireProject><TraitBuilder /></RequireProject></div>;
   if (active === "aspiration") return <div className="mx-auto max-w-[1600px] p-6"><RequireProject><AspirationBuilder /></RequireProject></div>;

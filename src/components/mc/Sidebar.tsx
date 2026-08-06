@@ -54,6 +54,7 @@ export const SIDEBAR_ITEMS: Item[] = [
   { id: "explorer", label: "Project Explorer", icon: FolderTree, group: "workspace" },
   { id: "templates", label: "Templates", icon: LayoutTemplate, group: "workspace" },
   { id: "reference", label: "Reference", icon: BookOpen, group: "workspace" },
+  { id: "gamedata", label: "Game Data", icon: Database, group: "workspace" },
 
   { id: "career", label: "Career Builder", icon: Briefcase, quickNew: "career", group: "builders" },
   { id: "trait", label: "Trait Builder", icon: Sparkles, quickNew: "trait", group: "builders" },
