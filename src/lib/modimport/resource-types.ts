@@ -78,7 +78,6 @@ export const RESOURCE_TYPES: Record<string, ResourceTypeInfo> = {
   "2E75C764": { label: "CAS Thumbnail", decodable: false, preservable: true, category: "image" },
   "3C2A8647": { label: "Object Thumbnail", decodable: false, preservable: true, category: "image" },
   "5B282D45": { label: "Sim Thumbnail", decodable: false, preservable: true, category: "image" },
-  "3BD45407": { label: "Sim Info Fragment", decodable: false, preservable: true, category: "data" },
   "0580A2B4": { label: "Build/Buy Thumbnail", decodable: false, preservable: true, category: "image" },
   "0580A2B5": { label: "Build/Buy Thumbnail (small)", decodable: false, preservable: true, category: "image" },
   "0580A2B6": { label: "Build/Buy Thumbnail (large)", decodable: false, preservable: true, category: "image" },
@@ -88,7 +87,6 @@ export const RESOURCE_TYPES: Record<string, ResourceTypeInfo> = {
   "5DE9DBA0": { label: "Lot Thumbnail", decodable: false, preservable: true, category: "image" },
   "6B6D2CE4": { label: "Household Thumbnail", decodable: false, preservable: true, category: "image" },
   "8E71065D": { label: "Texture (RLES)", decodable: false, preservable: true, category: "image" },
-  "3BD45407A": { label: "Reserved", decodable: false, preservable: true, category: "other" },
 
   /* Geometry / rendering (RCOL family) */
   "01661233": { label: "Model (MODL)", decodable: false, preservable: true, category: "other" },
