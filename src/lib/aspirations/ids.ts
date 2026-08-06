@@ -36,11 +36,13 @@ export interface AspirationKeys {
   /** Deterministic child keys for milestones and their objectives. */
   milestones: {
     id: string;
+    uuid: string;
     tuningName: string;
     key: ResourceKey;
     decimal: string;
-    objectives: { id: string; tuningName: string; key: ResourceKey; decimal: string }[];
+    objectives: { id: string; uuid: string; tuningName: string; key: ResourceKey; decimal: string }[];
   }[];
+
 }
 
 export function tuningNameFor(namespace: string, internalName: string): string {
@@ -86,18 +88,24 @@ export function computeAspirationKeys(doc: AspirationDoc, ids?: ResourceIdServic
   };
 
   const milestones = doc.milestones.map((m, i) => {
-    const msName = `${doc.ids.internalName}_milestone_${i + 1}`;
+    const msName = m.internalName
+      ? m.internalName.replace(/[^A-Za-z0-9_]/g, "_")
+      : `${doc.ids.internalName}_milestone_${i + 1}`;
     const { key, decimal } = childKey(service, ns, "aspiration_milestone", msName);
     return {
       id: m.id,
+      uuid: m.uuid,
       tuningName: tuningNameFor(ns, msName),
       key,
       decimal,
       objectives: m.objectives.map((o, j) => {
-        const objName = `${msName}_objective_${j + 1}`;
+        const objName = o.internalName
+          ? o.internalName.replace(/[^A-Za-z0-9_]/g, "_")
+          : `${msName}_objective_${j + 1}`;
         const ck = childKey(service, ns, "aspiration_objective", objName);
         return {
           id: o.id,
+          uuid: o.uuid,
           tuningName: tuningNameFor(ns, objName),
           key: ck.key,
           decimal: ck.decimal,
@@ -105,6 +113,7 @@ export function computeAspirationKeys(doc: AspirationDoc, ids?: ResourceIdServic
       }),
     };
   });
+
 
   return {
     tuningName,
