@@ -35,10 +35,24 @@ import {
 import { validateAspiration } from "@/lib/aspirations/validate";
 import { requiredPacks, resolveRef, type ResolveContext } from "@/lib/aspirations/resolver";
 import { ASPIRATION_TEMPLATES, type AspirationTemplate } from "@/lib/aspirations/templates";
-import { Badge, Btn, Chip, EmptyHint, Panel, SelectInput, TextInput } from "@/components/mc/trait/primitives";
+import {
+  Badge,
+  Btn,
+  Chip,
+  EmptyHint,
+  Panel,
+  SelectInput,
+  TextInput,
+} from "@/components/mc/trait/primitives";
 
 type SortId =
-  | "alpha" | "recent" | "created" | "category" | "difficulty" | "validation" | "complete";
+  | "alpha"
+  | "recent"
+  | "created"
+  | "category"
+  | "difficulty"
+  | "validation"
+  | "complete";
 
 const SORTS: { value: SortId; label: string }[] = [
   { value: "recent", label: "Recently edited" },
@@ -107,8 +121,14 @@ export function AspirationLanding({
   const filtered = useMemo(() => {
     const n = q.trim().toLowerCase();
     let list = rows.filter((r) => {
-      if (n && ![r.doc.displayName, r.doc.ids.internalName, r.doc.category, r.doc.aspirationType]
-        .join(" ").toLowerCase().includes(n)) return false;
+      if (
+        n &&
+        ![r.doc.displayName, r.doc.ids.internalName, r.doc.category, r.doc.aspirationType]
+          .join(" ")
+          .toLowerCase()
+          .includes(n)
+      )
+        return false;
       if (category !== "all" && r.doc.category !== category) return false;
       if (difficulty !== "all" && r.doc.difficulty !== difficulty) return false;
       if (onlyInvalid && r.v.errors === 0) return false;
@@ -119,13 +139,20 @@ export function AspirationLanding({
     });
     list = [...list].sort((a, b) => {
       switch (sort) {
-        case "alpha": return a.doc.displayName.localeCompare(b.doc.displayName);
-        case "created": return b.createdAt - a.createdAt;
-        case "category": return a.doc.category.localeCompare(b.doc.category);
-        case "difficulty": return DIFFICULTIES.indexOf(b.doc.difficulty) - DIFFICULTIES.indexOf(a.doc.difficulty);
-        case "validation": return b.v.score - a.v.score;
-        case "complete": return completeness(b.doc) - completeness(a.doc);
-        default: return b.updatedAt - a.updatedAt;
+        case "alpha":
+          return a.doc.displayName.localeCompare(b.doc.displayName);
+        case "created":
+          return b.createdAt - a.createdAt;
+        case "category":
+          return a.doc.category.localeCompare(b.doc.category);
+        case "difficulty":
+          return DIFFICULTIES.indexOf(b.doc.difficulty) - DIFFICULTIES.indexOf(a.doc.difficulty);
+        case "validation":
+          return b.v.score - a.v.score;
+        case "complete":
+          return completeness(b.doc) - completeness(a.doc);
+        default:
+          return b.updatedAt - a.updatedAt;
       }
     });
     return list;
@@ -143,8 +170,12 @@ export function AspirationLanding({
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-border bg-card/60 px-4 py-3">
-        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Project</div>
-        <div className="text-[15px] font-semibold tracking-tight">{project?.name ?? "No project"}</div>
+        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Project
+        </div>
+        <div className="text-[15px] font-semibold tracking-tight">
+          {project?.name ?? "No project"}
+        </div>
         <div className="mt-1 flex flex-wrap gap-1.5">
           <Badge tone="muted">{rows.length} aspirations</Badge>
           <Badge tone={totals.errors ? "error" : "ok"}>{totals.errors} errors</Badge>
@@ -160,10 +191,18 @@ export function AspirationLanding({
         subtitle="Only aspirations belonging to the active project are ever shown."
         actions={
           <>
-            <Btn icon={LayoutTemplate} onClick={() => setShowTemplates((s) => !s)}>From template</Btn>
-            <Btn icon={FolderInput} onClick={onImport}>Import</Btn>
-            <Btn icon={ShieldCheck} onClick={onBatchValidate}>Batch validate</Btn>
-            <Btn icon={Plus} variant="primary" onClick={onCreate}>New aspiration</Btn>
+            <Btn icon={LayoutTemplate} onClick={() => setShowTemplates((s) => !s)}>
+              From template
+            </Btn>
+            <Btn icon={FolderInput} onClick={onImport}>
+              Import
+            </Btn>
+            <Btn icon={ShieldCheck} onClick={onBatchValidate}>
+              Batch validate
+            </Btn>
+            <Btn icon={Plus} variant="primary" onClick={onCreate}>
+              New aspiration
+            </Btn>
           </>
         }
       >
@@ -173,7 +212,10 @@ export function AspirationLanding({
               <button
                 key={t.id}
                 type="button"
-                onClick={() => { setShowTemplates(false); onCreateFromTemplate(t); }}
+                onClick={() => {
+                  setShowTemplates(false);
+                  onCreateFromTemplate(t);
+                }}
                 className="rounded-md border border-border bg-card px-2.5 py-2 text-left transition-colors hover:bg-muted"
               >
                 <div className="text-[12px] font-semibold">{t.label}</div>
@@ -190,26 +232,51 @@ export function AspirationLanding({
         <div className="mb-3 grid gap-2 md:grid-cols-[1fr_auto_auto_auto]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <TextInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search aspirations…" className="pl-8" />
+            <TextInput
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search aspirations…"
+              className="pl-8"
+            />
           </div>
           <SelectInput
             value={category}
             onChange={setCategory}
-            options={[{ value: "all", label: "All categories" }, ...ASPIRATION_CATEGORIES.map((c) => ({ value: c, label: c }))]}
+            options={[
+              { value: "all", label: "All categories" },
+              ...ASPIRATION_CATEGORIES.map((c) => ({ value: c, label: c })),
+            ]}
           />
           <SelectInput
             value={difficulty}
             onChange={setDifficulty}
-            options={[{ value: "all", label: "All difficulties" }, ...DIFFICULTIES.map((d) => ({ value: d, label: DIFFICULTY_LABEL[d] }))]}
+            options={[
+              { value: "all", label: "All difficulties" },
+              ...DIFFICULTIES.map((d) => ({ value: d, label: DIFFICULTY_LABEL[d] })),
+            ]}
           />
           <SelectInput value={sort} onChange={(v) => setSort(v as SortId)} options={SORTS} />
         </div>
 
         <div className="mb-3 flex flex-wrap gap-1.5">
-          <Chip active={onlyInvalid} onClick={() => setOnlyInvalid((s) => !s)}>Has errors</Chip>
-          <Chip active={onlyReward} onClick={() => setOnlyReward((s) => !s)}>Has reward trait</Chip>
-          <Chip active={hidden === "visible"} onClick={() => setHidden(hidden === "visible" ? "all" : "visible")}>Visible</Chip>
-          <Chip active={hidden === "hidden"} onClick={() => setHidden(hidden === "hidden" ? "all" : "hidden")}>Hidden</Chip>
+          <Chip active={onlyInvalid} onClick={() => setOnlyInvalid((s) => !s)}>
+            Has errors
+          </Chip>
+          <Chip active={onlyReward} onClick={() => setOnlyReward((s) => !s)}>
+            Has reward trait
+          </Chip>
+          <Chip
+            active={hidden === "visible"}
+            onClick={() => setHidden(hidden === "visible" ? "all" : "visible")}
+          >
+            Visible
+          </Chip>
+          <Chip
+            active={hidden === "hidden"}
+            onClick={() => setHidden(hidden === "hidden" ? "all" : "hidden")}
+          >
+            Hidden
+          </Chip>
         </div>
 
         {filtered.length === 0 ? (
@@ -242,7 +309,11 @@ export function AspirationLanding({
                       </div>
                     </div>
                     <Badge tone={v.errors ? "error" : v.warnings ? "warn" : "ok"}>
-                      {v.errors ? `${v.errors} errors` : v.warnings ? `${v.warnings} warnings` : "valid"}
+                      {v.errors
+                        ? `${v.errors} errors`
+                        : v.warnings
+                          ? `${v.warnings} warnings`
+                          : "valid"}
                     </Badge>
                   </header>
 
@@ -252,14 +323,25 @@ export function AspirationLanding({
                     <Badge tone="muted">{DIFFICULTY_LABEL[doc.difficulty]}</Badge>
                     <Badge tone="muted">{doc.milestones.length} milestones</Badge>
                     <Badge tone="muted">{objectiveCount(doc)} objectives</Badge>
-                    <Badge tone={isVisible(doc) ? "accent" : "muted"}>{isVisible(doc) ? "visible" : "hidden"}</Badge>
-                    {packs.map((p) => <Badge key={p} tone="accent">{p}</Badge>)}
+                    <Badge tone={isVisible(doc) ? "accent" : "muted"}>
+                      {isVisible(doc) ? "visible" : "hidden"}
+                    </Badge>
+                    {packs.map((p) => (
+                      <Badge key={p} tone="accent">
+                        {p}
+                      </Badge>
+                    ))}
                   </div>
 
                   <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10.5px] text-muted-foreground">
                     <div className="flex justify-between gap-2">
                       <dt>Reward trait</dt>
-                      <dd className={cn("truncate font-medium", reward && reward.status !== "ok" && "text-red-500")}>
+                      <dd
+                        className={cn(
+                          "truncate font-medium",
+                          reward && reward.status !== "ok" && "text-red-500",
+                        )}
+                      >
                         {reward ? reward.label || reward.tuningName : "none"}
                       </dd>
                     </div>
@@ -279,9 +361,13 @@ export function AspirationLanding({
                       <dt>Export</dt>
                       <dd className="flex items-center gap-1 font-medium">
                         {doc.ids.lastBuiltAt ? (
-                          <><CheckCircle2 className="h-3 w-3 text-[var(--green,#22c55e)]" /> built</>
+                          <>
+                            <CheckCircle2 className="h-3 w-3 text-[var(--green,#22c55e)]" /> built
+                          </>
                         ) : (
-                          <><AlertTriangle className="h-3 w-3 text-amber-500" /> never built</>
+                          <>
+                            <AlertTriangle className="h-3 w-3 text-amber-500" /> never built
+                          </>
                         )}
                       </dd>
                     </div>
@@ -292,8 +378,12 @@ export function AspirationLanding({
                   </div>
 
                   <footer className="mt-2 flex flex-wrap gap-1.5">
-                    <Btn variant="primary" onClick={() => onOpen(id)}>Open</Btn>
-                    <Btn icon={Copy} onClick={() => onDuplicate(id)}>Duplicate</Btn>
+                    <Btn variant="primary" onClick={() => onOpen(id)}>
+                      Open
+                    </Btn>
+                    <Btn icon={Copy} onClick={() => onDuplicate(id)}>
+                      Duplicate
+                    </Btn>
                     <Btn
                       icon={Pencil}
                       onClick={() => {
@@ -303,8 +393,12 @@ export function AspirationLanding({
                     >
                       Rename
                     </Btn>
-                    <Btn icon={FileDown} onClick={() => onExport(id)}>Export</Btn>
-                    <Btn icon={Trash2} variant="danger" onClick={() => onDelete(id)}>Delete</Btn>
+                    <Btn icon={FileDown} onClick={() => onExport(id)}>
+                      Export
+                    </Btn>
+                    <Btn icon={Trash2} variant="danger" onClick={() => onDelete(id)}>
+                      Delete
+                    </Btn>
                   </footer>
                 </article>
               );

@@ -5,11 +5,7 @@ import { BUFF_TRIGGER_LABEL } from "@/lib/types";
 import { TraitBuilder } from "@/components/mc/trait/TraitBuilder";
 import { useBuilderSeed } from "@/lib/builder-seed";
 
-import type {
-  CareerPayload,
-  TraitPayload,
-  AspirationPayload,
-} from "@/lib/builtin-templates";
+import type { CareerPayload, TraitPayload, AspirationPayload } from "@/lib/builtin-templates";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -193,11 +189,7 @@ function Field({
       <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </label>
-      <Input
-        value={value}
-        onChange={(e) => onChange?.(e.target.value)}
-        className="h-8 text-xs"
-      />
+      <Input value={value} onChange={(e) => onChange?.(e.target.value)} className="h-8 text-xs" />
       {hint && <div className="mt-1 text-[10px] text-muted-foreground">{hint}</div>}
     </div>
   );
@@ -243,22 +235,63 @@ function GhostBtn({
 /* ---------- Projects ---------- */
 
 const PROJECTS = [
-  { name: "Epic Careers Overhaul", ver: "2.4.1-beta", type: "Career", updated: "2m ago", status: "Building", c: "blue" },
-  { name: "Lucid Dreamer Traits", ver: "1.2.0", type: "Trait", updated: "1h ago", status: "Draft", c: "violet" },
-  { name: "Trailblazer Aspirations", ver: "1.0.0", type: "Aspiration", updated: "yesterday", status: "Validated", c: "teal" },
-  { name: "Marine Biologist Career", ver: "0.4.0", type: "Career", updated: "3d ago", status: "Draft", c: "green" },
-  { name: "Weathercore Overhaul", ver: "0.9.2", type: "Tuning", updated: "1w ago", status: "Archived", c: "orange" },
+  {
+    name: "Epic Careers Overhaul",
+    ver: "2.4.1-beta",
+    type: "Career",
+    updated: "2m ago",
+    status: "Building",
+    c: "blue",
+  },
+  {
+    name: "Lucid Dreamer Traits",
+    ver: "1.2.0",
+    type: "Trait",
+    updated: "1h ago",
+    status: "Draft",
+    c: "violet",
+  },
+  {
+    name: "Trailblazer Aspirations",
+    ver: "1.0.0",
+    type: "Aspiration",
+    updated: "yesterday",
+    status: "Validated",
+    c: "teal",
+  },
+  {
+    name: "Marine Biologist Career",
+    ver: "0.4.0",
+    type: "Career",
+    updated: "3d ago",
+    status: "Draft",
+    c: "green",
+  },
+  {
+    name: "Weathercore Overhaul",
+    ver: "0.9.2",
+    type: "Tuning",
+    updated: "1w ago",
+    status: "Archived",
+    c: "orange",
+  },
 ];
 
 const STATUS_META: Record<import("@/lib/types").ProjectStatus, { label: string; c: string }> = {
-  "draft": { label: "Draft", c: "orange" },
+  draft: { label: "Draft", c: "orange" },
   "in-progress": { label: "In Progress", c: "blue" },
-  "complete": { label: "Complete", c: "green" },
-  "tested": { label: "Tested", c: "teal" },
-  "released": { label: "Released", c: "violet" },
+  complete: { label: "Complete", c: "green" },
+  tested: { label: "Tested", c: "teal" },
+  released: { label: "Released", c: "violet" },
 };
 
-const STATUS_ORDER: import("@/lib/types").ProjectStatus[] = ["draft", "in-progress", "complete", "tested", "released"];
+const STATUS_ORDER: import("@/lib/types").ProjectStatus[] = [
+  "draft",
+  "in-progress",
+  "complete",
+  "tested",
+  "released",
+];
 
 function StatusPill({ status }: { status: import("@/lib/types").ProjectStatus }) {
   const m = STATUS_META[status];
@@ -339,7 +372,9 @@ function ProjectDetailDialog({
 
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Status
+            </div>
             <StatusPill status={project.status} />
           </div>
 
@@ -360,7 +395,9 @@ function ProjectDetailDialog({
           </div>
 
           <div className="rounded-lg border border-border bg-card/50 p-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Version</div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Version
+            </div>
             <div className="mt-2 flex items-center gap-2">
               <Input
                 value={versionDraft}
@@ -372,7 +409,9 @@ function ProjectDetailDialog({
                 Current: <span className="font-semibold text-foreground">v{project.version}</span>
               </div>
               <div className="ml-auto">
-                <PrimaryBtn icon={Save} onClick={bumpVersion}>Save version</PrimaryBtn>
+                <PrimaryBtn icon={Save} onClick={bumpVersion}>
+                  Save version
+                </PrimaryBtn>
               </div>
             </div>
             <Textarea
@@ -382,14 +421,20 @@ function ProjectDetailDialog({
               className="mt-2 h-16 text-xs"
             />
             <div className="mt-1 text-[10px] text-muted-foreground">
-              Bumping the version resets status to <b>In Progress</b>. Mark the new version <b>Complete</b> when ready — a changelog entry is added automatically. Later mark it <b>Tested</b> once QA passes.
+              Bumping the version resets status to <b>In Progress</b>. Mark the new version{" "}
+              <b>Complete</b> when ready — a changelog entry is added automatically. Later mark it{" "}
+              <b>Tested</b> once QA passes.
             </div>
           </div>
 
           <div className="rounded-lg border border-border bg-card/50 p-3">
             <div className="mb-2 flex items-center justify-between">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Changelog</div>
-              <div className="text-[10px] text-muted-foreground">{project.changelog.length} entries</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Changelog
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                {project.changelog.length} entries
+              </div>
             </div>
             {project.changelog.length === 0 ? (
               <div className="rounded-md border border-dashed border-border p-4 text-center text-[11px] text-muted-foreground">
@@ -398,7 +443,10 @@ function ProjectDetailDialog({
             ) : (
               <ul className="max-h-56 space-y-1.5 overflow-y-auto pr-1">
                 {project.changelog.map((c) => (
-                  <li key={c.id} className="rounded-md border border-border/60 bg-background/60 p-2 text-xs">
+                  <li
+                    key={c.id}
+                    className="rounded-md border border-border/60 bg-background/60 p-2 text-xs"
+                  >
                     <div className="flex items-center gap-2">
                       <span className="font-semibold tabular-nums">v{c.version}</span>
                       <StatusPill status={c.status} />
@@ -411,7 +459,9 @@ function ProjectDetailDialog({
                         {new Date(c.createdAt).toLocaleString()}
                       </span>
                     </div>
-                    <div className="mt-1 whitespace-pre-wrap text-[11px] text-muted-foreground">{c.notes}</div>
+                    <div className="mt-1 whitespace-pre-wrap text-[11px] text-muted-foreground">
+                      {c.notes}
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -420,7 +470,8 @@ function ProjectDetailDialog({
 
           {nextIsMilestone && (
             <div className="rounded-md border border-[var(--blue)]/30 bg-[var(--blue)]/8 p-2 text-[11px]">
-              Tip: every new version should be marked <b>Complete</b> before it can be <b>Tested</b> or <b>Released</b>.
+              Tip: every new version should be marked <b>Complete</b> before it can be <b>Tested</b>{" "}
+              or <b>Released</b>.
             </div>
           )}
         </div>
@@ -432,7 +483,9 @@ function ProjectDetailDialog({
 function ProjectsView() {
   const store = useStore();
   const [filter, setFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | import("@/lib/types").ProjectStatus>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | import("@/lib/types").ProjectStatus>(
+    "all",
+  );
   const [detailId, setDetailId] = useState<string | null>(null);
 
   const projects = store.state.projects;
@@ -453,9 +506,10 @@ function ProjectsView() {
     toast.success(`Created "${p.name}"`);
   };
 
-  const filtered = projects.filter((p) =>
-    (!filter || p.name.toLowerCase().includes(filter.toLowerCase()))
-    && (statusFilter === "all" || p.status === statusFilter)
+  const filtered = projects.filter(
+    (p) =>
+      (!filter || p.name.toLowerCase().includes(filter.toLowerCase())) &&
+      (statusFilter === "all" || p.status === statusFilter),
   );
 
   return (
@@ -468,7 +522,9 @@ function ProjectsView() {
         accent="blue"
         actions={
           <>
-            <GhostBtn icon={Upload} onClick={handleImport}>Import</GhostBtn>
+            <GhostBtn icon={Upload} onClick={handleImport}>
+              Import
+            </GhostBtn>
             <PrimaryBtn icon={Plus} onClick={handleNew}>
               New Project
             </PrimaryBtn>
@@ -493,7 +549,9 @@ function ProjectsView() {
         >
           <option value="all">All statuses</option>
           {STATUS_ORDER.map((s) => (
-            <option key={s} value={s}>{STATUS_META[s].label}</option>
+            <option key={s} value={s}>
+              {STATUS_META[s].label}
+            </option>
           ))}
         </select>
       </div>
@@ -514,7 +572,8 @@ function ProjectsView() {
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                  No projects match. Click <span className="font-semibold">New Project</span> to create one.
+                  No projects match. Click <span className="font-semibold">New Project</span> to
+                  create one.
                 </td>
               </tr>
             )}
@@ -531,7 +590,10 @@ function ProjectsView() {
                 >
                   <td className="py-2 pl-2">
                     <div className="flex items-center gap-2">
-                      <div className="h-6 w-1 rounded" style={{ backgroundColor: `var(--${STATUS_META[p.status].c})` }} />
+                      <div
+                        className="h-6 w-1 rounded"
+                        style={{ backgroundColor: `var(--${STATUS_META[p.status].c})` }}
+                      />
                       <span className="font-semibold">{p.name}</span>
                       {active && (
                         <span className="rounded-full bg-[var(--teal)]/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-[var(--teal)]">
@@ -545,9 +607,13 @@ function ProjectsView() {
                       )}
                     </div>
                   </td>
-                  <td className="py-2 font-mono text-[11px] tabular-nums text-muted-foreground">v{p.version}</td>
+                  <td className="py-2 font-mono text-[11px] tabular-nums text-muted-foreground">
+                    v{p.version}
+                  </td>
                   <td className="py-2 text-muted-foreground">{p.author}</td>
-                  <td className="py-2"><StatusPill status={p.status} /></td>
+                  <td className="py-2">
+                    <StatusPill status={p.status} />
+                  </td>
                   <td className="py-2 text-muted-foreground">{fmtTime(p.updatedAt)}</td>
                   <td className="py-2 pr-2 text-right">
                     <button
@@ -575,7 +641,9 @@ function ProjectsView() {
                       className="rounded p-1 hover:bg-accent"
                       onClick={(e) => {
                         e.stopPropagation();
-                        const label = p.isDemo ? `Delete the demo project "${p.name}"? You can restore it later from Settings → Demo Data.` : `Delete "${p.name}"?`;
+                        const label = p.isDemo
+                          ? `Delete the demo project "${p.name}"? You can restore it later from Settings → Demo Data.`
+                          : `Delete "${p.name}"?`;
                         if (window.confirm(label)) {
                           store.deleteProject(p.id);
                           toast.success(`Deleted "${p.name}"`);
@@ -585,7 +653,6 @@ function ProjectsView() {
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
-
                   </td>
                 </tr>
               );
@@ -597,12 +664,13 @@ function ProjectsView() {
       <ProjectDetailDialog
         projectId={detailId}
         open={detailId !== null}
-        onOpenChange={(v) => { if (!v) setDetailId(null); }}
+        onOpenChange={(v) => {
+          if (!v) setDetailId(null);
+        }}
       />
     </div>
   );
 }
-
 
 /* ---------- Career Builder (V5-aligned) ---------- */
 
@@ -618,15 +686,37 @@ const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
 // V5 message overrides (subset of ~35, gated behind Advanced)
 const MESSAGE_KEYS = [
-  "EndGreat", "EndGood", "EndOK", "EndBad", "EndBoss",
-  "Promoted", "Demoted", "Fired", "Quit",
-  "WorkFromHome", "TakeVacationDay", "PaidTimeOffDepleted",
-  "JoinCareer", "RetireInvitation", "PerformanceLow",
-  "ChanceCardTitle", "ChanceCardText", "ChanceCardGood", "ChanceCardBad",
+  "EndGreat",
+  "EndGood",
+  "EndOK",
+  "EndBad",
+  "EndBoss",
+  "Promoted",
+  "Demoted",
+  "Fired",
+  "Quit",
+  "WorkFromHome",
+  "TakeVacationDay",
+  "PaidTimeOffDepleted",
+  "JoinCareer",
+  "RetireInvitation",
+  "PerformanceLow",
+  "ChanceCardTitle",
+  "ChanceCardText",
+  "ChanceCardGood",
+  "ChanceCardBad",
 ] as const;
 
 type Emotion = "Angry" | "Bored" | "Dazed" | "Embarrassed" | "Sad" | "Tense" | "Uncomfortable";
-const EMOTIONS: Emotion[] = ["Angry", "Bored", "Dazed", "Embarrassed", "Sad", "Tense", "Uncomfortable"];
+const EMOTIONS: Emotion[] = [
+  "Angry",
+  "Bored",
+  "Dazed",
+  "Embarrassed",
+  "Sad",
+  "Tense",
+  "Uncomfortable",
+];
 
 type Rank = {
   lvl: number;
@@ -698,7 +788,13 @@ const mkRank = (lvl: number, title: string, pay: number, req = "—"): Rank => (
   objectiveSet: "",
   promotionReward: "",
   invertedEmotions: {
-    Angry: false, Bored: false, Dazed: false, Embarrassed: false, Sad: false, Tense: false, Uncomfortable: false,
+    Angry: false,
+    Bored: false,
+    Dazed: false,
+    Embarrassed: false,
+    Sad: false,
+    Tense: false,
+    Uncomfortable: false,
   },
 });
 
@@ -718,12 +814,29 @@ const INITIAL_BRANCHES: Branch[] = [
       mkRank(5, "Admiral", 535, "Logic 9 · Fitness 7"),
     ],
     assignments: [
-      { id: "a1", name: "Analyze star charts", levelMin: 1, levelMax: 3, weight: 1, isFirst: true, conditions: "Has telescope" },
-      { id: "a2", name: "Simulate re-entry", levelMin: 3, levelMax: 5, weight: 2, isFirst: false, conditions: "Fitness ≥ 4" },
+      {
+        id: "a1",
+        name: "Analyze star charts",
+        levelMin: 1,
+        levelMax: 3,
+        weight: 1,
+        isFirst: true,
+        conditions: "Has telescope",
+      },
+      {
+        id: "a2",
+        name: "Simulate re-entry",
+        levelMin: 3,
+        levelMax: 5,
+        weight: 2,
+        isFirst: false,
+        conditions: "Fitness ≥ 4",
+      },
     ],
     events: [
       {
-        id: "e1", name: "First Launch",
+        id: "e1",
+        name: "First Launch",
         situation: "career_astro_launch",
         zoneDirector: "zd_launchpad",
         venue: "Science Facility",
@@ -782,7 +895,7 @@ function careerPayloadToBranches(p: CareerPayload): Branch[] {
     ranks: (b.levels ?? []).map((l, li) => {
       const start = parseHour(l.workStart);
       const end = parseHour(l.workEnd);
-      const duration = ((end.h - start.h + 24) % 24) || 8;
+      const duration = (end.h - start.h + 24) % 24 || 8;
       const workDays = (l.workDays ?? []) as string[];
       const days = DAY_KEYS.map((d) => workDays.includes(d));
       return {
@@ -887,7 +1000,9 @@ function Toggle({
       <span
         className={cn(
           "flex h-3 w-3 items-center justify-center rounded-sm border",
-          checked ? "border-[var(--blue)] bg-[var(--blue)] text-white" : "border-muted-foreground/40",
+          checked
+            ? "border-[var(--blue)] bg-[var(--blue)] text-white"
+            : "border-muted-foreground/40",
         )}
       >
         {checked && <CheckCircle2 className="h-2.5 w-2.5" strokeWidth={3} />}
@@ -946,12 +1061,17 @@ function CareerBuilder() {
   const [coverImage, setCoverImage] = useState<string | undefined>(undefined);
 
   const [ages, setAges] = useState<Record<Age, boolean>>({
-    Child: false, Teen: false, YoungAdult: true, Adult: true, Elder: true,
+    Child: false,
+    Teen: false,
+    YoungAdult: true,
+    Adult: true,
+    Elder: true,
   });
 
   // Company names
   const [companyNames, setCompanyNames] = useState<string[]>([
-    "The {label} Company", "Galactic {label} Corp",
+    "The {label} Company",
+    "Galactic {label} Corp",
   ]);
 
   // PTO
@@ -967,9 +1087,10 @@ function CareerBuilder() {
   // Message overrides
   const [messages, setMessages] = useState<Record<string, { enabled: boolean; text: string }>>(
     () =>
-      Object.fromEntries(
-        MESSAGE_KEYS.map((k) => [k, { enabled: false, text: "" }]),
-      ) as Record<string, { enabled: boolean; text: string }>,
+      Object.fromEntries(MESSAGE_KEYS.map((k) => [k, { enabled: false, text: "" }])) as Record<
+        string,
+        { enabled: boolean; text: string }
+      >,
   );
 
   // Branches (tracks)
@@ -984,24 +1105,54 @@ function CareerBuilder() {
 
   /* --- Project-bound record (switching projects reloads this builder) --- */
   type CareerDraft = {
-    name: string; description: string; category: string; careerType: string;
-    icon: string; image: string; coverImage?: string;
-    ages: Record<Age, boolean>; companyNames: string[];
-    ptoEnabled: boolean; ptoInitial: number; ptoLabel: string;
+    name: string;
+    description: string;
+    category: string;
+    careerType: string;
+    icon: string;
+    image: string;
+    coverImage?: string;
+    ages: Record<Age, boolean>;
+    companyNames: string[];
+    ptoEnabled: boolean;
+    ptoInitial: number;
+    ptoLabel: string;
     availabilityConditions: string[];
     messages: Record<string, { enabled: boolean; text: string }>;
-    branches: Branch[]; branchId: string;
+    branches: Branch[];
+    branchId: string;
   };
   const snapshotCareer = (): CareerDraft => ({
-    name, description, category, careerType, icon, image, coverImage,
-    ages, companyNames, ptoEnabled, ptoInitial, ptoLabel,
-    availabilityConditions, messages, branches, branchId,
+    name,
+    description,
+    category,
+    careerType,
+    icon,
+    image,
+    coverImage,
+    ages,
+    companyNames,
+    ptoEnabled,
+    ptoInitial,
+    ptoLabel,
+    availabilityConditions,
+    messages,
+    branches,
+    branchId,
   });
   const restoreCareer = (d: CareerDraft) => {
-    setName(d.name); setDescription(d.description); setCategory(d.category);
-    setCareerType(d.careerType); setIcon(d.icon ?? ""); setImage(d.image ?? "");
-    setCoverImage(d.coverImage); setAges(d.ages); setCompanyNames(d.companyNames ?? []);
-    setPtoEnabled(!!d.ptoEnabled); setPtoInitial(d.ptoInitial ?? 0); setPtoLabel(d.ptoLabel ?? "");
+    setName(d.name);
+    setDescription(d.description);
+    setCategory(d.category);
+    setCareerType(d.careerType);
+    setIcon(d.icon ?? "");
+    setImage(d.image ?? "");
+    setCoverImage(d.coverImage);
+    setAges(d.ages);
+    setCompanyNames(d.companyNames ?? []);
+    setPtoEnabled(!!d.ptoEnabled);
+    setPtoInitial(d.ptoInitial ?? 0);
+    setPtoLabel(d.ptoLabel ?? "");
     setAvailabilityConditions(d.availabilityConditions ?? []);
     setMessages(d.messages ?? {});
     const bs = d.branches?.length ? d.branches : INITIAL_BRANCHES;
@@ -1009,13 +1160,22 @@ function CareerBuilder() {
     setBranchId(bs.some((b) => b.id === d.branchId) ? d.branchId : bs[0].id);
   };
   const blankCareer = (): CareerDraft => ({
-    name: "New Career", description: "", category: "Technical", careerType: "FullTime",
-    icon: "", image: "", coverImage: undefined,
+    name: "New Career",
+    description: "",
+    category: "Technical",
+    careerType: "FullTime",
+    icon: "",
+    image: "",
+    coverImage: undefined,
     ages: { Child: false, Teen: false, YoungAdult: true, Adult: true, Elder: true },
-    companyNames: [], ptoEnabled: true, ptoInitial: 3, ptoLabel: "Take Vacation Day ({label})",
+    companyNames: [],
+    ptoEnabled: true,
+    ptoInitial: 3,
+    ptoLabel: "Take Vacation Day ({label})",
     availabilityConditions: [],
     messages: Object.fromEntries(MESSAGE_KEYS.map((k) => [k, { enabled: false, text: "" }])),
-    branches: INITIAL_BRANCHES, branchId: INITIAL_BRANCHES[0].id,
+    branches: INITIAL_BRANCHES,
+    branchId: INITIAL_BRANCHES[0].id,
   });
   const record = useBuilderRecord<CareerDraft>({
     kind: "career",
@@ -1072,7 +1232,6 @@ function CareerBuilder() {
     setTab("identity");
   });
 
-
   const updateBranch = (id: string, patch: Partial<Branch>) =>
     setBranches((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
 
@@ -1124,7 +1283,12 @@ function CareerBuilder() {
           (branch.ranks[0].beginHour + branch.ranks[0].durationHours) % 24,
         ).padStart(2, "0")}:00`
       : "—",
-    days: branch.ranks[0] ? branch.ranks[0].days.map((d, i) => (d ? DAYS[i] : "")).filter(Boolean).join(" · ") : "—",
+    days: branch.ranks[0]
+      ? branch.ranks[0].days
+          .map((d, i) => (d ? DAYS[i] : ""))
+          .filter(Boolean)
+          .join(" · ")
+      : "—",
     emoji: branch.emoji,
     color: branch.color,
     activeBranch: branch.name,
@@ -1146,7 +1310,12 @@ function CareerBuilder() {
     })),
   };
 
-  const tabs: { id: typeof tab; label: string; icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; advanced?: boolean }[] = [
+  const tabs: {
+    id: typeof tab;
+    label: string;
+    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+    advanced?: boolean;
+  }[] = [
     { id: "identity", label: "Identity", icon: Briefcase },
     { id: "levels", label: "Levels", icon: ListChecks },
     { id: "assignments", label: "Work From Home", icon: Boxes, advanced: true },
@@ -1164,9 +1333,22 @@ function CareerBuilder() {
         accent="blue"
         actions={
           <>
-            <GhostBtn icon={Plus} onClick={() => record.addNew()}>Add new</GhostBtn>
-            <GhostBtn icon={Save} onClick={() => { record.save(); toast.success("Career saved"); }}>Save</GhostBtn>
-            <PrimaryBtn icon={Play} onClick={() => toast.success("Career compiled → epic_careers.package")}>
+            <GhostBtn icon={Plus} onClick={() => record.addNew()}>
+              Add new
+            </GhostBtn>
+            <GhostBtn
+              icon={Save}
+              onClick={() => {
+                record.save();
+                toast.success("Career saved");
+              }}
+            >
+              Save
+            </GhostBtn>
+            <PrimaryBtn
+              icon={Play}
+              onClick={() => toast.success("Career compiled → epic_careers.package")}
+            >
               Compile
             </PrimaryBtn>
           </>
@@ -1177,7 +1359,8 @@ function CareerBuilder() {
 
       {!advanced && (
         <div className="rounded-lg border border-[var(--blue)]/25 bg-[var(--blue)]/5 px-3 py-2 text-[11px] text-muted-foreground">
-          Simple mode — Identity and Levels are shown. Turn on Advanced in the top bar for messages, events, and work-from-home assignments.
+          Simple mode — Identity and Levels are shown. Turn on Advanced in the top bar for messages,
+          events, and work-from-home assignments.
         </div>
       )}
 
@@ -1241,9 +1424,18 @@ function CareerBuilder() {
           <Card title="Career Identity">
             <div className="grid grid-cols-2 gap-3">
               <Field label="Career Name" value={name} onChange={setName} />
-              <Field label="Category" value={category} onChange={setCategory} hint="Technical · Culinary · Athletic…" />
+              <Field
+                label="Category"
+                value={category}
+                onChange={setCategory}
+                hint="Technical · Culinary · Athletic…"
+              />
               {advanced && (
-                <Field label="Internal ID" value="career_interstellar_navigator" hint="Snake_case, must be unique" />
+                <Field
+                  label="Internal ID"
+                  value="career_interstellar_navigator"
+                  hint="Snake_case, must be unique"
+                />
               )}
               <div>
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -1309,10 +1501,10 @@ function CareerBuilder() {
             </div>
           </Card>
 
-
-          <Card title="Age Availability" action={
-            <CopyToMenu what="age availability" label="Copy to…" />
-          }>
+          <Card
+            title="Age Availability"
+            action={<CopyToMenu what="age availability" label="Copy to…" />}
+          >
             <div className="flex flex-wrap gap-1.5">
               {AGES.map((a) => (
                 <Toggle
@@ -1334,12 +1526,27 @@ function CareerBuilder() {
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Enabled
                 </label>
-                <Toggle checked={ptoEnabled} onChange={setPtoEnabled} label={ptoEnabled ? "PTO on" : "PTO off"} />
+                <Toggle
+                  checked={ptoEnabled}
+                  onChange={setPtoEnabled}
+                  label={ptoEnabled ? "PTO on" : "PTO off"}
+                />
               </div>
               {ptoEnabled && (
                 <>
-                  <NumField label="Initial PTO Days" value={ptoInitial} onChange={setPtoInitial} min={0} max={30} />
-                  <Field label="Interaction Name" value={ptoLabel} onChange={setPtoLabel} hint="{label} = career name" />
+                  <NumField
+                    label="Initial PTO Days"
+                    value={ptoInitial}
+                    onChange={setPtoInitial}
+                    min={0}
+                    max={30}
+                  />
+                  <Field
+                    label="Interaction Name"
+                    value={ptoLabel}
+                    onChange={setPtoLabel}
+                    hint="{label} = career name"
+                  />
                 </>
               )}
             </div>
@@ -1385,8 +1592,16 @@ function CareerBuilder() {
             action={<CopyToMenu what={`${branch.name} branch`} label="Copy branch to…" />}
           >
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Branch Name" value={branch.name} onChange={(v) => updateBranch(branch.id, { name: v })} />
-              <Field label="Emoji" value={branch.emoji} onChange={(v) => updateBranch(branch.id, { emoji: v })} />
+              <Field
+                label="Branch Name"
+                value={branch.name}
+                onChange={(v) => updateBranch(branch.id, { name: v })}
+              />
+              <Field
+                label="Emoji"
+                value={branch.emoji}
+                onChange={(v) => updateBranch(branch.id, { emoji: v })}
+              />
               <div className="col-span-2">
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Branch Description
@@ -1470,14 +1685,19 @@ function CareerBuilder() {
             ) : (
               <div className="space-y-2">
                 {branch.assignments.map((a) => (
-                  <div key={a.id} className="grid grid-cols-12 gap-2 rounded-md border border-border bg-background/60 p-2.5">
+                  <div
+                    key={a.id}
+                    className="grid grid-cols-12 gap-2 rounded-md border border-border bg-background/60 p-2.5"
+                  >
                     <div className="col-span-4">
                       <Field
                         label="Name"
                         value={a.name}
                         onChange={(v) =>
                           updateBranch(branch.id, {
-                            assignments: branch.assignments.map((x) => (x.id === a.id ? { ...x, name: v } : x)),
+                            assignments: branch.assignments.map((x) =>
+                              x.id === a.id ? { ...x, name: v } : x,
+                            ),
                           })
                         }
                       />
@@ -1488,7 +1708,9 @@ function CareerBuilder() {
                         value={a.levelMin}
                         onChange={(v) =>
                           updateBranch(branch.id, {
-                            assignments: branch.assignments.map((x) => (x.id === a.id ? { ...x, levelMin: v } : x)),
+                            assignments: branch.assignments.map((x) =>
+                              x.id === a.id ? { ...x, levelMin: v } : x,
+                            ),
                           })
                         }
                       />
@@ -1499,7 +1721,9 @@ function CareerBuilder() {
                         value={a.levelMax}
                         onChange={(v) =>
                           updateBranch(branch.id, {
-                            assignments: branch.assignments.map((x) => (x.id === a.id ? { ...x, levelMax: v } : x)),
+                            assignments: branch.assignments.map((x) =>
+                              x.id === a.id ? { ...x, levelMax: v } : x,
+                            ),
                           })
                         }
                       />
@@ -1510,7 +1734,9 @@ function CareerBuilder() {
                         value={a.weight}
                         onChange={(v) =>
                           updateBranch(branch.id, {
-                            assignments: branch.assignments.map((x) => (x.id === a.id ? { ...x, weight: v } : x)),
+                            assignments: branch.assignments.map((x) =>
+                              x.id === a.id ? { ...x, weight: v } : x,
+                            ),
                           })
                         }
                       />
@@ -1520,7 +1746,9 @@ function CareerBuilder() {
                         checked={a.isFirst}
                         onChange={(v) =>
                           updateBranch(branch.id, {
-                            assignments: branch.assignments.map((x) => (x.id === a.id ? { ...x, isFirst: v } : x)),
+                            assignments: branch.assignments.map((x) =>
+                              x.id === a.id ? { ...x, isFirst: v } : x,
+                            ),
                           })
                         }
                         label="First"
@@ -1544,7 +1772,9 @@ function CareerBuilder() {
                         value={a.conditions}
                         onChange={(v) =>
                           updateBranch(branch.id, {
-                            assignments: branch.assignments.map((x) => (x.id === a.id ? { ...x, conditions: v } : x)),
+                            assignments: branch.assignments.map((x) =>
+                              x.id === a.id ? { ...x, conditions: v } : x,
+                            ),
                           })
                         }
                         hint="Comma-separated test conditions"
@@ -1610,7 +1840,9 @@ function CareerBuilder() {
                       })
                     }
                     onRemove={() =>
-                      updateBranch(branch.id, { events: branch.events.filter((x) => x.id !== ev.id) })
+                      updateBranch(branch.id, {
+                        events: branch.events.filter((x) => x.id !== ev.id),
+                      })
                     }
                   />
                 ))}
@@ -1625,13 +1857,17 @@ function CareerBuilder() {
         <div className="space-y-3">
           <Card title="Message Overrides">
             <div className="mb-2 text-[11px] text-muted-foreground">
-              Toggle a message to override its default game text. Disabled messages fall back to the base text for the selected career type.
+              Toggle a message to override its default game text. Disabled messages fall back to the
+              base text for the selected career type.
             </div>
             <div className="grid grid-cols-1 gap-1.5">
               {MESSAGE_KEYS.map((k) => {
                 const m = messages[k];
                 return (
-                  <div key={k} className="grid grid-cols-12 gap-2 rounded-md border border-border bg-background/60 px-2.5 py-2">
+                  <div
+                    key={k}
+                    className="grid grid-cols-12 gap-2 rounded-md border border-border bg-background/60 px-2.5 py-2"
+                  >
                     <div className="col-span-3 flex items-center gap-2">
                       <Toggle
                         checked={m.enabled}
@@ -1644,7 +1880,9 @@ function CareerBuilder() {
                       <Input
                         disabled={!m.enabled}
                         value={m.text}
-                        onChange={(e) => setMessages({ ...messages, [k]: { ...m, text: e.target.value } })}
+                        onChange={(e) =>
+                          setMessages({ ...messages, [k]: { ...m, text: e.target.value } })
+                        }
                         placeholder={`Default: ${k} message text…`}
                         className="h-7 text-xs"
                       />
@@ -1660,14 +1898,19 @@ function CareerBuilder() {
       {/* --- ADVANCED --- */}
       {tab === "advanced" && advanced && (
         <div className="space-y-3">
-          <Card title="Availability Conditions" action={
-            <button
-              onClick={() => setAvailabilityConditions([...availabilityConditions, "New condition"])}
-              className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
-            >
-              <Plus className="h-3 w-3" /> Add
-            </button>
-          }>
+          <Card
+            title="Availability Conditions"
+            action={
+              <button
+                onClick={() =>
+                  setAvailabilityConditions([...availabilityConditions, "New condition"])
+                }
+                className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
+              >
+                <Plus className="h-3 w-3" /> Add
+              </button>
+            }
+          >
             <ul className="space-y-1.5">
               {availabilityConditions.map((c, i) => (
                 <li key={i} className="flex items-center gap-2">
@@ -1682,7 +1925,9 @@ function CareerBuilder() {
                     className="h-7 text-xs"
                   />
                   <button
-                    onClick={() => setAvailabilityConditions(availabilityConditions.filter((_, j) => j !== i))}
+                    onClick={() =>
+                      setAvailabilityConditions(availabilityConditions.filter((_, j) => j !== i))
+                    }
                     className="rounded p-1 hover:bg-accent"
                   >
                     <Trash2 className="h-3 w-3 text-muted-foreground" />
@@ -1705,7 +1950,7 @@ function CareerBuilder() {
 
           <Card title="XML Output">
             <pre className="max-h-64 overflow-auto rounded-md border border-border bg-[color-mix(in_oklab,var(--foreground)_4%,var(--card))] p-3 font-mono text-[10.5px] leading-relaxed text-foreground/85">
-{`<Career id="0xA112E8" name="career_interstellar_navigator" type="${careerType}">
+              {`<Career id="0xA112E8" name="career_interstellar_navigator" type="${careerType}">
   <Ages>${AGES.filter((a) => ages[a]).join(",")}</Ages>
   <PTO enabled="${ptoEnabled}" initial="${ptoInitial}" />
   <Track name="${branch.name}">
@@ -1714,7 +1959,10 @@ ${branch.ranks
     (r) =>
       `    <Level lvl="${r.lvl}" title="${r.title}" pay="${r.simoleonsPerHour}" begin="${String(
         r.beginHour,
-      ).padStart(2, "0")}:${String(r.beginMinute).padStart(2, "0")}" duration="${r.durationHours}" />`,
+      ).padStart(
+        2,
+        "0",
+      )}:${String(r.beginMinute).padStart(2, "0")}" duration="${r.durationHours}" />`,
   )
   .join("\n")}
   </Track>
@@ -1786,7 +2034,11 @@ function RankRow({
           className="inline-flex items-center rounded p-1 hover:bg-accent"
           title="More"
         >
-          {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+          {expanded ? (
+            <ChevronDown className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5" />
+          )}
         </button>
         <CopyToMenu what={`rank "${rank.title}"`} compact />
         <button onClick={onRemove} className="rounded p-1 hover:bg-accent" title="Remove">
@@ -1911,15 +2163,43 @@ function EventEditor({
         </button>
       </div>
       <div className="grid grid-cols-3 gap-2">
-        <Field label="Situation" value={event.situation} onChange={(v) => onChange({ situation: v })} />
-        <Field label="Zone Director" value={event.zoneDirector} onChange={(v) => onChange({ zoneDirector: v })} />
+        <Field
+          label="Situation"
+          value={event.situation}
+          onChange={(v) => onChange({ situation: v })}
+        />
+        <Field
+          label="Zone Director"
+          value={event.zoneDirector}
+          onChange={(v) => onChange({ zoneDirector: v })}
+        />
         <Field label="Venue" value={event.venue} onChange={(v) => onChange({ venue: v })} />
-        <Field label="No Medal" value={event.noMedalText} onChange={(v) => onChange({ noMedalText: v })} />
-        <Field label="Bronze" value={event.bronzeText} onChange={(v) => onChange({ bronzeText: v })} />
-        <Field label="Silver" value={event.silverText} onChange={(v) => onChange({ silverText: v })} />
+        <Field
+          label="No Medal"
+          value={event.noMedalText}
+          onChange={(v) => onChange({ noMedalText: v })}
+        />
+        <Field
+          label="Bronze"
+          value={event.bronzeText}
+          onChange={(v) => onChange({ bronzeText: v })}
+        />
+        <Field
+          label="Silver"
+          value={event.silverText}
+          onChange={(v) => onChange({ silverText: v })}
+        />
         <Field label="Gold" value={event.goldText} onChange={(v) => onChange({ goldText: v })} />
-        <Field label="Loot on Start" value={event.lootOnStart} onChange={(v) => onChange({ lootOnStart: v })} />
-        <Field label="Loot on End" value={event.lootOnEnd} onChange={(v) => onChange({ lootOnEnd: v })} />
+        <Field
+          label="Loot on Start"
+          value={event.lootOnStart}
+          onChange={(v) => onChange({ lootOnStart: v })}
+        />
+        <Field
+          label="Loot on End"
+          value={event.lootOnEnd}
+          onChange={(v) => onChange({ lootOnEnd: v })}
+        />
       </div>
       <div className="mt-3 flex items-center gap-2">
         <Toggle
@@ -1930,8 +2210,16 @@ function EventEditor({
       </div>
       {event.showEndOfDayReport && (
         <div className="mt-2 grid grid-cols-2 gap-2">
-          <Field label="Report Title" value={event.endOfDayTitle} onChange={(v) => onChange({ endOfDayTitle: v })} />
-          <Field label="Report Text" value={event.endOfDayText} onChange={(v) => onChange({ endOfDayText: v })} />
+          <Field
+            label="Report Title"
+            value={event.endOfDayTitle}
+            onChange={(v) => onChange({ endOfDayTitle: v })}
+          />
+          <Field
+            label="Report Text"
+            value={event.endOfDayText}
+            onChange={(v) => onChange({ endOfDayText: v })}
+          />
         </div>
       )}
     </div>
@@ -1957,9 +2245,21 @@ const TRAIT_AGES = [
 type AgeId = (typeof TRAIT_AGES)[number]["id"];
 
 const EMOTIONS_V5 = [
-  "Happy", "Angry", "Bored", "Confident", "Embarrassed", "Energized",
-  "Fine", "Flirty", "Focused", "Inspired", "Playful", "Sad",
-  "Stressed", "Uncomfortable", "Scared",
+  "Happy",
+  "Angry",
+  "Bored",
+  "Confident",
+  "Embarrassed",
+  "Energized",
+  "Fine",
+  "Flirty",
+  "Focused",
+  "Inspired",
+  "Playful",
+  "Sad",
+  "Stressed",
+  "Uncomfortable",
+  "Scared",
 ] as const;
 type EmotionV5 = (typeof EMOTIONS_V5)[number];
 
@@ -1998,27 +2298,42 @@ const newRule = (): BuffRuleRow => ({
   cooldownHours: 4,
 });
 
-
-type TraitTab =
-  | "identity"
-  | "buffs"
-  | "special"
-  | "modifiers"
-  | "social"
-  | "advanced";
+type TraitTab = "identity" | "buffs" | "special" | "modifiers" | "social" | "advanced";
 
 const EMOTION_COLOR: Record<EmotionV5, string> = {
-  Happy: "green", Angry: "red", Bored: "gray", Confident: "amber",
-  Embarrassed: "pink", Energized: "yellow", Fine: "blue", Flirty: "pink",
-  Focused: "blue", Inspired: "violet", Playful: "orange", Sad: "blue",
-  Stressed: "red", Uncomfortable: "gray", Scared: "violet",
+  Happy: "green",
+  Angry: "red",
+  Bored: "gray",
+  Confident: "amber",
+  Embarrassed: "pink",
+  Energized: "yellow",
+  Fine: "blue",
+  Flirty: "pink",
+  Focused: "blue",
+  Inspired: "violet",
+  Playful: "orange",
+  Sad: "blue",
+  Stressed: "red",
+  Uncomfortable: "gray",
+  Scared: "violet",
 };
 
 const EMOTION_ICON: Record<EmotionV5, string> = {
-  Happy: "😊", Angry: "😠", Bored: "😐", Confident: "😎",
-  Embarrassed: "😳", Energized: "⚡", Fine: "🙂", Flirty: "😘",
-  Focused: "🎯", Inspired: "💡", Playful: "😄", Sad: "😢",
-  Stressed: "😰", Uncomfortable: "😖", Scared: "😱",
+  Happy: "😊",
+  Angry: "😠",
+  Bored: "😐",
+  Confident: "😎",
+  Embarrassed: "😳",
+  Energized: "⚡",
+  Fine: "🙂",
+  Flirty: "😘",
+  Focused: "🎯",
+  Inspired: "💡",
+  Playful: "😄",
+  Sad: "😢",
+  Stressed: "😰",
+  Uncomfortable: "😖",
+  Scared: "😱",
 };
 
 function LegacyTraitBuilder() {
@@ -2033,22 +2348,88 @@ function LegacyTraitBuilder() {
   const [traitType, setTraitType] = useState<TraitType>("Personality");
   const [category, setCategory] = useState<TraitCategory>("Emotional");
   const [ages, setAges] = useState<Record<AgeId, boolean>>({
-    infant: false, toddler: false, child: true, teen: true,
-    youngAdult: true, adult: true, elder: true,
+    infant: false,
+    toddler: false,
+    child: true,
+    teen: true,
+    youngAdult: true,
+    adult: true,
+    elder: true,
   });
 
   const [buffs, setBuffs] = useState<TraitBuff[]>([
-    { id: "b1", name: "Well-Rested Focus", description: "Sharp after a good dream.", emotion: "Focused", weight: 2, duration: "6h", hasEmotion: true, color: "blue", icon: "🎯", rules: [{ id: "r1", trigger: "on-wake", condition: "Energy need above 70%", chance: 100, cooldownHours: 12 }] },
-    { id: "b2", name: "Dream Recall", description: "Struck by a vivid memory.", emotion: "Inspired", weight: 1, duration: "3h", hasEmotion: true, color: "violet", icon: "💭", rules: [{ id: "r2", trigger: "on-wake", condition: "Random chance after sleeping 6+ hours", chance: 35, cooldownHours: 24 }] },
-    { id: "b3", name: "Foggy Morning", description: "Slow to shake the dream.", emotion: "Uncomfortable", weight: 1, duration: "2h", hasEmotion: true, color: "gray", icon: "🌫️", rules: [{ id: "r3", trigger: "on-wake", condition: "Energy need below 40%", chance: 80, cooldownHours: 12 }] },
-
+    {
+      id: "b1",
+      name: "Well-Rested Focus",
+      description: "Sharp after a good dream.",
+      emotion: "Focused",
+      weight: 2,
+      duration: "6h",
+      hasEmotion: true,
+      color: "blue",
+      icon: "🎯",
+      rules: [
+        {
+          id: "r1",
+          trigger: "on-wake",
+          condition: "Energy need above 70%",
+          chance: 100,
+          cooldownHours: 12,
+        },
+      ],
+    },
+    {
+      id: "b2",
+      name: "Dream Recall",
+      description: "Struck by a vivid memory.",
+      emotion: "Inspired",
+      weight: 1,
+      duration: "3h",
+      hasEmotion: true,
+      color: "violet",
+      icon: "💭",
+      rules: [
+        {
+          id: "r2",
+          trigger: "on-wake",
+          condition: "Random chance after sleeping 6+ hours",
+          chance: 35,
+          cooldownHours: 24,
+        },
+      ],
+    },
+    {
+      id: "b3",
+      name: "Foggy Morning",
+      description: "Slow to shake the dream.",
+      emotion: "Uncomfortable",
+      weight: 1,
+      duration: "2h",
+      hasEmotion: true,
+      color: "gray",
+      icon: "🌫️",
+      rules: [
+        {
+          id: "r3",
+          trigger: "on-wake",
+          condition: "Energy need below 40%",
+          chance: 80,
+          cooldownHours: 12,
+        },
+      ],
+    },
   ]);
   const [selectedBuffId, setSelectedBuffId] = useState<string>("b1");
   const selectedBuff = buffs.find((b) => b.id === selectedBuffId) ?? buffs[0];
 
   const [blockAging, setBlockAging] = useState<Record<AgeId, boolean>>({
-    infant: false, toddler: false, child: false, teen: false,
-    youngAdult: false, adult: false, elder: false,
+    infant: false,
+    toddler: false,
+    child: false,
+    teen: false,
+    youngAdult: false,
+    adult: false,
+    elder: false,
   });
   const [blockedEmotions, setBlockedEmotions] = useState<EmotionV5[]>([]);
   const [hideRelationships, setHideRelationships] = useState(false);
@@ -2061,15 +2442,20 @@ function LegacyTraitBuilder() {
 
   const [skillMults, setSkillMults] = useState([
     { skill: "Logic", mult: 1.15 },
-    { skill: "Wellness", mult: 1.10 },
+    { skill: "Wellness", mult: 1.1 },
   ]);
   const [needMults, setNeedMults] = useState([{ need: "Energy Decay", mult: 0.85 }]);
   const [relMults, setRelMults] = useState([{ track: "Friendship (gain)", mult: 1.05 }]);
   const [commodities, setCommodities] = useState([{ commodity: "Autonomy: Sleep", weight: 1.5 }]);
 
   const [whimSet, setWhimSet] = useState("Whims_LucidDreamer");
-  const [socialInteractions, setSocialInteractions] = useState(["Share Dream Story", "Ask About Nightmares"]);
-  const [buffReplacements, setBuffReplacements] = useState([{ from: "Buff_Tired", to: "Buff_Focused_Lucid" }]);
+  const [socialInteractions, setSocialInteractions] = useState([
+    "Share Dream Story",
+    "Ask About Nightmares",
+  ]);
+  const [buffReplacements, setBuffReplacements] = useState([
+    { from: "Buff_Tired", to: "Buff_Focused_Lucid" },
+  ]);
   const [proximityBuffs, setProximityBuffs] = useState(["Buff_LucidAmbience"]);
 
   const [lootActionSets, setLootActionSets] = useState(["Loot_TraitAdd_LucidWelcome"]);
@@ -2078,55 +2464,133 @@ function LegacyTraitBuilder() {
 
   /* --- Project-bound record --- */
   type TraitDraft = {
-    name: string; description: string; icon: string; traitType: TraitType;
-    category: TraitCategory; ages: Record<AgeId, boolean>; buffs: TraitBuff[];
-    selectedBuffId: string; blockAging: Record<AgeId, boolean>;
-    blockedEmotions: EmotionV5[]; hideRelationships: boolean; immuneToDeath: boolean;
-    isNonPersisted: boolean; isNPCOnly: boolean; isGlobalTrait: boolean;
-    traitOrigin: string; voiceEffect: string;
+    name: string;
+    description: string;
+    icon: string;
+    traitType: TraitType;
+    category: TraitCategory;
+    ages: Record<AgeId, boolean>;
+    buffs: TraitBuff[];
+    selectedBuffId: string;
+    blockAging: Record<AgeId, boolean>;
+    blockedEmotions: EmotionV5[];
+    hideRelationships: boolean;
+    immuneToDeath: boolean;
+    isNonPersisted: boolean;
+    isNPCOnly: boolean;
+    isGlobalTrait: boolean;
+    traitOrigin: string;
+    voiceEffect: string;
     skillMults: { skill: string; mult: number }[];
     needMults: { need: string; mult: number }[];
     relMults: { track: string; mult: number }[];
     commodities: { commodity: string; weight: number }[];
-    whimSet: string; socialInteractions: string[];
+    whimSet: string;
+    socialInteractions: string[];
     buffReplacements: { from: string; to: string }[];
-    proximityBuffs: string[]; lootActionSets: string[];
-    blacklist: string[]; whitelist: string[];
+    proximityBuffs: string[];
+    lootActionSets: string[];
+    blacklist: string[];
+    whitelist: string[];
   };
   const snapshotTrait = (): TraitDraft => ({
-    name, description, icon, traitType, category, ages, buffs, selectedBuffId,
-    blockAging, blockedEmotions, hideRelationships, immuneToDeath, isNonPersisted,
-    isNPCOnly, isGlobalTrait, traitOrigin, voiceEffect, skillMults, needMults,
-    relMults, commodities, whimSet, socialInteractions, buffReplacements,
-    proximityBuffs, lootActionSets, blacklist, whitelist,
+    name,
+    description,
+    icon,
+    traitType,
+    category,
+    ages,
+    buffs,
+    selectedBuffId,
+    blockAging,
+    blockedEmotions,
+    hideRelationships,
+    immuneToDeath,
+    isNonPersisted,
+    isNPCOnly,
+    isGlobalTrait,
+    traitOrigin,
+    voiceEffect,
+    skillMults,
+    needMults,
+    relMults,
+    commodities,
+    whimSet,
+    socialInteractions,
+    buffReplacements,
+    proximityBuffs,
+    lootActionSets,
+    blacklist,
+    whitelist,
   });
   const restoreTrait = (d: TraitDraft) => {
-    setName(d.name); setDescription(d.description); setIcon(d.icon ?? "");
-    setTraitType(d.traitType); setCategory(d.category); setAges(d.ages);
-    setBuffs(d.buffs ?? []); setSelectedBuffId(d.selectedBuffId ?? d.buffs?.[0]?.id ?? "");
-    setBlockAging(d.blockAging); setBlockedEmotions(d.blockedEmotions ?? []);
-    setHideRelationships(!!d.hideRelationships); setImmuneToDeath(!!d.immuneToDeath);
-    setIsNonPersisted(!!d.isNonPersisted); setIsNPCOnly(!!d.isNPCOnly);
-    setIsGlobalTrait(!!d.isGlobalTrait); setTraitOrigin(d.traitOrigin ?? "");
-    setVoiceEffect(d.voiceEffect ?? "None"); setSkillMults(d.skillMults ?? []);
-    setNeedMults(d.needMults ?? []); setRelMults(d.relMults ?? []);
-    setCommodities(d.commodities ?? []); setWhimSet(d.whimSet ?? "");
+    setName(d.name);
+    setDescription(d.description);
+    setIcon(d.icon ?? "");
+    setTraitType(d.traitType);
+    setCategory(d.category);
+    setAges(d.ages);
+    setBuffs(d.buffs ?? []);
+    setSelectedBuffId(d.selectedBuffId ?? d.buffs?.[0]?.id ?? "");
+    setBlockAging(d.blockAging);
+    setBlockedEmotions(d.blockedEmotions ?? []);
+    setHideRelationships(!!d.hideRelationships);
+    setImmuneToDeath(!!d.immuneToDeath);
+    setIsNonPersisted(!!d.isNonPersisted);
+    setIsNPCOnly(!!d.isNPCOnly);
+    setIsGlobalTrait(!!d.isGlobalTrait);
+    setTraitOrigin(d.traitOrigin ?? "");
+    setVoiceEffect(d.voiceEffect ?? "None");
+    setSkillMults(d.skillMults ?? []);
+    setNeedMults(d.needMults ?? []);
+    setRelMults(d.relMults ?? []);
+    setCommodities(d.commodities ?? []);
+    setWhimSet(d.whimSet ?? "");
     setSocialInteractions(d.socialInteractions ?? []);
     setBuffReplacements(d.buffReplacements ?? []);
-    setProximityBuffs(d.proximityBuffs ?? []); setLootActionSets(d.lootActionSets ?? []);
-    setBlacklist(d.blacklist ?? []); setWhitelist(d.whitelist ?? []);
+    setProximityBuffs(d.proximityBuffs ?? []);
+    setLootActionSets(d.lootActionSets ?? []);
+    setBlacklist(d.blacklist ?? []);
+    setWhitelist(d.whitelist ?? []);
   };
-  const noAges = { infant: false, toddler: false, child: false, teen: false, youngAdult: false, adult: false, elder: false } as Record<AgeId, boolean>;
+  const noAges = {
+    infant: false,
+    toddler: false,
+    child: false,
+    teen: false,
+    youngAdult: false,
+    adult: false,
+    elder: false,
+  } as Record<AgeId, boolean>;
   const blankTrait = (): TraitDraft => ({
-    name: "New Trait", description: "", icon: "", traitType: "Personality",
+    name: "New Trait",
+    description: "",
+    icon: "",
+    traitType: "Personality",
     category: "Emotional",
     ages: { ...noAges, child: true, teen: true, youngAdult: true, adult: true, elder: true },
-    buffs: [], selectedBuffId: "", blockAging: { ...noAges },
-    blockedEmotions: [], hideRelationships: false, immuneToDeath: false,
-    isNonPersisted: false, isNPCOnly: false, isGlobalTrait: false,
-    traitOrigin: "", voiceEffect: "None", skillMults: [], needMults: [], relMults: [],
-    commodities: [], whimSet: "", socialInteractions: [], buffReplacements: [],
-    proximityBuffs: [], lootActionSets: [], blacklist: [], whitelist: [],
+    buffs: [],
+    selectedBuffId: "",
+    blockAging: { ...noAges },
+    blockedEmotions: [],
+    hideRelationships: false,
+    immuneToDeath: false,
+    isNonPersisted: false,
+    isNPCOnly: false,
+    isGlobalTrait: false,
+    traitOrigin: "",
+    voiceEffect: "None",
+    skillMults: [],
+    needMults: [],
+    relMults: [],
+    commodities: [],
+    whimSet: "",
+    socialInteractions: [],
+    buffReplacements: [],
+    proximityBuffs: [],
+    lootActionSets: [],
+    blacklist: [],
+    whitelist: [],
   });
   const record = useBuilderRecord<TraitDraft>({
     kind: "trait",
@@ -2165,7 +2629,10 @@ function LegacyTraitBuilder() {
         }),
         selectedBuffId: (t.buffs ?? [])[0]?.id ?? "",
         socialInteractions: (t.socialInteractions ?? []).map(String),
-        commodities: (t.commodityWeights ?? []).map((c) => ({ commodity: c.commodity, weight: c.weight })),
+        commodities: (t.commodityWeights ?? []).map((c) => ({
+          commodity: c.commodity,
+          weight: c.weight,
+        })),
       };
     },
   });
@@ -2183,8 +2650,13 @@ function LegacyTraitBuilder() {
     );
     setCategory("Emotional");
     setAges({
-      infant: false, toddler: false, child: false, teen: false,
-      youngAdult: false, adult: false, elder: false,
+      infant: false,
+      toddler: false,
+      child: false,
+      teen: false,
+      youngAdult: false,
+      adult: false,
+      elder: false,
       ...Object.fromEntries(
         (p.ageGates ?? [])
           .map((g) => AGE_GATE_TO_TRAIT[g])
@@ -2212,7 +2684,6 @@ function LegacyTraitBuilder() {
           chance: r.chance ?? 100,
           cooldownHours: r.cooldownHours ?? 0,
         })),
-
       };
     });
     setBuffs(nextBuffs);
@@ -2224,7 +2695,6 @@ function LegacyTraitBuilder() {
     setTraitOrigin(p.description ?? "");
     setTab("identity");
   });
-
 
   const previewData: TraitPreviewData = {
     name,
@@ -2249,7 +2719,12 @@ function LegacyTraitBuilder() {
     autonomy: traitOrigin,
   };
 
-  const tabs: { id: TraitTab; label: string; icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; advanced?: boolean }[] = [
+  const tabs: {
+    id: TraitTab;
+    label: string;
+    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+    advanced?: boolean;
+  }[] = [
     { id: "identity", label: "Identity", icon: Sparkles },
     { id: "buffs", label: "Buffs & Moodlets", icon: Bell },
     { id: "special", label: "Special Cases", icon: Shield, advanced: true },
@@ -2270,9 +2745,22 @@ function LegacyTraitBuilder() {
         accent="violet"
         actions={
           <>
-            <GhostBtn icon={Plus} onClick={() => record.addNew()}>Add new</GhostBtn>
-            <GhostBtn icon={Save} onClick={() => { record.save(); toast.success("Trait saved"); }}>Save</GhostBtn>
-            <PrimaryBtn icon={Play} onClick={() => toast.success("Trait compiled → lucid_dreamer.package")}>
+            <GhostBtn icon={Plus} onClick={() => record.addNew()}>
+              Add new
+            </GhostBtn>
+            <GhostBtn
+              icon={Save}
+              onClick={() => {
+                record.save();
+                toast.success("Trait saved");
+              }}
+            >
+              Save
+            </GhostBtn>
+            <PrimaryBtn
+              icon={Play}
+              onClick={() => toast.success("Trait compiled → lucid_dreamer.package")}
+            >
               Compile
             </PrimaryBtn>
           </>
@@ -2281,11 +2769,10 @@ function LegacyTraitBuilder() {
 
       <BuilderRecordBar rec={record} noun="trait" />
 
-
-
       {!advanced && (
         <div className="rounded-lg border border-[var(--violet)]/25 bg-[var(--violet)]/5 px-3 py-2 text-[11px] text-muted-foreground">
-          Simple mode — Identity and Buffs are shown. Turn on Advanced in the top bar for special cases, modifiers, social interactions, and raw tuning.
+          Simple mode — Identity and Buffs are shown. Turn on Advanced in the top bar for special
+          cases, modifiers, social interactions, and raw tuning.
         </div>
       )}
 
@@ -2332,7 +2819,9 @@ function LegacyTraitBuilder() {
                   className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
                 >
                   {TRAIT_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
                   ))}
                 </select>
                 <div className="mt-1 text-[10px] text-muted-foreground">
@@ -2350,7 +2839,9 @@ function LegacyTraitBuilder() {
                     className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
                   >
                     {TRAIT_CATEGORIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -2391,7 +2882,8 @@ function LegacyTraitBuilder() {
                       : "border-border bg-muted/40 text-muted-foreground hover:bg-accent",
                   )}
                 >
-                  {ages[a.id] ? "✓ " : ""}{a.label}
+                  {ages[a.id] ? "✓ " : ""}
+                  {a.label}
                 </button>
               ))}
             </div>
@@ -2427,7 +2919,18 @@ function LegacyTraitBuilder() {
                 const id = `b${Date.now()}`;
                 setBuffs((p) => [
                   ...p,
-                  { id, name: "New Buff", description: "", emotion: "Happy", weight: 1, duration: "2h", hasEmotion: true, color: "green", icon: "🙂", rules: [newRule()] },
+                  {
+                    id,
+                    name: "New Buff",
+                    description: "",
+                    emotion: "Happy",
+                    weight: 1,
+                    duration: "2h",
+                    hasEmotion: true,
+                    color: "green",
+                    icon: "🙂",
+                    rules: [newRule()],
+                  },
                 ]);
                 setSelectedBuffId(id);
               }}
@@ -2443,7 +2946,11 @@ function LegacyTraitBuilder() {
                 <Field
                   label="Buff Name"
                   value={selectedBuff.name}
-                  onChange={(v) => setBuffs((p) => p.map((b) => b.id === selectedBuff.id ? { ...b, name: v } : b))}
+                  onChange={(v) =>
+                    setBuffs((p) =>
+                      p.map((b) => (b.id === selectedBuff.id ? { ...b, name: v } : b)),
+                    )
+                  }
                 />
                 <div>
                   <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -2451,11 +2958,25 @@ function LegacyTraitBuilder() {
                   </label>
                   <select
                     value={selectedBuff.emotion}
-                    onChange={(e) => setBuffs((p) => p.map((b) => b.id === selectedBuff.id ? { ...b, emotion: e.target.value as EmotionV5, color: EMOTION_COLOR[e.target.value as EmotionV5] } : b))}
+                    onChange={(e) =>
+                      setBuffs((p) =>
+                        p.map((b) =>
+                          b.id === selectedBuff.id
+                            ? {
+                                ...b,
+                                emotion: e.target.value as EmotionV5,
+                                color: EMOTION_COLOR[e.target.value as EmotionV5],
+                              }
+                            : b,
+                        ),
+                      )
+                    }
                     className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
                   >
                     {EMOTIONS_V5.map((em) => (
-                      <option key={em} value={em}>{EMOTION_ICON[em]} {em}</option>
+                      <option key={em} value={em}>
+                        {EMOTION_ICON[em]} {em}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -2468,14 +2989,26 @@ function LegacyTraitBuilder() {
                     min={1}
                     max={5}
                     value={selectedBuff.weight}
-                    onChange={(e) => setBuffs((p) => p.map((b) => b.id === selectedBuff.id ? { ...b, weight: Number(e.target.value) || 1 } : b))}
+                    onChange={(e) =>
+                      setBuffs((p) =>
+                        p.map((b) =>
+                          b.id === selectedBuff.id
+                            ? { ...b, weight: Number(e.target.value) || 1 }
+                            : b,
+                        ),
+                      )
+                    }
                     className="h-8 text-xs"
                   />
                 </div>
                 <Field
                   label="Duration"
                   value={selectedBuff.duration}
-                  onChange={(v) => setBuffs((p) => p.map((b) => b.id === selectedBuff.id ? { ...b, duration: v } : b))}
+                  onChange={(v) =>
+                    setBuffs((p) =>
+                      p.map((b) => (b.id === selectedBuff.id ? { ...b, duration: v } : b)),
+                    )
+                  }
                   hint="e.g. 4h, 240 min, permanent"
                 />
                 <div className="col-span-2">
@@ -2484,7 +3017,13 @@ function LegacyTraitBuilder() {
                   </label>
                   <Textarea
                     value={selectedBuff.description}
-                    onChange={(e) => setBuffs((p) => p.map((b) => b.id === selectedBuff.id ? { ...b, description: e.target.value } : b))}
+                    onChange={(e) =>
+                      setBuffs((p) =>
+                        p.map((b) =>
+                          b.id === selectedBuff.id ? { ...b, description: e.target.value } : b,
+                        ),
+                      )
+                    }
                     className="h-14 resize-none text-xs"
                   />
                 </div>
@@ -2492,7 +3031,13 @@ function LegacyTraitBuilder() {
                   <input
                     type="checkbox"
                     checked={selectedBuff.hasEmotion}
-                    onChange={(e) => setBuffs((p) => p.map((b) => b.id === selectedBuff.id ? { ...b, hasEmotion: e.target.checked } : b))}
+                    onChange={(e) =>
+                      setBuffs((p) =>
+                        p.map((b) =>
+                          b.id === selectedBuff.id ? { ...b, hasEmotion: e.target.checked } : b,
+                        ),
+                      )
+                    }
                   />
                   Visible in the Moodlets panel
                   <span className="text-muted-foreground">(uncheck for silent buffs)</span>
@@ -2505,7 +3050,8 @@ function LegacyTraitBuilder() {
                   <div>
                     <div className="text-[11.5px] font-semibold">Application Rules</div>
                     <div className="text-[10.5px] text-muted-foreground">
-                      Why and when this moodlet is applied. No rules = always active while the Sim has the trait.
+                      Why and when this moodlet is applied. No rules = always active while the Sim
+                      has the trait.
                     </div>
                   </div>
                   <button
@@ -2535,7 +3081,9 @@ function LegacyTraitBuilder() {
                             b.id === selectedBuff.id
                               ? {
                                   ...b,
-                                  rules: b.rules.map((x) => (x.id === r.id ? { ...x, ...next } : x)),
+                                  rules: b.rules.map((x) =>
+                                    x.id === r.id ? { ...x, ...next } : x,
+                                  ),
                                 }
                               : b,
                           ),
@@ -2582,7 +3130,9 @@ function LegacyTraitBuilder() {
                                 max={100}
                                 value={r.chance}
                                 onChange={(e) =>
-                                  patch({ chance: Math.min(100, Math.max(1, Number(e.target.value) || 1)) })
+                                  patch({
+                                    chance: Math.min(100, Math.max(1, Number(e.target.value) || 1)),
+                                  })
                                 }
                                 className="h-7 w-full rounded-md border border-border bg-background px-2 text-[11px]"
                               />
@@ -2651,16 +3201,34 @@ function LegacyTraitBuilder() {
         <div className="space-y-4">
           <Card title="Behavior Flags">
             <div className="grid grid-cols-2 gap-2 text-[11.5px]">
-              <FlagToggle checked={hideRelationships} onChange={setHideRelationships} label="Hide from Relationships panel" />
-              <FlagToggle checked={immuneToDeath} onChange={setImmuneToDeath} label="Immune to death" />
-              <FlagToggle checked={isNonPersisted} onChange={setIsNonPersisted} label="Non-persisted (temporary)" />
+              <FlagToggle
+                checked={hideRelationships}
+                onChange={setHideRelationships}
+                label="Hide from Relationships panel"
+              />
+              <FlagToggle
+                checked={immuneToDeath}
+                onChange={setImmuneToDeath}
+                label="Immune to death"
+              />
+              <FlagToggle
+                checked={isNonPersisted}
+                onChange={setIsNonPersisted}
+                label="Non-persisted (temporary)"
+              />
               <FlagToggle checked={isNPCOnly} onChange={setIsNPCOnly} label="NPC-only" />
-              <FlagToggle checked={isGlobalTrait} onChange={setIsGlobalTrait} label="Global trait (all matching Sims)" />
+              <FlagToggle
+                checked={isGlobalTrait}
+                onChange={setIsGlobalTrait}
+                label="Global trait (all matching Sims)"
+              />
             </div>
           </Card>
 
           <Card title="Aging & Voice">
-            <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Block Aging From</div>
+            <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Block Aging From
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {TRAIT_AGES.map((a) => (
                 <button
@@ -2673,7 +3241,8 @@ function LegacyTraitBuilder() {
                       : "border-border bg-muted/40 text-muted-foreground hover:bg-accent",
                   )}
                 >
-                  {blockAging[a.id] ? "⏸ " : ""}{a.label}
+                  {blockAging[a.id] ? "⏸ " : ""}
+                  {a.label}
                 </button>
               ))}
             </div>
@@ -2687,10 +3256,19 @@ function LegacyTraitBuilder() {
                   onChange={(e) => setVoiceEffect(e.target.value)}
                   className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
                 >
-                  {VOICE_EFFECTS.map((v) => <option key={v} value={v}>{v}</option>)}
+                  {VOICE_EFFECTS.map((v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
                 </select>
               </div>
-              <Field label="Trait Origin" value={traitOrigin} onChange={setTraitOrigin} hint="Shown as the 'how did I get this trait?' text." />
+              <Field
+                label="Trait Origin"
+                value={traitOrigin}
+                onChange={setTraitOrigin}
+                hint="Shown as the 'how did I get this trait?' text."
+              />
             </div>
           </Card>
 
@@ -2701,7 +3279,9 @@ function LegacyTraitBuilder() {
                 return (
                   <button
                     key={em}
-                    onClick={() => setBlockedEmotions((p) => on ? p.filter((x) => x !== em) : [...p, em])}
+                    onClick={() =>
+                      setBlockedEmotions((p) => (on ? p.filter((x) => x !== em) : [...p, em]))
+                    }
                     className={cn(
                       "rounded-full border px-2 py-0.5 text-[10.5px] font-semibold transition-colors",
                       on
@@ -2709,7 +3289,8 @@ function LegacyTraitBuilder() {
                         : "border-border bg-muted/40 text-muted-foreground hover:bg-accent",
                     )}
                   >
-                    {on ? "⊘ " : ""}{EMOTION_ICON[em]} {em}
+                    {on ? "⊘ " : ""}
+                    {EMOTION_ICON[em]} {em}
                   </button>
                 );
               })}
@@ -2723,24 +3304,57 @@ function LegacyTraitBuilder() {
 
       {tab === "modifiers" && advanced && (
         <div className="space-y-4">
-          <MultiplierList title="Skill Multipliers" hint="Multiplies skill gain rate while active." rows={skillMults} keyLabel="Skill" keyField="skill" onChange={setSkillMults} />
-          <MultiplierList title="Need Modifiers" hint="Values <1 slow decay, >1 speed it up." rows={needMults} keyLabel="Need" keyField="need" onChange={setNeedMults} />
-          <MultiplierList title="Relationship Track Multipliers" hint="Applied to relationship gains/losses." rows={relMults} keyLabel="Track" keyField="track" onChange={setRelMults} />
+          <MultiplierList
+            title="Skill Multipliers"
+            hint="Multiplies skill gain rate while active."
+            rows={skillMults}
+            keyLabel="Skill"
+            keyField="skill"
+            onChange={setSkillMults}
+          />
+          <MultiplierList
+            title="Need Modifiers"
+            hint="Values <1 slow decay, >1 speed it up."
+            rows={needMults}
+            keyLabel="Need"
+            keyField="need"
+            onChange={setNeedMults}
+          />
+          <MultiplierList
+            title="Relationship Track Multipliers"
+            hint="Applied to relationship gains/losses."
+            rows={relMults}
+            keyLabel="Track"
+            keyField="track"
+            onChange={setRelMults}
+          />
           <Card title="Autonomy Commodities">
-            <div className="mb-2 text-[10px] text-muted-foreground">Higher weight → more likely to run related interactions autonomously.</div>
+            <div className="mb-2 text-[10px] text-muted-foreground">
+              Higher weight → more likely to run related interactions autonomously.
+            </div>
             <ul className="space-y-1.5">
               {commodities.map((c, i) => (
                 <li key={i} className="grid grid-cols-[1fr_6rem_auto] gap-2">
                   <Input
                     value={c.commodity}
-                    onChange={(e) => setCommodities((p) => p.map((x, xi) => xi === i ? { ...x, commodity: e.target.value } : x))}
+                    onChange={(e) =>
+                      setCommodities((p) =>
+                        p.map((x, xi) => (xi === i ? { ...x, commodity: e.target.value } : x)),
+                      )
+                    }
                     className="h-7 text-xs"
                   />
                   <Input
                     type="number"
                     step="0.05"
                     value={c.weight}
-                    onChange={(e) => setCommodities((p) => p.map((x, xi) => xi === i ? { ...x, weight: Number(e.target.value) || 0 } : x))}
+                    onChange={(e) =>
+                      setCommodities((p) =>
+                        p.map((x, xi) =>
+                          xi === i ? { ...x, weight: Number(e.target.value) || 0 } : x,
+                        ),
+                      )
+                    }
                     className="h-7 text-xs"
                   />
                   <button
@@ -2753,7 +3367,9 @@ function LegacyTraitBuilder() {
               ))}
             </ul>
             <button
-              onClick={() => setCommodities((p) => [...p, { commodity: "New Commodity", weight: 1 }])}
+              onClick={() =>
+                setCommodities((p) => [...p, { commodity: "New Commodity", weight: 1 }])
+              }
               className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:bg-accent"
             >
               <Plus className="h-3 w-3" /> Add Commodity
@@ -2765,7 +3381,12 @@ function LegacyTraitBuilder() {
       {tab === "social" && advanced && (
         <div className="space-y-4">
           <Card title="Whim Set">
-            <Field label="Whim Set Reference" value={whimSet} onChange={setWhimSet} hint="Whim set used when this trait is active." />
+            <Field
+              label="Whim Set Reference"
+              value={whimSet}
+              onChange={setWhimSet}
+              hint="Whim set used when this trait is active."
+            />
           </Card>
 
           <Card title="Social Interactions">
@@ -2774,7 +3395,11 @@ function LegacyTraitBuilder() {
                 <li key={i} className="flex items-center gap-2">
                   <Input
                     value={si}
-                    onChange={(e) => setSocialInteractions((p) => p.map((x, xi) => xi === i ? e.target.value : x))}
+                    onChange={(e) =>
+                      setSocialInteractions((p) =>
+                        p.map((x, xi) => (xi === i ? e.target.value : x)),
+                      )
+                    }
                     className="h-7 text-xs"
                   />
                   <button
@@ -2795,20 +3420,30 @@ function LegacyTraitBuilder() {
           </Card>
 
           <Card title="Buff Replacements">
-            <div className="mb-2 text-[10px] text-muted-foreground">Replace the "from" buff with the "to" buff while trait is active.</div>
+            <div className="mb-2 text-[10px] text-muted-foreground">
+              Replace the "from" buff with the "to" buff while trait is active.
+            </div>
             <ul className="space-y-1.5">
               {buffReplacements.map((r, i) => (
                 <li key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2">
                   <Input
                     value={r.from}
                     placeholder="Original buff"
-                    onChange={(e) => setBuffReplacements((p) => p.map((x, xi) => xi === i ? { ...x, from: e.target.value } : x))}
+                    onChange={(e) =>
+                      setBuffReplacements((p) =>
+                        p.map((x, xi) => (xi === i ? { ...x, from: e.target.value } : x)),
+                      )
+                    }
                     className="h-7 text-xs"
                   />
                   <Input
                     value={r.to}
                     placeholder="Replacement buff"
-                    onChange={(e) => setBuffReplacements((p) => p.map((x, xi) => xi === i ? { ...x, to: e.target.value } : x))}
+                    onChange={(e) =>
+                      setBuffReplacements((p) =>
+                        p.map((x, xi) => (xi === i ? { ...x, to: e.target.value } : x)),
+                      )
+                    }
                     className="h-7 text-xs"
                   />
                   <button
@@ -2829,8 +3464,14 @@ function LegacyTraitBuilder() {
           </Card>
 
           <Card title="Proximity Buffs">
-            <div className="mb-2 text-[10px] text-muted-foreground">Granted to nearby Sims while this Sim is present.</div>
-            <ChipList items={proximityBuffs} onChange={setProximityBuffs} placeholder="Buff reference" />
+            <div className="mb-2 text-[10px] text-muted-foreground">
+              Granted to nearby Sims while this Sim is present.
+            </div>
+            <ChipList
+              items={proximityBuffs}
+              onChange={setProximityBuffs}
+              placeholder="Buff reference"
+            />
           </Card>
         </div>
       )}
@@ -2838,7 +3479,11 @@ function LegacyTraitBuilder() {
       {tab === "advanced" && advanced && (
         <div className="space-y-4">
           <Card title="Setup Actions (Loot on Trait Add)">
-            <ChipList items={lootActionSets} onChange={setLootActionSets} placeholder="Loot Action Set reference" />
+            <ChipList
+              items={lootActionSets}
+              onChange={setLootActionSets}
+              placeholder="Loot Action Set reference"
+            />
           </Card>
 
           <Card title="Conflicting Traits (Blacklist)">
@@ -2855,12 +3500,25 @@ function LegacyTraitBuilder() {
             </div>
           </Card>
 
-          <Card title="XML Manifest Preview" action={<GhostBtn icon={Copy} onClick={() => toast("XML copied")}>Copy</GhostBtn>}>
+          <Card
+            title="XML Manifest Preview"
+            action={
+              <GhostBtn icon={Copy} onClick={() => toast("XML copied")}>
+                Copy
+              </GhostBtn>
+            }
+          >
             <pre className="max-h-64 overflow-auto rounded-md bg-muted/40 p-3 text-[10.5px] leading-relaxed">
-{`<Trait n="${name.replace(/\s+/g, "_")}"
-  type="${traitType}"${traitType === "Personality" ? `
-  category="TraitGroup_${category}"` : ""}
-  ages="${TRAIT_AGES.filter((a) => ages[a.id]).map((a) => a.label).join(",")}"
+              {`<Trait n="${name.replace(/\s+/g, "_")}"
+  type="${traitType}"${
+    traitType === "Personality"
+      ? `
+  category="TraitGroup_${category}"`
+      : ""
+  }
+  ages="${TRAIT_AGES.filter((a) => ages[a.id])
+    .map((a) => a.label)
+    .join(",")}"
   hide_relationships="${hideRelationships}"
   can_die="${!immuneToDeath}"
   persistable="${!isNonPersisted}"
@@ -2918,7 +3576,10 @@ function ChipList({
     <div>
       <div className="flex flex-wrap gap-1.5">
         {items.map((it, i) => (
-          <span key={it + i} className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10.5px]">
+          <span
+            key={it + i}
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10.5px]"
+          >
             {it}
             <button
               onClick={() => onChange(items.filter((_, xi) => xi !== i))}
@@ -2943,7 +3604,12 @@ function ChipList({
           className="h-7 text-xs"
         />
         <button
-          onClick={() => { if (draft.trim()) { onChange([...items, draft.trim()]); setDraft(""); } }}
+          onClick={() => {
+            if (draft.trim()) {
+              onChange([...items, draft.trim()]);
+              setDraft("");
+            }
+          }}
           className="rounded-md border border-border px-2 text-[11px] hover:bg-accent"
         >
           Add
@@ -2982,14 +3648,24 @@ function MultiplierList<T extends MultiplierRow>({
           <li key={i} className="grid grid-cols-[1fr_6rem_auto] gap-2">
             <Input
               value={String(r[keyField])}
-              onChange={(e) => onChange(rows.map((x, xi) => xi === i ? { ...x, [keyField]: e.target.value } as T : x))}
+              onChange={(e) =>
+                onChange(
+                  rows.map((x, xi) => (xi === i ? ({ ...x, [keyField]: e.target.value } as T) : x)),
+                )
+              }
               className="h-7 text-xs"
             />
             <Input
               type="number"
               step="0.05"
               value={Number(r.mult)}
-              onChange={(e) => onChange(rows.map((x, xi) => xi === i ? { ...x, mult: Number(e.target.value) || 0 } as T : x))}
+              onChange={(e) =>
+                onChange(
+                  rows.map((x, xi) =>
+                    xi === i ? ({ ...x, mult: Number(e.target.value) || 0 } as T) : x,
+                  ),
+                )
+              }
               className="h-7 text-xs"
             />
             <button
@@ -3011,7 +3687,6 @@ function MultiplierList<T extends MultiplierRow>({
   );
 }
 
-
 /* ---------- Tuning Editor ---------- */
 
 function TuningEditor() {
@@ -3025,7 +3700,9 @@ function TuningEditor() {
         actions={
           <>
             <GhostBtn icon={FileCode2}>Format</GhostBtn>
-            <PrimaryBtn icon={Save} onClick={() => toast.success("Tuning saved")}>Save</PrimaryBtn>
+            <PrimaryBtn icon={Save} onClick={() => toast.success("Tuning saved")}>
+              Save
+            </PrimaryBtn>
           </>
         }
       />
@@ -3056,7 +3733,7 @@ function TuningEditor() {
 
         <Card title="career_astro.xml" className="col-span-9">
           <pre className="max-h-[520px] overflow-auto rounded-md border border-border bg-[color-mix(in_oklab,var(--foreground)_4%,var(--card))] p-3 font-mono text-[11px] leading-relaxed">
-{`<?xml version="1.0" encoding="utf-8"?>
+            {`<?xml version="1.0" encoding="utf-8"?>
 <I c="Career" i="career" m="careers.career" n="career_interstellar_navigator" s="0xA112E8">
   <L n="career_track">
     <U>
@@ -3160,9 +3837,14 @@ function AssetsView() {
         accent="orange"
         actions={
           <>
-            <GhostBtn icon={FolderPlus} onClick={addFolder}>New Folder</GhostBtn>
+            <GhostBtn icon={FolderPlus} onClick={addFolder}>
+              New Folder
+            </GhostBtn>
             <GhostBtn icon={Download}>Export</GhostBtn>
-            <PrimaryBtn icon={Upload} onClick={() => toast.success(`2 files imported into ${active.name}`)}>
+            <PrimaryBtn
+              icon={Upload}
+              onClick={() => toast.success(`2 files imported into ${active.name}`)}
+            >
               Import
             </PrimaryBtn>
           </>
@@ -3199,9 +3881,7 @@ function AssetsView() {
                     }}
                     className={cn(
                       "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs",
-                      activeId === f.id
-                        ? "bg-accent font-semibold"
-                        : "hover:bg-accent/60",
+                      activeId === f.id ? "bg-accent font-semibold" : "hover:bg-accent/60",
                     )}
                   >
                     <FolderOpen
@@ -3317,7 +3997,9 @@ type ExportItem = {
 
 function ExporterView() {
   const store = useStore();
-  const project = store.state.projects.find((p) => p.id === store.state.activeProjectId) ?? store.state.projects[0];
+  const project =
+    store.state.projects.find((p) => p.id === store.state.activeProjectId) ??
+    store.state.projects[0];
 
   // Build export items from the active project's contents.
   const items: ExportItem[] = useMemo(() => {
@@ -3326,21 +4008,58 @@ function ExporterView() {
     const pv = project.version || "0.1.0";
     const careers = store.state.careers
       .filter((c) => c.projectId === pid)
-      .map<ExportItem>((c) => ({ id: `career:${c.id}`, kind: "Career", name: c.name, version: pv, c: "blue" }));
+      .map<ExportItem>((c) => ({
+        id: `career:${c.id}`,
+        kind: "Career",
+        name: c.name,
+        version: pv,
+        c: "blue",
+      }));
     const traits = store.state.traits
       .filter((t) => t.projectId === pid)
-      .map<ExportItem>((t) => ({ id: `trait:${t.id}`, kind: "Trait", name: t.name, version: pv, c: "violet" }));
+      .map<ExportItem>((t) => ({
+        id: `trait:${t.id}`,
+        kind: "Trait",
+        name: t.name,
+        version: pv,
+        c: "violet",
+      }));
     const aspirations = store.state.aspirations
       .filter((a) => a.projectId === pid)
-      .map<ExportItem>((a) => ({ id: `aspiration:${a.id}`, kind: "Aspiration", name: a.name, version: pv, c: "teal" }));
+      .map<ExportItem>((a) => ({
+        id: `aspiration:${a.id}`,
+        kind: "Aspiration",
+        name: a.name,
+        version: pv,
+        c: "teal",
+      }));
     const notifications = store.state.notifications
       .filter((n) => n.projectId === pid)
-      .map<ExportItem>((n) => ({ id: `notification:${n.id}`, kind: "Notification", name: n.name, version: pv, c: "orange" }));
+      .map<ExportItem>((n) => ({
+        id: `notification:${n.id}`,
+        kind: "Notification",
+        name: n.name,
+        version: pv,
+        c: "orange",
+      }));
     return [...careers, ...traits, ...aspirations, ...notifications];
-  }, [project, store.state.careers, store.state.traits, store.state.aspirations, store.state.notifications]);
+  }, [
+    project,
+    store.state.careers,
+    store.state.traits,
+    store.state.aspirations,
+    store.state.notifications,
+  ]);
 
-  const slug = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "bundle";
-  const [packageName, setPackageName] = useState(() => (project ? slug(project.name) : "my_mod_bundle"));
+  const slug = (s: string) =>
+    s
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "") || "bundle";
+  const [packageName, setPackageName] = useState(() =>
+    project ? slug(project.name) : "my_mod_bundle",
+  );
   const [creator, setCreator] = useState(() => project?.author || "YourName");
   const [version, setVersion] = useState(() => project?.version || "1.0.0");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -3397,7 +4116,9 @@ function ExporterView() {
     {} as Record<ExportItem["kind"], number>,
   );
   const totalSelected = selected.size;
-  const projectAssetCount = project ? store.state.assets.filter((a) => a.projectId === project.id).length : 0;
+  const projectAssetCount = project
+    ? store.state.assets.filter((a) => a.projectId === project.id).length
+    : 0;
 
   function build() {
     if (!project) {
@@ -3443,7 +4164,9 @@ function ExporterView() {
           <span className="font-semibold">{project.name}</span>
           <span className="font-mono text-muted-foreground">v{project.version}</span>
           {project.isDemo && (
-            <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide">Demo</span>
+            <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide">
+              Demo
+            </span>
           )}
           <span className="ml-auto text-muted-foreground">
             {items.length} items · {projectAssetCount} assets
@@ -3485,8 +4208,9 @@ function ExporterView() {
           >
             <p className="mb-3 text-[11px] text-muted-foreground">
               Combine careers, traits, aspirations, or notifications from{" "}
-              <span className="font-semibold">{project?.name ?? "the active project"}</span> into a single{" "}
-              <span className="font-mono">.package</span>. Uncheck anything you don't want in the build.
+              <span className="font-semibold">{project?.name ?? "the active project"}</span> into a
+              single <span className="font-mono">.package</span>. Uncheck anything you don't want in
+              the build.
             </p>
             {items.length === 0 ? (
               <div className="rounded-md border border-dashed border-border p-6 text-center text-[11px] text-muted-foreground">
@@ -3637,14 +4361,16 @@ function ExporterView() {
                 </div>
               ) : (
                 <div className="space-y-0.5">
-                  {items.filter((i) => selected.has(i.id)).map((i) => (
-                    <div key={i.id}>
-                      📦{" "}
-                      <span className="font-semibold">
-                        {slug(creator)}_{slug(i.name)}.package
-                      </span>
-                    </div>
-                  ))}
+                  {items
+                    .filter((i) => selected.has(i.id))
+                    .map((i) => (
+                      <div key={i.id}>
+                        📦{" "}
+                        <span className="font-semibold">
+                          {slug(creator)}_{slug(i.name)}.package
+                        </span>
+                      </div>
+                    ))}
                   {totalSelected === 0 && (
                     <div className="text-muted-foreground">Nothing selected.</div>
                   )}
@@ -3658,18 +4384,46 @@ function ExporterView() {
   );
 }
 
-
-
 /* ---------- Validation ---------- */
 
 function ValidationView() {
   const [running, setRunning] = useState(false);
   const items = [
-    { level: "ok", msg: "All tuning IDs unique", src: "tuning/*.xml", icon: CheckCircle2, c: "green" },
-    { level: "ok", msg: "Manifest schema valid", src: "manifest.json", icon: CheckCircle2, c: "green" },
-    { level: "warn", msg: "Missing STBL for 3 strings", src: "strings/en_US.stbl", icon: AlertTriangle, c: "orange" },
-    { level: "warn", msg: "Icon dimensions non-power-of-two", src: "ic_asp_trailblazer.png", icon: AlertTriangle, c: "orange" },
-    { level: "err", msg: "Ref chain broken: 0xA112E8", src: "career_astro.xml", icon: XCircle, c: "destructive" },
+    {
+      level: "ok",
+      msg: "All tuning IDs unique",
+      src: "tuning/*.xml",
+      icon: CheckCircle2,
+      c: "green",
+    },
+    {
+      level: "ok",
+      msg: "Manifest schema valid",
+      src: "manifest.json",
+      icon: CheckCircle2,
+      c: "green",
+    },
+    {
+      level: "warn",
+      msg: "Missing STBL for 3 strings",
+      src: "strings/en_US.stbl",
+      icon: AlertTriangle,
+      c: "orange",
+    },
+    {
+      level: "warn",
+      msg: "Icon dimensions non-power-of-two",
+      src: "ic_asp_trailblazer.png",
+      icon: AlertTriangle,
+      c: "orange",
+    },
+    {
+      level: "err",
+      msg: "Ref chain broken: 0xA112E8",
+      src: "career_astro.xml",
+      icon: XCircle,
+      c: "destructive",
+    },
   ];
   return (
     <div className="space-y-4">
@@ -3694,7 +4448,10 @@ function ValidationView() {
           </PrimaryBtn>
         }
       />
-      <Card title="Latest Results" action={<span className="text-[11px] text-muted-foreground">5 checks</span>}>
+      <Card
+        title="Latest Results"
+        action={<span className="text-[11px] text-muted-foreground">5 checks</span>}
+      >
         <ul className="divide-y divide-border text-xs">
           {items.map((it, i) => {
             const Icon = it.icon;
@@ -3742,7 +4499,9 @@ function QueueView() {
         actions={
           <>
             <GhostBtn icon={Pause}>Pause All</GhostBtn>
-            <PrimaryBtn icon={Play} onClick={() => toast.success("Queue started")}>Run Queue</PrimaryBtn>
+            <PrimaryBtn icon={Play} onClick={() => toast.success("Queue started")}>
+              Run Queue
+            </PrimaryBtn>
           </>
         }
       />
@@ -3909,10 +4668,7 @@ function InstallPaths() {
       if (kind === "game") setGame(found);
       else setMods(found);
       setScanning(null);
-      toast.success(
-        `Found ${kind === "game" ? "game" : "Mods"} folder`,
-        { description: found },
-      );
+      toast.success(`Found ${kind === "game" ? "game" : "Mods"} folder`, { description: found });
     }, 700);
   };
 
@@ -3979,7 +4735,6 @@ function InstallPaths() {
 
 /* ---------- Settings ---------- */
 
-
 /**
  * Creator prefix — exported file names follow the community
  * "CreatorName_ModTitle" convention. File names only: tuning names and
@@ -3992,7 +4747,9 @@ function CreatorPrefixCard() {
   const [draft, setDraft] = useState(saved);
   useEffect(() => setDraft(saved), [saved]);
 
-  const suggestion = normalizeCreatorPrefix(project?.author && project.author !== "You" ? project.author : "");
+  const suggestion = normalizeCreatorPrefix(
+    project?.author && project.author !== "You" ? project.author : "",
+  );
   const effective = normalizeCreatorPrefix(draft);
   const title = (project?.name ?? "My Mod").replace(/\s+/g, "");
   const version = project?.version ?? "1.0.0";
@@ -4044,8 +4801,8 @@ function CreatorPrefixCard() {
       </div>
       <p className="mt-2 text-[11px] text-muted-foreground">
         Packages, ZIPs and folders export as{" "}
-        <span className="font-mono text-foreground">{example}</span>. Tuning names and internal
-        ids stay exactly as they are.
+        <span className="font-mono text-foreground">{example}</span>. Tuning names and internal ids
+        stay exactly as they are.
       </p>
     </Card>
   );
@@ -4089,11 +4846,14 @@ function SettingsView() {
             )}
           >
             <div className="flex items-center gap-2 text-sm font-semibold">
-              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--blue)]/15 text-[var(--blue)]">✓</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--blue)]/15 text-[var(--blue)]">
+                ✓
+              </span>
               Simple
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Recommended. Guided builders, plain-English fields, one-click compile. No code required.
+              Recommended. Guided builders, plain-English fields, one-click compile. No code
+              required.
             </p>
           </button>
           <button
@@ -4106,7 +4866,9 @@ function SettingsView() {
             )}
           >
             <div className="flex items-center gap-2 text-sm font-semibold">
-              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--orange)]/15 text-[var(--orange)]">⚙</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--orange)]/15 text-[var(--orange)]">
+                ⚙
+              </span>
               Advanced
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground">
@@ -4117,19 +4879,15 @@ function SettingsView() {
       </Card>
 
       <div className="grid grid-cols-12 gap-4">
-        <Card
-          title="Sims 4 Installation"
-          className="col-span-6"
-          action={<OsBadge />}
-        >
+        <Card title="Sims 4 Installation" className="col-span-6" action={<OsBadge />}>
           <InstallPaths />
         </Card>
 
         <Card title="lot51.cc Sync" className="col-span-6">
           <p className="text-xs text-muted-foreground">
             Mod Constructor runs entirely offline. Enable this to occasionally reach out to
-            <span className="mx-1 font-mono">lot51.cc</span> for framework and Core Library
-            updates. No project data leaves your machine.
+            <span className="mx-1 font-mono">lot51.cc</span> for framework and Core Library updates.
+            No project data leaves your machine.
           </p>
           <div className="mt-3 space-y-2 text-xs">
             <SettingToggle label="Check for updates at launch" defaultOn />
@@ -4138,7 +4896,10 @@ function SettingsView() {
             <SettingToggle label="Share anonymous crash reports" />
           </div>
           <div className="mt-3 flex items-center gap-2">
-            <GhostBtn icon={Download} onClick={() => toast.success("lot51 Core Library up to date")}>
+            <GhostBtn
+              icon={Download}
+              onClick={() => toast.success("lot51 Core Library up to date")}
+            >
               Check Now
             </GhostBtn>
             <span className="text-[11px] text-muted-foreground">Last checked · 2 days ago</span>
@@ -4177,7 +4938,6 @@ function SettingsView() {
             <CreditsContent showInternal={advanced} />
           </div>
         </Card>
-
       </div>
     </div>
   );
@@ -4207,7 +4967,9 @@ function HostModeCard() {
         <div
           className={cn(
             "rounded-lg border p-3",
-            host.isChatGPT ? "border-[var(--green)]/50 bg-[var(--green)]/5" : "border-border bg-card",
+            host.isChatGPT
+              ? "border-[var(--green)]/50 bg-[var(--green)]/5"
+              : "border-border bg-card",
           )}
         >
           <div className="flex items-center gap-2 text-sm font-semibold">
@@ -4215,9 +4977,8 @@ function HostModeCard() {
             ChatGPT App mode
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            Runs embedded inside ChatGPT via the OpenAI Apps SDK. Native ChatGPT
-            assistance and image generation are available. No OpenAI API key is
-            requested or stored.
+            Runs embedded inside ChatGPT via the OpenAI Apps SDK. Native ChatGPT assistance and
+            image generation are available. No OpenAI API key is requested or stored.
           </p>
         </div>
         <div
@@ -4231,16 +4992,15 @@ function HostModeCard() {
             Desktop mode
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            Standalone Windows/macOS build. Local tools, manual uploads, and
-            separately configured generation providers. A ChatGPT subscription
-            cannot be consumed from the desktop app.
+            Standalone Windows/macOS build. Local tools, manual uploads, and separately configured
+            generation providers. A ChatGPT subscription cannot be consumed from the desktop app.
           </p>
         </div>
       </div>
       <p className="mt-3 rounded-md bg-muted/40 px-2.5 py-2 text-[11px] text-muted-foreground">
-        Projects created in either host use the same Portable Bundle
-        (<span className="font-mono">.mcbundle.json</span>) format — export from
-        ChatGPT and open in Desktop, or vice versa.
+        Projects created in either host use the same Portable Bundle (
+        <span className="font-mono">.mcbundle.json</span>) format — export from ChatGPT and open in
+        Desktop, or vice versa.
       </p>
     </Card>
   );
@@ -4294,7 +5054,8 @@ function ImageProviderCard() {
               <p className="mt-1 text-[11px] text-muted-foreground">{PROVIDER_DESCRIPTION[p]}</p>
               {disabled && (
                 <p className="mt-1 text-[10px] italic text-muted-foreground">
-                  This app cannot consume a user's ChatGPT subscription. Placeholder for a future integration.
+                  This app cannot consume a user's ChatGPT subscription. Placeholder for a future
+                  integration.
                 </p>
               )}
             </button>
@@ -4321,10 +5082,10 @@ function EngineCapabilitiesCard() {
     s === "available"
       ? "bg-[var(--green)]/15 text-[var(--green)]"
       : s === "not-connected"
-      ? "bg-[var(--orange)]/15 text-[var(--orange)]"
-      : s === "coming-later"
-      ? "bg-[var(--violet)]/15 text-[var(--violet)]"
-      : "bg-muted text-muted-foreground";
+        ? "bg-[var(--orange)]/15 text-[var(--orange)]"
+        : s === "coming-later"
+          ? "bg-[var(--violet)]/15 text-[var(--violet)]"
+          : "bg-muted text-muted-foreground";
   return (
     <Card
       title="Engine Integrations"
@@ -4335,18 +5096,27 @@ function EngineCapabilitiesCard() {
       }
     >
       <p className="mb-3 text-xs text-muted-foreground">
-        These actions need the real Mod Architect engine or an external
-        service. In this preview they show explicit states and any button
-        that depends on them is disabled with a matching tooltip.
+        These actions need the real Mod Architect engine or an external service. In this preview
+        they show explicit states and any button that depends on them is disabled with a matching
+        tooltip.
       </p>
       <div className="grid grid-cols-2 gap-2 text-xs">
         {rows.map((r) => {
           const s = caps[r.key];
           return (
-            <div key={r.key} className="rounded-md border border-border bg-muted/30 p-2" title={ENGINE_STATE_TOOLTIP[s]}>
+            <div
+              key={r.key}
+              className="rounded-md border border-border bg-muted/30 p-2"
+              title={ENGINE_STATE_TOOLTIP[s]}
+            >
               <div className="flex items-center justify-between gap-2">
                 <span className="font-semibold">{r.label}</span>
-                <span className={cn("rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider", color(s))}>
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+                    color(s),
+                  )}
+                >
                   {ENGINE_STATE_LABEL[s]}
                 </span>
               </div>
@@ -4367,16 +5137,13 @@ function DemoDataCard() {
     <Card
       title="Demo Data"
       action={
-        <span className="text-[11px] text-muted-foreground">
-          Storage · {store.adapter.label}
-        </span>
+        <span className="text-[11px] text-muted-foreground">Storage · {store.adapter.label}</span>
       }
     >
       <p className="text-xs text-muted-foreground">
-        The prototype persists projects, careers, traits, assets, templates,
-        snippets, validation dismissals and preferences to the storage
-        adapter above. Export a portable bundle any time or reset everything
-        to a blank slate.
+        The prototype persists projects, careers, traits, assets, templates, snippets, validation
+        dismissals and preferences to the storage adapter above. Export a portable bundle any time
+        or reset everything to a blank slate.
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <GhostBtn
@@ -4389,10 +5156,7 @@ function DemoDataCard() {
         >
           Export Bundle
         </GhostBtn>
-        <GhostBtn
-          icon={Upload}
-          onClick={settingsImporter.openImport}
-        >
+        <GhostBtn icon={Upload} onClick={settingsImporter.openImport}>
           Import Bundle
         </GhostBtn>
         {settingsImporter.dialog}
@@ -4430,9 +5194,8 @@ function DemoDataCard() {
   );
 }
 
-
 function McpToolsCard() {
-  const groups: Record<string, typeof MCP_TOOL_DEFS[number][]> = {};
+  const groups: Record<string, (typeof MCP_TOOL_DEFS)[number][]> = {};
   for (const t of MCP_TOOL_DEFS) {
     (groups[t.category] ||= []).push(t);
   }
@@ -4446,9 +5209,9 @@ function McpToolsCard() {
       }
     >
       <p className="mb-3 text-xs text-muted-foreground">
-        When running as a ChatGPT App, Mod Constructor publishes these tools so
-        ChatGPT can help you author projects. Authentication is inherited from
-        the ChatGPT session — this app never sees passwords or tokens.
+        When running as a ChatGPT App, Mod Constructor publishes these tools so ChatGPT can help you
+        author projects. Authentication is inherited from the ChatGPT session — this app never sees
+        passwords or tokens.
       </p>
       <div className="grid grid-cols-2 gap-2">
         {Object.entries(groups).map(([cat, tools]) => (
@@ -4459,7 +5222,9 @@ function McpToolsCard() {
             <ul className="space-y-1 text-[11px]">
               {tools.map((t) => (
                 <li key={t.name}>
-                  <span className="font-mono text-[10.5px] font-semibold text-foreground">{t.name}</span>
+                  <span className="font-mono text-[10.5px] font-semibold text-foreground">
+                    {t.name}
+                  </span>
                   <span className="ml-1 text-muted-foreground">— {t.description}</span>
                 </li>
               ))}
@@ -4470,7 +5235,6 @@ function McpToolsCard() {
     </Card>
   );
 }
-
 
 function SettingToggle({ label, defaultOn }: { label: string; defaultOn?: boolean }) {
   const [on, setOn] = useState(!!defaultOn);
@@ -4522,10 +5286,13 @@ function RequireProject({ children }: { children: React.ReactNode }) {
       <div className="rounded-xl border border-dashed border-border p-10 text-center">
         <div className="text-sm font-semibold">No Active Project</div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Choose a project on the Projects screen and select <b>Open in Builder</b> to start editing.
+          Choose a project on the Projects screen and select <b>Open in Builder</b> to start
+          editing.
         </p>
         <div className="mt-3">
-          <PrimaryBtn icon={FolderKanban} onClick={() => navigate("projects")}>Back to Projects</PrimaryBtn>
+          <PrimaryBtn icon={FolderKanban} onClick={() => navigate("projects")}>
+            Back to Projects
+          </PrimaryBtn>
         </div>
       </div>
     );
@@ -4548,21 +5315,83 @@ export function SectionView({
       <div className="mx-auto max-w-[1600px] space-y-6 p-6">
         <ProjectsScreen />
         <details className="rounded-xl border border-border bg-card p-3">
-          <summary className="cursor-pointer text-sm font-semibold">Project status, versions &amp; changelog</summary>
-          <div className="mt-3"><ProjectsView /></div>
+          <summary className="cursor-pointer text-sm font-semibold">
+            Project status, versions &amp; changelog
+          </summary>
+          <div className="mt-3">
+            <ProjectsView />
+          </div>
         </details>
       </div>
     );
-  if (active === "explorer") return <div className="mx-auto max-w-[1600px] p-6"><ProjectExplorer /></div>;
-  if (active === "reference") return <div className="mx-auto max-w-[1600px] p-6"><ReferenceViewer /></div>;
-  if (active === "gamedata") return <div className="mx-auto max-w-[1600px] p-6"><GameDataView /></div>;
-  if (active === "career") return <div className="mx-auto max-w-[1600px] p-6"><RequireProject><CareerBuilder /></RequireProject></div>;
-  if (active === "trait") return <div className="mx-auto max-w-[1600px] p-6"><RequireProject><TraitBuilder /></RequireProject></div>;
-  if (active === "aspiration") return <div className="mx-auto max-w-[1600px] p-6"><RequireProject><AspirationBuilder /></RequireProject></div>;
-  if (active === "notifications") return <div className="mx-auto max-w-[1600px] p-6"><RequireProject><NotificationLibrary /></RequireProject></div>;
-  if (active === "tuning") return <div className="mx-auto max-w-[1600px] p-6"><TuningEditor /></div>;
-  if (active === "icons") return <div className="mx-auto max-w-[1600px] p-6"><IconLibraryView /></div>;
-  if (active === "assets") return <div className="mx-auto max-w-[1600px] p-6"><AssetManager /></div>;
+  if (active === "explorer")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <ProjectExplorer />
+      </div>
+    );
+  if (active === "reference")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <ReferenceViewer />
+      </div>
+    );
+  if (active === "gamedata")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <GameDataView />
+      </div>
+    );
+  if (active === "career")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <RequireProject>
+          <CareerBuilder />
+        </RequireProject>
+      </div>
+    );
+  if (active === "trait")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <RequireProject>
+          <TraitBuilder />
+        </RequireProject>
+      </div>
+    );
+  if (active === "aspiration")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <RequireProject>
+          <AspirationBuilder />
+        </RequireProject>
+      </div>
+    );
+  if (active === "notifications")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <RequireProject>
+          <NotificationLibrary />
+        </RequireProject>
+      </div>
+    );
+  if (active === "tuning")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <TuningEditor />
+      </div>
+    );
+  if (active === "icons")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <IconLibraryView />
+      </div>
+    );
+  if (active === "assets")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <AssetManager />
+      </div>
+    );
   if (active === "importer")
     return (
       <div className="mx-auto max-w-[1600px] space-y-6 p-6">
@@ -4592,15 +5421,65 @@ export function SectionView({
       </div>
     );
 
-  if (active === "validation") return <div className="mx-auto max-w-[1600px] p-6"><ValidationCenter /></div>;
-  if (active === "queue") return <div className="mx-auto max-w-[1600px] p-6"><QueueView /></div>;
-  if (active === "templates") return <div className="mx-auto max-w-[1600px] p-6"><TemplatesGallery /></div>;
-  if (active === "snippets") return <div className="mx-auto max-w-[1600px] p-6"><SnippetsLibrary /></div>;
-  if (active === "graph") return <div className="mx-auto max-w-[1600px] p-6"><DependencyGraph /></div>;
-  if (active === "timeline") return <div className="mx-auto max-w-[1600px] p-6"><ActivityTimeline /></div>;
-  if (active === "analytics") return <div className="mx-auto max-w-[1600px] p-6"><BuildAnalytics /></div>;
-  if (active === "updates") return <div className="mx-auto max-w-[1600px] p-6"><UpdateCenter /></div>;
-  if (active === "community") return <div className="mx-auto max-w-[1600px] p-6"><CommunityLibrary /></div>;
-  if (active === "settings") return <div className="mx-auto max-w-[1600px] p-6"><SettingsView /></div>;
+  if (active === "validation")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <ValidationCenter />
+      </div>
+    );
+  if (active === "queue")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <QueueView />
+      </div>
+    );
+  if (active === "templates")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <TemplatesGallery />
+      </div>
+    );
+  if (active === "snippets")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <SnippetsLibrary />
+      </div>
+    );
+  if (active === "graph")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <DependencyGraph />
+      </div>
+    );
+  if (active === "timeline")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <ActivityTimeline />
+      </div>
+    );
+  if (active === "analytics")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <BuildAnalytics />
+      </div>
+    );
+  if (active === "updates")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <UpdateCenter />
+      </div>
+    );
+  if (active === "community")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <CommunityLibrary />
+      </div>
+    );
+  if (active === "settings")
+    return (
+      <div className="mx-auto max-w-[1600px] p-6">
+        <SettingsView />
+      </div>
+    );
   return null;
 }

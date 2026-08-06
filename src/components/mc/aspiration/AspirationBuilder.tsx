@@ -54,7 +54,12 @@ import {
   type SectionProps,
 } from "./sections";
 
-const NAV: { id: AspirationSectionId | "milestones"; label: string; icon: typeof Sparkles; advanced?: boolean }[] = [
+const NAV: {
+  id: AspirationSectionId | "milestones";
+  label: string;
+  icon: typeof Sparkles;
+  advanced?: boolean;
+}[] = [
   { id: "identity", label: "Basic info", icon: Sparkles },
   { id: "availability", label: "Availability", icon: UserCheck },
   { id: "milestones", label: "Milestones", icon: ListChecks },
@@ -246,7 +251,9 @@ export function AspirationBuilder() {
   return (
     <div className="space-y-4">
       <header className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2">
-        <Btn icon={ArrowLeft} onClick={() => setMode("list")}>All aspirations</Btn>
+        <Btn icon={ArrowLeft} onClick={() => setMode("list")}>
+          All aspirations
+        </Btn>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <span className="truncate text-[13px] font-semibold">
@@ -265,10 +272,24 @@ export function AspirationBuilder() {
             {doc.ids.namespace}:{doc.ids.internalName}
           </div>
         </div>
-        <Btn icon={Undo2} onClick={undo} title="Undo">{""}</Btn>
-        <Btn icon={Redo2} onClick={redo} title="Redo">{""}</Btn>
-        <Btn icon={Save} onClick={() => { record.save(); toast.success("Aspiration saved to project"); }}>Save</Btn>
-        <Btn icon={FileDown} variant="primary" onClick={() => exportOne()}>Export</Btn>
+        <Btn icon={Undo2} onClick={undo} title="Undo">
+          {""}
+        </Btn>
+        <Btn icon={Redo2} onClick={redo} title="Redo">
+          {""}
+        </Btn>
+        <Btn
+          icon={Save}
+          onClick={() => {
+            record.save();
+            toast.success("Aspiration saved to project");
+          }}
+        >
+          Save
+        </Btn>
+        <Btn icon={FileDown} variant="primary" onClick={() => exportOne()}>
+          Export
+        </Btn>
       </header>
 
       <div className="grid gap-4 lg:grid-cols-[190px_1fr]">
@@ -280,16 +301,23 @@ export function AspirationBuilder() {
               <button
                 key={n.id}
                 type="button"
-                onClick={() => { setSection(n.id); setFocus(undefined); }}
+                onClick={() => {
+                  setSection(n.id);
+                  setFocus(undefined);
+                }}
                 className={cn(
                   "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[12px] font-medium transition-colors",
-                  section === n.id ? "bg-primary/15 text-foreground" : "text-muted-foreground hover:bg-muted",
+                  section === n.id
+                    ? "bg-primary/15 text-foreground"
+                    : "text-muted-foreground hover:bg-muted",
                 )}
               >
                 <n.icon className="h-3.5 w-3.5 shrink-0" />
                 <span className="flex-1 truncate">{n.label}</span>
                 {issues.length > 0 && (
-                  <span className={cn("h-1.5 w-1.5 rounded-full", bad ? "bg-red-500" : "bg-amber-500")} />
+                  <span
+                    className={cn("h-1.5 w-1.5 rounded-full", bad ? "bg-red-500" : "bg-amber-500")}
+                  />
                 )}
               </button>
             );

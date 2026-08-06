@@ -58,7 +58,12 @@ import {
   type OccultMode,
   type GenderRule,
 } from "@/lib/aspirations/schema";
-import { STRING_USAGE, computeAspirationKeys, ensureStringKeys, previewKeys } from "@/lib/aspirations/ids";
+import {
+  STRING_USAGE,
+  computeAspirationKeys,
+  ensureStringKeys,
+  previewKeys,
+} from "@/lib/aspirations/ids";
 import {
   incomingLinks,
   outgoingLinks,
@@ -128,7 +133,9 @@ export function IdentitySection({ doc, patch, validation, focus }: SectionProps)
             <Field
               label="Aspiration name"
               hint="Shown in CAS, Simology and every notification."
-              {...(firstError(validation, "displayName") ? { error: firstError(validation, "displayName")! } : {})}
+              {...(firstError(validation, "displayName")
+                ? { error: firstError(validation, "displayName")! }
+                : {})}
             >
               <TextInput value={doc.displayName} onChange={(e) => setName(e.target.value)} />
             </Field>
@@ -138,7 +145,9 @@ export function IdentitySection({ doc, patch, validation, focus }: SectionProps)
             <Field
               label="Internal name"
               hint="Unique in this project. Letters, numbers and underscores only."
-              {...(firstError(validation, "internalName") ? { error: firstError(validation, "internalName")! } : {})}
+              {...(firstError(validation, "internalName")
+                ? { error: firstError(validation, "internalName")! }
+                : {})}
             >
               <div className="flex gap-1.5">
                 <TextInput
@@ -168,11 +177,15 @@ export function IdentitySection({ doc, patch, validation, focus }: SectionProps)
             <Field
               label="Creator namespace"
               hint="Prefixes every generated tuning, loot, test set and hash."
-              {...(firstError(validation, "namespace") ? { error: firstError(validation, "namespace")! } : {})}
+              {...(firstError(validation, "namespace")
+                ? { error: firstError(validation, "namespace")! }
+                : {})}
             >
               <TextInput
                 value={doc.ids.namespace}
-                onChange={(e) => patch((d) => ({ ...d, ids: { ...d.ids, namespace: e.target.value } }))}
+                onChange={(e) =>
+                  patch((d) => ({ ...d, ids: { ...d.ids, namespace: e.target.value } }))
+                }
                 className="font-mono"
               />
             </Field>
@@ -182,7 +195,9 @@ export function IdentitySection({ doc, patch, validation, focus }: SectionProps)
             <Field
               label="Icon resource"
               hint="Project asset id, built-in icon key or an EA resource key."
-              {...(firstError(validation, "icon") ? { error: firstError(validation, "icon")! } : {})}
+              {...(firstError(validation, "icon")
+                ? { error: firstError(validation, "icon")! }
+                : {})}
             >
               <TextInput
                 value={doc.icon}
@@ -205,7 +220,10 @@ export function IdentitySection({ doc, patch, validation, focus }: SectionProps)
                 patch((d) => ({
                   ...d,
                   description: e.target.value,
-                  strings: { ...d.strings, description: { ...d.strings.description, text: e.target.value } },
+                  strings: {
+                    ...d.strings,
+                    description: { ...d.strings.description, text: e.target.value },
+                  },
                 }))
               }
             />
@@ -217,7 +235,10 @@ export function IdentitySection({ doc, patch, validation, focus }: SectionProps)
         </div>
       </Panel>
 
-      <Panel title="Classification" subtitle="Type drives which options the rest of the builder offers.">
+      <Panel
+        title="Classification"
+        subtitle="Type drives which options the rest of the builder offers."
+      >
         <div className="grid gap-3 md:grid-cols-3">
           <div className={ring(focus, "aspirationType")}>
             <Field label="Aspiration type" hint={spec.hint}>
@@ -251,7 +272,11 @@ export function IdentitySection({ doc, patch, validation, focus }: SectionProps)
             Visibility
           </span>
           {(["auto", "visible", "hidden"] as const).map((v) => (
-            <Chip key={v} active={doc.visibility === v} onClick={() => patch((d) => ({ ...d, visibility: v }))}>
+            <Chip
+              key={v}
+              active={doc.visibility === v}
+              onClick={() => patch((d) => ({ ...d, visibility: v }))}
+            >
               {v === "auto" ? `Auto (${spec.visibleByDefault ? "visible" : "hidden"})` : v}
             </Chip>
           ))}
@@ -264,7 +289,10 @@ export function IdentitySection({ doc, patch, validation, focus }: SectionProps)
       <Panel title="Developer notes" subtitle="Editor-only. Neither field is ever exported.">
         <div className={ring(focus, "summary")}>
           <Field label="Summary" hint="One line for your own list view.">
-            <TextInput value={doc.summary} onChange={(e) => patch((d) => ({ ...d, summary: e.target.value }))} />
+            <TextInput
+              value={doc.summary}
+              onChange={(e) => patch((d) => ({ ...d, summary: e.target.value }))}
+            />
           </Field>
         </div>
         <div className={cn("mt-3", ring(focus, "notes"))}>
@@ -285,7 +313,8 @@ export function IdentitySection({ doc, patch, validation, focus }: SectionProps)
 
 export function AvailabilitySection({ doc, patch, ctx, validation, focus }: SectionProps) {
   const a = doc.availability;
-  const setA = (p: Partial<typeof a>) => patch((d) => ({ ...d, availability: { ...d.availability, ...p } }));
+  const setA = (p: Partial<typeof a>) =>
+    patch((d) => ({ ...d, availability: { ...d.availability, ...p } }));
   const packs = requiredPacks(doc, ctx);
 
   const toggle = <T,>(list: T[], v: T): T[] =>
@@ -293,10 +322,17 @@ export function AvailabilitySection({ doc, patch, ctx, validation, focus }: Sect
 
   return (
     <div className="space-y-4">
-      <Panel title="Ages" subtitle="Objectives that no allowed age can complete are flagged automatically.">
+      <Panel
+        title="Ages"
+        subtitle="Objectives that no allowed age can complete are flagged automatically."
+      >
         <div className={cn("flex flex-wrap gap-1.5", ring(focus, "ages"))}>
           {AGES.map((age) => (
-            <Chip key={age} active={a.ages.includes(age)} onClick={() => setA({ ages: toggle(a.ages, age) })}>
+            <Chip
+              key={age}
+              active={a.ages.includes(age)}
+              onClick={() => setA({ ages: toggle(a.ages, age) })}
+            >
               {AGE_LABEL[age]}
             </Chip>
           ))}
@@ -309,7 +345,11 @@ export function AvailabilitySection({ doc, patch, ctx, validation, focus }: Sect
       <Panel title="Species">
         <div className={cn("flex flex-wrap gap-1.5", ring(focus, "species"))}>
           {SPECIES.map((s) => (
-            <Chip key={s} active={a.species.includes(s)} onClick={() => setA({ species: toggle(a.species, s) })}>
+            <Chip
+              key={s}
+              active={a.species.includes(s)}
+              onClick={() => setA({ species: toggle(a.species, s) })}
+            >
               {SPECIES_LABEL[s]}
             </Chip>
           ))}
@@ -318,16 +358,22 @@ export function AvailabilitySection({ doc, patch, ctx, validation, focus }: Sect
 
       <Panel title="Occult restrictions" subtitle="Choose how the selected occults are applied.">
         <div className="flex flex-wrap gap-1.5">
-          {(["any", "allow-only", "exclude", "require-one", "require-all"] as OccultMode[]).map((m) => (
-            <Chip key={m} active={a.occultMode === m} onClick={() => setA({ occultMode: m })}>
-              {m === "any" ? "Any Sim" : m.replace("-", " ")}
-            </Chip>
-          ))}
+          {(["any", "allow-only", "exclude", "require-one", "require-all"] as OccultMode[]).map(
+            (m) => (
+              <Chip key={m} active={a.occultMode === m} onClick={() => setA({ occultMode: m })}>
+                {m === "any" ? "Any Sim" : m.replace("-", " ")}
+              </Chip>
+            ),
+          )}
         </div>
         {a.occultMode !== "any" && (
           <div className={cn("mt-3 flex flex-wrap gap-1.5", ring(focus, "occults"))}>
             {OCCULTS.map((o) => (
-              <Chip key={o} active={a.occults.includes(o)} onClick={() => setA({ occults: toggle(a.occults, o) })}>
+              <Chip
+                key={o}
+                active={a.occults.includes(o)}
+                onClick={() => setA({ occults: toggle(a.occults, o) })}
+              >
                 {OCCULT_LABEL[o]}
               </Chip>
             ))}
@@ -384,11 +430,19 @@ export function AvailabilitySection({ doc, patch, ctx, validation, focus }: Sect
           ) : (
             <EmptyHint>No pack content detected. Base game only.</EmptyHint>
           )}
-          <Field label="Additional packs" hint="Comma separated. Use for content the detector cannot see.">
+          <Field
+            label="Additional packs"
+            hint="Comma separated. Use for content the detector cannot see."
+          >
             <TextInput
               value={a.extraPacks.join(", ")}
               onChange={(e) =>
-                setA({ extraPacks: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })
+                setA({
+                  extraPacks: e.target.value
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+                })
               }
             />
           </Field>
@@ -416,7 +470,9 @@ export function ResourcesSection({ doc, patch, ctx, validation, focus }: Section
             expects="Trait"
             value={doc.rewardTrait}
             onChange={(ref) => patch((d) => ({ ...d, rewardTrait: ref }))}
-            {...(firstError(validation, "rewardTrait") ? { status: { status: "missing", message: firstError(validation, "rewardTrait")! } } : {})}
+            {...(firstError(validation, "rewardTrait")
+              ? { status: { status: "missing", message: firstError(validation, "rewardTrait")! } }
+              : {})}
           />
         </div>
       </Panel>
@@ -441,9 +497,14 @@ export function ResourcesSection({ doc, patch, ctx, validation, focus }: Section
         ) : (
           <div className="space-y-2">
             {doc.connections.map((ref, i) => (
-              <div key={`${ref.tuningName}-${i}`} className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5">
+              <div
+                key={`${ref.tuningName}-${i}`}
+                className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5"
+              >
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[12px] font-semibold">{ref.label || ref.tuningName}</div>
+                  <div className="truncate text-[12px] font-semibold">
+                    {ref.label || ref.tuningName}
+                  </div>
                   <div className="truncate font-mono text-[10px] text-muted-foreground">
                     {ref.resourceKind} · {ref.source} · {ref.tuningName}
                   </div>
@@ -465,13 +526,18 @@ export function ResourcesSection({ doc, patch, ctx, validation, focus }: Section
             label="Attach another resource"
             expects="Loot"
             value={null}
-            onChange={(ref) => ref && patch((d) => ({ ...d, connections: [...d.connections, ref] }))}
+            onChange={(ref) =>
+              ref && patch((d) => ({ ...d, connections: [...d.connections, ref] }))
+            }
             hint="Pick from project records, game resources or another creator's mod."
           />
         </div>
       </Panel>
 
-      <Panel title="Generated identifiers" subtitle="Deterministic — the same names always produce the same keys.">
+      <Panel
+        title="Generated identifiers"
+        subtitle="Deterministic — the same names always produce the same keys."
+      >
         <dl className="grid gap-2 text-[11.5px] md:grid-cols-2">
           <IdRow label="Project UUID" value={doc.ids.uuid} note="Permanent. Never changes." />
           <IdRow label="Tuning name" value={keys.tuningName} />
@@ -480,7 +546,10 @@ export function ResourcesSection({ doc, patch, ctx, validation, focus }: Section
           <IdRow label="Tuning instance (dec)" value={keys.tuningDecimal} />
           <IdRow label="SimData instance" value={keys.simData.instance} />
           <IdRow label="FNV-1a 32" value={keys.fnv32} />
-          <IdRow label="Resource key" value={`${keys.tuning.type}:${keys.tuning.group}:${keys.tuning.instance}`} />
+          <IdRow
+            label="Resource key"
+            value={`${keys.tuning.type}:${keys.tuning.group}:${keys.tuning.instance}`}
+          />
         </dl>
         {preview.instance !== keys.tuning.instance && (
           <p className="mt-2 text-[10.5px] text-amber-500">
@@ -516,7 +585,9 @@ export function ResourcesSection({ doc, patch, ctx, validation, focus }: Section
 function IdRow({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div className="rounded-md border border-border bg-background/60 px-2.5 py-1.5">
-      <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </dt>
       <dd className="truncate font-mono text-[11px]">{value}</dd>
       {note && <p className="text-[10px] text-muted-foreground">{note}</p>}
     </div>
@@ -527,30 +598,86 @@ function IdRow({ label, value, note }: { label: string; value: string; note?: st
 
 export function StringsSection({ doc, patch, focus }: SectionProps) {
   const strings = ensureStringKeys(doc);
-  const rows: { field: string; label: string; text: string; key: string; set: (v: string) => void }[] = [
+  const rows: {
+    field: string;
+    label: string;
+    text: string;
+    key: string;
+    set: (v: string) => void;
+  }[] = [
     {
-      field: "display_name", label: "Display name", text: doc.strings.displayName.text, key: strings.displayName.key,
-      set: (v) => patch((d) => ({ ...d, displayName: v, strings: { ...d.strings, displayName: { ...d.strings.displayName, text: v } } })),
+      field: "display_name",
+      label: "Display name",
+      text: doc.strings.displayName.text,
+      key: strings.displayName.key,
+      set: (v) =>
+        patch((d) => ({
+          ...d,
+          displayName: v,
+          strings: { ...d.strings, displayName: { ...d.strings.displayName, text: v } },
+        })),
     },
     {
-      field: "description", label: "Description", text: doc.strings.description.text, key: strings.description.key,
-      set: (v) => patch((d) => ({ ...d, description: v, strings: { ...d.strings, description: { ...d.strings.description, text: v } } })),
+      field: "description",
+      label: "Description",
+      text: doc.strings.description.text,
+      key: strings.description.key,
+      set: (v) =>
+        patch((d) => ({
+          ...d,
+          description: v,
+          strings: { ...d.strings, description: { ...d.strings.description, text: v } },
+        })),
     },
     {
-      field: "tooltip", label: "Tooltip", text: doc.strings.tooltip.text, key: strings.tooltip.key,
-      set: (v) => patch((d) => ({ ...d, strings: { ...d.strings, tooltip: { ...d.strings.tooltip, text: v } } })),
+      field: "tooltip",
+      label: "Tooltip",
+      text: doc.strings.tooltip.text,
+      key: strings.tooltip.key,
+      set: (v) =>
+        patch((d) => ({
+          ...d,
+          strings: { ...d.strings, tooltip: { ...d.strings.tooltip, text: v } },
+        })),
     },
     {
-      field: "completion_notification", label: "Completion notification", text: doc.strings.completionNotification.text, key: strings.completionNotification.key,
-      set: (v) => patch((d) => ({ ...d, strings: { ...d.strings, completionNotification: { ...d.strings.completionNotification, text: v } } })),
+      field: "completion_notification",
+      label: "Completion notification",
+      text: doc.strings.completionNotification.text,
+      key: strings.completionNotification.key,
+      set: (v) =>
+        patch((d) => ({
+          ...d,
+          strings: {
+            ...d.strings,
+            completionNotification: { ...d.strings.completionNotification, text: v },
+          },
+        })),
     },
     {
-      field: "reward_notification", label: "Reward notification", text: doc.strings.rewardNotification.text, key: strings.rewardNotification.key,
-      set: (v) => patch((d) => ({ ...d, strings: { ...d.strings, rewardNotification: { ...d.strings.rewardNotification, text: v } } })),
+      field: "reward_notification",
+      label: "Reward notification",
+      text: doc.strings.rewardNotification.text,
+      key: strings.rewardNotification.key,
+      set: (v) =>
+        patch((d) => ({
+          ...d,
+          strings: {
+            ...d.strings,
+            rewardNotification: { ...d.strings.rewardNotification, text: v },
+          },
+        })),
     },
     {
-      field: "journal_text", label: "Journal text", text: doc.strings.journalText.text, key: strings.journalText.key,
-      set: (v) => patch((d) => ({ ...d, strings: { ...d.strings, journalText: { ...d.strings.journalText, text: v } } })),
+      field: "journal_text",
+      label: "Journal text",
+      text: doc.strings.journalText.text,
+      key: strings.journalText.key,
+      set: (v) =>
+        patch((d) => ({
+          ...d,
+          strings: { ...d.strings, journalText: { ...d.strings.journalText, text: v } },
+        })),
     },
   ];
 
@@ -561,7 +688,13 @@ export function StringsSection({ doc, patch, focus }: SectionProps) {
     >
       <div className="space-y-3">
         {rows.map((r) => (
-          <div key={r.field} className={cn("rounded-md border border-border bg-background/60 p-2.5", ring(focus, r.field))}>
+          <div
+            key={r.field}
+            className={cn(
+              "rounded-md border border-border bg-background/60 p-2.5",
+              ring(focus, r.field),
+            )}
+          >
             <div className="mb-1 flex items-center justify-between gap-2">
               <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {r.label}
@@ -625,18 +758,26 @@ export function DependenciesSection({
           <Badge tone="muted">{objectiveCount(doc)} objectives</Badge>
           <Badge tone="muted">{doc.rewardTrait ? "1 reward trait" : "no reward trait"}</Badge>
           {packs.map((p) => (
-            <Badge key={p} tone="accent">{p}</Badge>
+            <Badge key={p} tone="accent">
+              {p}
+            </Badge>
           ))}
         </div>
       </Panel>
 
-      <Panel title="Referenced by" subtitle="Other project records that point back at this aspiration.">
+      <Panel
+        title="Referenced by"
+        subtitle="Other project records that point back at this aspiration."
+      >
         {incoming.length === 0 ? (
           <EmptyHint>Nothing references this aspiration yet.</EmptyHint>
         ) : (
           <ul className="space-y-1.5">
             {incoming.map((l) => (
-              <li key={`${l.kind}:${l.id}:${l.path}`} className="flex items-center gap-2 rounded-md border border-border bg-background/60 px-2.5 py-1.5">
+              <li
+                key={`${l.kind}:${l.id}:${l.path}`}
+                className="flex items-center gap-2 rounded-md border border-border bg-background/60 px-2.5 py-1.5"
+              >
                 <Badge tone="muted">{l.kind}</Badge>
                 <span className="min-w-0 flex-1 truncate text-[12px] font-semibold">{l.name}</span>
                 <span className="font-mono text-[10px] text-muted-foreground">{l.path}</span>
@@ -667,7 +808,9 @@ export function ValidationSection({
       <Panel title="Validation" subtitle="Runs continuously. Errors block export; warnings do not.">
         <div className="mb-3 flex flex-wrap gap-1.5">
           <Badge tone={validation.errors ? "error" : "ok"}>{validation.errors} errors</Badge>
-          <Badge tone={validation.warnings ? "warn" : "muted"}>{validation.warnings} warnings</Badge>
+          <Badge tone={validation.warnings ? "warn" : "muted"}>
+            {validation.warnings} warnings
+          </Badge>
           <Badge tone="muted">{validation.suggestions} suggestions</Badge>
           <Badge tone={validation.score > 80 ? "ok" : validation.score > 50 ? "warn" : "error"}>
             health {validation.score}
@@ -733,7 +876,10 @@ export function AdvancedSection({ doc, patch }: SectionProps) {
               value={doc.ids.manualTuningInstance ?? ""}
               placeholder={keys.tuning.instance}
               onChange={(e) =>
-                patch((d) => ({ ...d, ids: { ...d.ids, manualTuningInstance: e.target.value.trim() || undefined } }))
+                patch((d) => ({
+                  ...d,
+                  ids: { ...d.ids, manualTuningInstance: e.target.value.trim() || undefined },
+                }))
               }
               className="font-mono"
             />
@@ -743,7 +889,10 @@ export function AdvancedSection({ doc, patch }: SectionProps) {
               value={doc.ids.manualSimDataInstance ?? ""}
               placeholder={keys.simData.instance}
               onChange={(e) =>
-                patch((d) => ({ ...d, ids: { ...d.ids, manualSimDataInstance: e.target.value.trim() || undefined } }))
+                patch((d) => ({
+                  ...d,
+                  ids: { ...d.ids, manualSimDataInstance: e.target.value.trim() || undefined },
+                }))
               }
               className="font-mono"
             />
@@ -755,7 +904,11 @@ export function AdvancedSection({ doc, patch }: SectionProps) {
             onClick={() => {
               patch((d) => ({
                 ...d,
-                ids: { ...d.ids, manualTuningInstance: undefined, manualSimDataInstance: undefined },
+                ids: {
+                  ...d.ids,
+                  manualTuningInstance: undefined,
+                  manualSimDataInstance: undefined,
+                },
               }));
               toast.success("Overrides cleared — ids are derived again");
             }}
@@ -828,7 +981,10 @@ export function MilestonesSection({ doc, patch, focus }: SectionProps) {
         <Btn
           variant="primary"
           onClick={() =>
-            patch((d) => ({ ...d, milestones: [...d.milestones, makeMilestone(d.milestones.length)] }))
+            patch((d) => ({
+              ...d,
+              milestones: [...d.milestones, makeMilestone(d.milestones.length)],
+            }))
           }
         >
           Add milestone
@@ -836,13 +992,18 @@ export function MilestonesSection({ doc, patch, focus }: SectionProps) {
       }
     >
       {doc.milestones.length === 0 ? (
-        <EmptyHint>No milestones yet. An aspiration with no milestones can never be completed.</EmptyHint>
+        <EmptyHint>
+          No milestones yet. An aspiration with no milestones can never be completed.
+        </EmptyHint>
       ) : (
         <ol className="space-y-2">
           {doc.milestones.map((m, i) => (
             <li
               key={m.id}
-              className={cn("rounded-md border border-border bg-background/60 p-2.5", ring(focus, m.id))}
+              className={cn(
+                "rounded-md border border-border bg-background/60 p-2.5",
+                ring(focus, m.id),
+              )}
             >
               <div className="flex items-center gap-2">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border text-[10px] font-bold">
@@ -853,7 +1014,9 @@ export function MilestonesSection({ doc, patch, focus }: SectionProps) {
                   onChange={(e) =>
                     patch((d) => ({
                       ...d,
-                      milestones: d.milestones.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)),
+                      milestones: d.milestones.map((x, j) =>
+                        j === i ? { ...x, title: e.target.value } : x,
+                      ),
                     }))
                   }
                 />
@@ -894,7 +1057,9 @@ export function MilestonesSection({ doc, patch, focus }: SectionProps) {
                         patch((d) => ({
                           ...d,
                           milestones: d.milestones.map((x, j) =>
-                            j === i ? { ...x, objectives: x.objectives.filter((_, l) => l !== k) } : x,
+                            j === i
+                              ? { ...x, objectives: x.objectives.filter((_, l) => l !== k) }
+                              : x,
                           ),
                         }))
                       }

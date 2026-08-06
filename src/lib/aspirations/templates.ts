@@ -30,8 +30,12 @@ export interface AspirationTemplate {
 
 export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
   {
-    id: "knowledge", label: "Knowledge", blurb: "Skill mastery with escalating study goals.",
-    category: "Knowledge", type: "primary", difficulty: "normal",
+    id: "knowledge",
+    label: "Knowledge",
+    blurb: "Skill mastery with escalating study goals.",
+    category: "Knowledge",
+    type: "primary",
+    difficulty: "normal",
     structure: [
       ["Curious Mind", ["Read 3 books", "Reach Logic level 2"]],
       ["Dedicated Student", ["Reach Logic level 5", "Research 5 topics"]],
@@ -40,8 +44,12 @@ export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
     ],
   },
   {
-    id: "creative", label: "Creative", blurb: "Make, sell and be known for your work.",
-    category: "Creativity", type: "primary", difficulty: "normal",
+    id: "creative",
+    label: "Creative",
+    blurb: "Make, sell and be known for your work.",
+    category: "Creativity",
+    type: "primary",
+    difficulty: "normal",
     structure: [
       ["First Sketches", ["Paint 3 paintings", "Reach Painting level 3"]],
       ["Working Artist", ["Sell 5 works", "Reach Painting level 6"]],
@@ -50,8 +58,12 @@ export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
     ],
   },
   {
-    id: "athletic", label: "Athletic", blurb: "Fitness progression with physical challenges.",
-    category: "Athletic", type: "primary", difficulty: "hard",
+    id: "athletic",
+    label: "Athletic",
+    blurb: "Fitness progression with physical challenges.",
+    category: "Athletic",
+    type: "primary",
+    difficulty: "hard",
     structure: [
       ["Warming Up", ["Work out 5 times", "Reach Fitness level 3"]],
       ["Serious Training", ["Reach Fitness level 6", "Win a sparring match"]],
@@ -59,8 +71,12 @@ export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
     ],
   },
   {
-    id: "family", label: "Family", blurb: "Household milestones across generations.",
-    category: "Family", type: "primary", difficulty: "normal",
+    id: "family",
+    label: "Family",
+    blurb: "Household milestones across generations.",
+    category: "Family",
+    type: "primary",
+    difficulty: "normal",
     structure: [
       ["New Beginnings", ["Get married", "Reach a friendly relationship with 3 Sims"]],
       ["Growing Household", ["Have a child", "Raise a toddler to Child"]],
@@ -68,8 +84,12 @@ export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
     ],
   },
   {
-    id: "romance", label: "Romance", blurb: "Charisma and relationship-driven goals.",
-    category: "Romance", type: "primary", difficulty: "normal",
+    id: "romance",
+    label: "Romance",
+    blurb: "Charisma and relationship-driven goals.",
+    category: "Romance",
+    type: "primary",
+    difficulty: "normal",
     structure: [
       ["First Flirt", ["Flirt with 3 Sims", "Reach Charisma level 3"]],
       ["Sweetheart", ["Have 2 romantic partners", "First kiss"]],
@@ -77,8 +97,12 @@ export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
     ],
   },
   {
-    id: "nature", label: "Nature", blurb: "Gardening, collecting and the outdoors.",
-    category: "Nature", type: "primary", difficulty: "easy",
+    id: "nature",
+    label: "Nature",
+    blurb: "Gardening, collecting and the outdoors.",
+    category: "Nature",
+    type: "primary",
+    difficulty: "easy",
     structure: [
       ["Green Thumb", ["Plant 5 plants", "Reach Gardening level 3"]],
       ["Harvest Season", ["Harvest 20 items", "Reach Gardening level 6"]],
@@ -86,8 +110,12 @@ export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
     ],
   },
   {
-    id: "food", label: "Food", blurb: "Cooking mastery from grilled cheese upward.",
-    category: "Food", type: "primary", difficulty: "normal",
+    id: "food",
+    label: "Food",
+    blurb: "Cooking mastery from grilled cheese upward.",
+    category: "Food",
+    type: "primary",
+    difficulty: "normal",
     structure: [
       ["Home Cook", ["Cook 5 meals", "Reach Cooking level 3"]],
       ["Kitchen Confident", ["Cook 3 gourmet meals", "Reach Gourmet Cooking level 5"]],
@@ -95,8 +123,12 @@ export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
     ],
   },
   {
-    id: "fortune", label: "Fortune", blurb: "Wealth accumulation and property goals.",
-    category: "Fortune", type: "primary", difficulty: "hard",
+    id: "fortune",
+    label: "Fortune",
+    blurb: "Wealth accumulation and property goals.",
+    category: "Fortune",
+    type: "primary",
+    difficulty: "hard",
     structure: [
       ["First Simoleons", ["Earn §5,000", "Get a job"]],
       ["Comfortable", ["Earn §50,000", "Own a §100,000 home"]],
@@ -104,8 +136,12 @@ export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
     ],
   },
   {
-    id: "popularity", label: "Popularity", blurb: "Social reach and reputation.",
-    category: "Popularity", type: "primary", difficulty: "normal",
+    id: "popularity",
+    label: "Popularity",
+    blurb: "Social reach and reputation.",
+    category: "Popularity",
+    type: "primary",
+    difficulty: "normal",
     structure: [
       ["Making Friends", ["Befriend 3 Sims", "Reach Charisma level 3"]],
       ["Well Known", ["Befriend 10 Sims", "Throw a good party"]],
@@ -113,8 +149,12 @@ export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
     ],
   },
   {
-    id: "deviance", label: "Deviance", blurb: "Mischief-driven misbehaviour.",
-    category: "Deviance", type: "primary", difficulty: "hard",
+    id: "deviance",
+    label: "Deviance",
+    blurb: "Mischief-driven misbehaviour.",
+    category: "Deviance",
+    type: "primary",
+    difficulty: "hard",
     structure: [
       ["Petty Trouble", ["Play 5 pranks", "Reach Mischief level 3"]],
       ["Known Nuisance", ["Start 3 fights", "Reach Mischief level 6"]],
@@ -122,8 +162,12 @@ export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
     ],
   },
   {
-    id: "occult", label: "Occult", blurb: "Occult-gated progression track.",
-    category: "Occult", type: "occult", difficulty: "expert",
+    id: "occult",
+    label: "Occult",
+    blurb: "Occult-gated progression track.",
+    category: "Occult",
+    type: "occult",
+    difficulty: "expert",
     structure: [
       ["Awakening", ["Discover your nature", "Use an occult ability 5 times"]],
       ["Embracing It", ["Master 2 abilities", "Meet 3 other occults"]],
@@ -131,8 +175,12 @@ export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
     ],
   },
   {
-    id: "career", label: "Career", blurb: "Attached to a career track.",
-    category: "Career", type: "career", difficulty: "normal",
+    id: "career",
+    label: "Career",
+    blurb: "Attached to a career track.",
+    category: "Career",
+    type: "career",
+    difficulty: "normal",
     structure: [
       ["Getting Hired", ["Join the career", "Reach level 3"]],
       ["Climbing", ["Reach level 6", "Get 2 promotions"]],
@@ -140,8 +188,12 @@ export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
     ],
   },
   {
-    id: "business", label: "Business", blurb: "Own and grow a venture.",
-    category: "Business", type: "primary", difficulty: "hard",
+    id: "business",
+    label: "Business",
+    blurb: "Own and grow a venture.",
+    category: "Business",
+    type: "primary",
+    difficulty: "hard",
     structure: [
       ["Opening Day", ["Own a business", "Make your first sale"]],
       ["Turning Profit", ["Earn §10,000 profit", "Hire an employee"]],
@@ -149,8 +201,12 @@ export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
     ],
   },
   {
-    id: "university", label: "University", blurb: "Degree-style academic track.",
-    category: "University", type: "university", difficulty: "hard",
+    id: "university",
+    label: "University",
+    blurb: "Degree-style academic track.",
+    category: "University",
+    type: "university",
+    difficulty: "hard",
     structure: [
       ["Enrolled", ["Enrol in a degree", "Complete 3 assignments"]],
       ["Dean's List", ["Hold an A average for a term"]],
@@ -158,13 +214,21 @@ export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
     ],
   },
   {
-    id: "hidden", label: "Hidden Gameplay", blurb: "Silent background tracking.",
-    category: "Lifestyle", type: "hidden", difficulty: "normal",
+    id: "hidden",
+    label: "Hidden Gameplay",
+    blurb: "Silent background tracking.",
+    category: "Lifestyle",
+    type: "hidden",
+    difficulty: "normal",
     structure: [["Tracked Progress", ["Trigger the tracked event 10 times"]]],
   },
   {
-    id: "challenge", label: "Challenge", blurb: "Long-form self-imposed challenge.",
-    category: "Lifestyle", type: "challenge", difficulty: "legendary",
+    id: "challenge",
+    label: "Challenge",
+    blurb: "Long-form self-imposed challenge.",
+    category: "Lifestyle",
+    type: "challenge",
+    difficulty: "legendary",
     structure: [
       ["Rule Set", ["Accept the challenge terms"]],
       ["The Grind", ["Complete 10 challenge steps"]],
@@ -172,13 +236,21 @@ export const ASPIRATION_TEMPLATES: AspirationTemplate[] = [
     ],
   },
   {
-    id: "tutorial", label: "Tutorial", blurb: "Short guided teaching sequence.",
-    category: "Lifestyle", type: "tutorial", difficulty: "very-easy",
+    id: "tutorial",
+    label: "Tutorial",
+    blurb: "Short guided teaching sequence.",
+    category: "Lifestyle",
+    type: "tutorial",
+    difficulty: "very-easy",
     structure: [["Learn the Basics", ["Open the new menu", "Use the new interaction once"]]],
   },
   {
-    id: "custom", label: "Custom", blurb: "Empty structure — you own every field.",
-    category: "Custom", type: "custom", difficulty: "normal",
+    id: "custom",
+    label: "Custom",
+    blurb: "Empty structure — you own every field.",
+    category: "Custom",
+    type: "custom",
+    difficulty: "normal",
     structure: [],
   },
 ];

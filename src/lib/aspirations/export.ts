@@ -14,7 +14,12 @@
 
 import { canSerializeSimData, requiresSimData } from "@/lib/modexport/simdata";
 import { keyToString } from "@/lib/modexport/ids";
-import { ALL_STRING_FIELDS, computeAspirationKeys, ensureStringKeys, type AspirationKeys } from "./ids";
+import {
+  ALL_STRING_FIELDS,
+  computeAspirationKeys,
+  ensureStringKeys,
+  type AspirationKeys,
+} from "./ids";
 import {
   AGE_LABEL,
   aspirationTypeSpec,
@@ -24,12 +29,7 @@ import {
   type AspirationDoc,
   type ResourceRef,
 } from "./schema";
-import {
-  externalDependencies,
-  requiredPacks,
-  resolveRef,
-  type ResolveContext,
-} from "./resolver";
+import { externalDependencies, requiredPacks, resolveRef, type ResolveContext } from "./resolver";
 import { validateAspiration, type AspirationValidation } from "./validate";
 
 export interface AspirationExportFile {
@@ -88,7 +88,8 @@ export function buildAspirationXml(
 
   if (doc.availability.ages.length) {
     push(1, `<L n="available_ages">`);
-    for (const a of doc.availability.ages) push(2, `<T>${AGE_LABEL[a].toUpperCase().replace(" ", "")}</T>`);
+    for (const a of doc.availability.ages)
+      push(2, `<T>${AGE_LABEL[a].toUpperCase().replace(" ", "")}</T>`);
     push(1, `</L>`);
   }
   if (doc.availability.species.length) {
@@ -253,7 +254,14 @@ export function exportAspiration(
 function collectResolved(doc: AspirationDoc, ctx: ResolveContext) {
   return collectRefs(doc).map(({ path, ref }) => {
     const r = resolveRef(ref, ctx);
-    return { path, kind: ref.resourceKind, source: ref.source, name: r.tuningName, id: r.tuningId, status: r.status };
+    return {
+      path,
+      kind: ref.resourceKind,
+      source: ref.source,
+      name: r.tuningName,
+      id: r.tuningId,
+      status: r.status,
+    };
   });
 }
 

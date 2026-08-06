@@ -53,53 +53,103 @@ export interface AspirationTypeSpec {
 
 export const ASPIRATION_TYPES: AspirationTypeSpec[] = [
   {
-    id: "primary", label: "Primary Aspiration", visibleByDefault: true, usesCategory: true,
-    expectsRewardTrait: true, exportable: true, gameAspirationType: "FULL_ASPIRATION",
+    id: "primary",
+    label: "Primary Aspiration",
+    visibleByDefault: true,
+    usesCategory: true,
+    expectsRewardTrait: true,
+    exportable: true,
+    gameAspirationType: "FULL_ASPIRATION",
     hint: "A full lifetime aspiration selectable in CAS and Simology.",
   },
   {
-    id: "hidden", label: "Hidden Aspiration", visibleByDefault: false, usesCategory: false,
-    expectsRewardTrait: false, exportable: true, gameAspirationType: "HIDDEN",
+    id: "hidden",
+    label: "Hidden Aspiration",
+    visibleByDefault: false,
+    usesCategory: false,
+    expectsRewardTrait: false,
+    exportable: true,
+    gameAspirationType: "HIDDEN",
     hint: "Tracked silently in the background. Never appears in the aspiration picker.",
   },
   {
-    id: "tutorial", label: "Tutorial", visibleByDefault: false, usesCategory: false,
-    expectsRewardTrait: false, exportable: true, gameAspirationType: "TUTORIAL",
+    id: "tutorial",
+    label: "Tutorial",
+    visibleByDefault: false,
+    usesCategory: false,
+    expectsRewardTrait: false,
+    exportable: true,
+    gameAspirationType: "TUTORIAL",
     hint: "Short guided sequence used to teach a mechanic.",
   },
   {
-    id: "gameplay", label: "Gameplay", visibleByDefault: false, usesCategory: false,
-    expectsRewardTrait: false, exportable: true, gameAspirationType: "GAMEPLAY",
+    id: "gameplay",
+    label: "Gameplay",
+    visibleByDefault: false,
+    usesCategory: false,
+    expectsRewardTrait: false,
+    exportable: true,
+    gameAspirationType: "GAMEPLAY",
     hint: "Driven by gameplay systems rather than chosen by the player.",
   },
   {
-    id: "occult", label: "Occult", visibleByDefault: true, usesCategory: true,
-    expectsRewardTrait: true, exportable: true, gameAspirationType: "FULL_ASPIRATION",
+    id: "occult",
+    label: "Occult",
+    visibleByDefault: true,
+    usesCategory: true,
+    expectsRewardTrait: true,
+    exportable: true,
+    gameAspirationType: "FULL_ASPIRATION",
     hint: "A full aspiration gated behind an occult life state.",
   },
   {
-    id: "career", label: "Career", visibleByDefault: false, usesCategory: true,
-    expectsRewardTrait: false, exportable: true, gameAspirationType: "CAREER",
+    id: "career",
+    label: "Career",
+    visibleByDefault: false,
+    usesCategory: true,
+    expectsRewardTrait: false,
+    exportable: true,
+    gameAspirationType: "CAREER",
     hint: "Attached to a career track and progressed through work events.",
   },
   {
-    id: "university", label: "University", visibleByDefault: false, usesCategory: true,
-    expectsRewardTrait: false, exportable: true, gameAspirationType: "GAMEPLAY",
+    id: "university",
+    label: "University",
+    visibleByDefault: false,
+    usesCategory: true,
+    expectsRewardTrait: false,
+    exportable: true,
+    gameAspirationType: "GAMEPLAY",
     hint: "Degree-style track tied to university gameplay.",
   },
   {
-    id: "scenario", label: "Scenario", visibleByDefault: false, usesCategory: false,
-    expectsRewardTrait: false, exportable: true, gameAspirationType: "GAMEPLAY",
+    id: "scenario",
+    label: "Scenario",
+    visibleByDefault: false,
+    usesCategory: false,
+    expectsRewardTrait: false,
+    exportable: true,
+    gameAspirationType: "GAMEPLAY",
     hint: "Goal set for a scenario. Not selectable by the player.",
   },
   {
-    id: "challenge", label: "Challenge", visibleByDefault: true, usesCategory: true,
-    expectsRewardTrait: true, exportable: true, gameAspirationType: "FULL_ASPIRATION",
+    id: "challenge",
+    label: "Challenge",
+    visibleByDefault: true,
+    usesCategory: true,
+    expectsRewardTrait: true,
+    exportable: true,
+    gameAspirationType: "FULL_ASPIRATION",
     hint: "Long-form self-imposed challenge with hard objectives.",
   },
   {
-    id: "custom", label: "Custom", visibleByDefault: true, usesCategory: true,
-    expectsRewardTrait: false, exportable: true, gameAspirationType: "FULL_ASPIRATION",
+    id: "custom",
+    label: "Custom",
+    visibleByDefault: true,
+    usesCategory: true,
+    expectsRewardTrait: false,
+    exportable: true,
+    gameAspirationType: "FULL_ASPIRATION",
     hint: "Anything that does not fit the presets. You own every field.",
   },
 ];
@@ -110,17 +160,35 @@ export const aspirationTypeSpec = (id: AspirationTypeId): AspirationTypeSpec =>
 /* ----------------------------------------------------------- categories -- */
 
 export const ASPIRATION_CATEGORIES = [
-  "Knowledge", "Creativity", "Athletic", "Nature", "Food", "Fortune", "Family",
-  "Popularity", "Romance", "Deviance", "Career", "Business", "Magic", "Occult",
-  "University", "Lifestyle", "Custom",
+  "Knowledge",
+  "Creativity",
+  "Athletic",
+  "Nature",
+  "Food",
+  "Fortune",
+  "Family",
+  "Popularity",
+  "Romance",
+  "Deviance",
+  "Career",
+  "Business",
+  "Magic",
+  "Occult",
+  "University",
+  "Lifestyle",
+  "Custom",
 ] as const;
 export type AspirationCategoryId = (typeof ASPIRATION_CATEGORIES)[number];
 
 export const DIFFICULTIES = ["very-easy", "easy", "normal", "hard", "expert", "legendary"] as const;
 export type DifficultyId = (typeof DIFFICULTIES)[number];
 export const DIFFICULTY_LABEL: Record<DifficultyId, string> = {
-  "very-easy": "Very Easy", easy: "Easy", normal: "Normal",
-  hard: "Hard", expert: "Expert", legendary: "Legendary",
+  "very-easy": "Very Easy",
+  easy: "Easy",
+  normal: "Normal",
+  hard: "Hard",
+  expert: "Expert",
+  legendary: "Legendary",
 };
 
 /* --------------------------------------------------------- availability -- */
@@ -128,27 +196,54 @@ export const DIFFICULTY_LABEL: Record<DifficultyId, string> = {
 export const AGES = ["infant", "toddler", "child", "teen", "youngAdult", "adult", "elder"] as const;
 export type AgeId = (typeof AGES)[number];
 export const AGE_LABEL: Record<AgeId, string> = {
-  infant: "Infant", toddler: "Toddler", child: "Child", teen: "Teen",
-  youngAdult: "Young Adult", adult: "Adult", elder: "Elder",
+  infant: "Infant",
+  toddler: "Toddler",
+  child: "Child",
+  teen: "Teen",
+  youngAdult: "Young Adult",
+  adult: "Adult",
+  elder: "Elder",
 };
 
 export const SPECIES = ["human", "dog", "cat", "horse"] as const;
 export type SpeciesId = (typeof SPECIES)[number];
 export const SPECIES_LABEL: Record<SpeciesId, string> = {
-  human: "Human", dog: "Dog", cat: "Cat", horse: "Horse",
+  human: "Human",
+  dog: "Dog",
+  cat: "Cat",
+  horse: "Horse",
 };
 
 export const OCCULTS = [
-  "spellcaster", "werewolf", "vampire", "alien", "ghost", "mermaid", "servo", "plantsim",
+  "spellcaster",
+  "werewolf",
+  "vampire",
+  "alien",
+  "ghost",
+  "mermaid",
+  "servo",
+  "plantsim",
 ] as const;
 export type OccultId = (typeof OCCULTS)[number];
 export const OCCULT_LABEL: Record<OccultId, string> = {
-  spellcaster: "Spellcaster", werewolf: "Werewolf", vampire: "Vampire", alien: "Alien",
-  ghost: "Ghost", mermaid: "Mermaid", servo: "Servo", plantsim: "PlantSim",
+  spellcaster: "Spellcaster",
+  werewolf: "Werewolf",
+  vampire: "Vampire",
+  alien: "Alien",
+  ghost: "Ghost",
+  mermaid: "Mermaid",
+  servo: "Servo",
+  plantsim: "PlantSim",
 };
 
 export type OccultMode = "any" | "allow-only" | "exclude" | "require-one" | "require-all";
-export type GenderRule = "none" | "masculine-frame" | "feminine-frame" | "male" | "female" | "custom";
+export type GenderRule =
+  | "none"
+  | "masculine-frame"
+  | "feminine-frame"
+  | "male"
+  | "female"
+  | "custom";
 
 export interface AspirationAvailability {
   ages: AgeId[];
@@ -333,7 +428,10 @@ export function blankAspirationDoc(init?: Partial<AspirationDoc>): AspirationDoc
 
 /** Sanitize a display name into a legal internal name. Never auto-applied. */
 export function sanitizeInternalName(input: string, prefix = "aspiration_"): string {
-  let s = (input || "").trim().replace(/[^A-Za-z0-9_ ]+/g, "").replace(/\s+/g, "_");
+  let s = (input || "")
+    .trim()
+    .replace(/[^A-Za-z0-9_ ]+/g, "")
+    .replace(/\s+/g, "_");
   s = s.replace(/_+/g, "_").replace(/^_|_$/g, "");
   if (!s) s = "Untitled";
   if (/^\d/.test(s)) s = `A${s}`;

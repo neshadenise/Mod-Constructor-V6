@@ -8,12 +8,7 @@
 
 import type { AppState, Aspiration, ID } from "@/lib/types";
 import { resolveRef, type ResolveContext, type Resolved } from "@/lib/traits/resolver";
-import {
-  OCCULT_LABEL,
-  SPECIES_LABEL,
-  collectRefs,
-  type AspirationDoc,
-} from "./schema";
+import { OCCULT_LABEL, SPECIES_LABEL, collectRefs, type AspirationDoc } from "./schema";
 import { computeAspirationKeys, tuningNameFor } from "./ids";
 import { migrateAspirationDoc } from "./migrate";
 
@@ -21,12 +16,20 @@ export { resolveRef };
 export type { ResolveContext, Resolved };
 
 const SPECIES_PACK: Record<string, string> = {
-  human: "BaseGame", dog: "Cats & Dogs", cat: "Cats & Dogs", horse: "Horse Ranch",
+  human: "BaseGame",
+  dog: "Cats & Dogs",
+  cat: "Cats & Dogs",
+  horse: "Horse Ranch",
 };
 const OCCULT_PACK: Record<string, string> = {
-  spellcaster: "Realm of Magic", werewolf: "Werewolves", vampire: "Vampires",
-  alien: "Get to Work", ghost: "BaseGame", mermaid: "Island Living",
-  servo: "Discover University", plantsim: "BaseGame",
+  spellcaster: "Realm of Magic",
+  werewolf: "Werewolves",
+  vampire: "Vampires",
+  alien: "Get to Work",
+  ghost: "BaseGame",
+  mermaid: "Island Living",
+  servo: "Discover University",
+  plantsim: "BaseGame",
 };
 
 /** All aspiration docs belonging to a project, migrated to the current schema. */
@@ -125,11 +128,15 @@ export function incomingLinks(doc: AspirationDoc, ctx: ResolveContext) {
         out.push({ kind: "aspiration", id, name: other.displayName, path });
     }
   }
-  for (const career of ctx.state.careers.filter((c) => !ctx.projectId || c.projectId === ctx.projectId)) {
+  for (const career of ctx.state.careers.filter(
+    (c) => !ctx.projectId || c.projectId === ctx.projectId,
+  )) {
     if (JSON.stringify(career.builderState ?? {}).includes(target))
       out.push({ kind: "career", id: career.id, name: career.name, path: "career reward" });
   }
-  for (const trait of ctx.state.traits.filter((t) => !ctx.projectId || t.projectId === ctx.projectId)) {
+  for (const trait of ctx.state.traits.filter(
+    (t) => !ctx.projectId || t.projectId === ctx.projectId,
+  )) {
     if (JSON.stringify(trait.builderState ?? {}).includes(target))
       out.push({ kind: "trait", id: trait.id, name: trait.name, path: "trait reference" });
   }

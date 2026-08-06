@@ -51,7 +51,12 @@ export function tuningNameFor(namespace: string, internalName: string): string {
 
 const childKey = (service: ResourceIdService, namespace: string, kind: string, name: string) => {
   const key = service.generateResourceKey({
-    namespace, kind, name, type: TYPE_TUNING, group: GROUP_DEFAULT, highBit: true,
+    namespace,
+    kind,
+    name,
+    type: TYPE_TUNING,
+    group: GROUP_DEFAULT,
+    highBit: true,
   });
   return { key, decimal: BigInt(`0x${key.instance}`).toString(10) };
 };
@@ -91,7 +96,12 @@ export function computeAspirationKeys(doc: AspirationDoc, ids?: ResourceIdServic
       objectives: m.objectives.map((o, j) => {
         const objName = `${msName}_objective_${j + 1}`;
         const ck = childKey(service, ns, "aspiration_objective", objName);
-        return { id: o.id, tuningName: tuningNameFor(ns, objName), key: ck.key, decimal: ck.decimal };
+        return {
+          id: o.id,
+          tuningName: tuningNameFor(ns, objName),
+          key: ck.key,
+          decimal: ck.decimal,
+        };
       }),
     };
   });
@@ -132,7 +142,10 @@ export function ensureStringKeys(doc: AspirationDoc): AspirationStrings {
   const assign = (t: LocalizedText): LocalizedText =>
     t.key
       ? t
-      : { ...t, key: localizationKey(doc.ids.namespace, "aspiration", doc.ids.internalName, t.field) };
+      : {
+          ...t,
+          key: localizationKey(doc.ids.namespace, "aspiration", doc.ids.internalName, t.field),
+        };
 
   const s = doc.strings;
   return {
