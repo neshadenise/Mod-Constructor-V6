@@ -27,6 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useStore } from "@/lib/store";
 import { useAdvanced } from "@/lib/advanced-mode";
 import { downloadExportedFile, runExport } from "@/lib/modexport/pipeline";
+import { applyCreatorPrefix, normalizeCreatorPrefix, versionedName } from "@/lib/modexport/filenames";
 import { listImportedProjects, subscribeImports } from "@/lib/modexport/registry";
 import { listExportHistory, recordExport } from "@/lib/modexport/history";
 import { nonExportableKinds } from "@/lib/modexport/simdata";
@@ -125,6 +126,11 @@ export default function ExportCenter() {
 
   const [request, setRequest] = useState<ExportRequest>({ ...DEFAULT_EXPORT_REQUEST, projectId: pid ?? "none" });
   const [excluded, setExcluded] = useState<string[]>([]);
+  /** Per-export escape hatch: skip the workspace creator prefix this once. */
+  const [skipPrefix, setSkipPrefix] = useState(false);
+  const creatorPrefix = skipPrefix
+    ? undefined
+    : normalizeCreatorPrefix(store.state.settings.creatorPrefix ?? "") || undefined;
   const [job, setJob] = useState<ExportJob | null>(null);
   const [running, setRunning] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -161,7 +167,7 @@ export default function ExportCenter() {
     setJob(null);
     const selected = components.filter((c) => !excluded.includes(c.id)).map((c) => c.id);
     const result = await runExport({
-      request: { ...request, projectId: project.id, selectedComponentIds: selected.length === components.length ? undefined : selected },
+      request: { ...request, projectId: project.id, creatorPrefix, selectedComponentIds: selected.length === components.length ? undefined : selected },
       builder: imported ? undefined : builder,
       imported: imported ? { project: imported.project, originals: imported.originals } : undefined,
       onProgress: (j) => setJob({ ...j }),
@@ -360,7 +366,7 @@ export default function ExportCenter() {
         <Card title="Advanced options" subtitle="Only shown in advanced interface mode.">
           <div className="grid gap-1 sm:grid-cols-2">
             <Row checked={request.preserveFolderStructure} onChange={(v) => patch({ preserveFolderStructure: v })} label="Preserve imported folder structure" />
-            <Row checked={Boolean(request.versionedFileNames)} onChange={(v) => patch({ versionedFileNames: v })} label="Generate versioned filenames" hint={`e.g. ${project.name.replace(/\s+/g, "_")}_v${project.version}.package`} />
+            <Row checked={Boolean(request.versionedFileNames)} onChange={(v) => patch({ versionedFileNames: v })} label="Generate versioned filenames" hint={`e.g. ${versionedName(request.outputName || project.name, "package", project.version, creatorPrefix)}`} />
             <Row checked={Boolean(request.onlyModified)} onChange={(v) => patch({ onlyModified: v })} label="Export only modified components" />
             <Row
               checked={Boolean(request.allowTuningOnly)}
