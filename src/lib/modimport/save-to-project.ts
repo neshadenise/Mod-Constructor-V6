@@ -9,7 +9,7 @@
  * Files are plain Explorer items, so the normal open / edit / rename / delete
  * flow works on them afterwards.
  */
-import type { ModProject } from "./types";
+import type { ImportedResource, ModProject, ResourceKey } from "./types";
 
 export interface SaveFileEntry {
   /** Folder path segments below the project root. */
@@ -18,7 +18,44 @@ export interface SaveFileEntry {
   size: number;
   mimeType?: string;
   dataUrl: string;
+  /** "type!group!instance" for files that came from a package resource. */
+  resourceKey?: string;
 }
+
+/** Sidecar written next to an imported mod so edits can be rebuilt back into it. */
+export interface ResourceManifest {
+  version: 1;
+  mod: string;
+  resources: {
+    key: ResourceKey;
+    /** Path relative to the imported mod folder. */
+    path: string;
+    /** File name of the .package this resource came from. */
+    sourceFile: string;
+    typeLabel: string;
+    encoding: "xml" | "stbl-json" | "preserved";
+    byteSize: number;
+  }[];
+}
+
+const BINARY_EXT: Record<string, string> = {
+  simdata: ".simdata",
+  image: ".dds",
+  audio: ".audio",
+  localization: ".stbl",
+  data: ".data",
+};
+
+function binaryExtension(resource: ImportedResource): string {
+  const sub = (resource.subtype ?? "").toLowerCase();
+  if (sub === "dds") return ".dds";
+  if (sub === "png") return ".png";
+  if (sub === "jpeg") return ".jpg";
+  if (sub === "zip") return ".zip";
+  if (sub === "rcol") return ".rcol";
+  return BINARY_EXT[sub] ?? ".bin";
+}
+
 
 const CHUNK = 0x8000;
 
