@@ -263,6 +263,46 @@ describe("file names", () => {
   });
 });
 
+describe("creator prefix", () => {
+  it("normalizes a handle into a filename-safe prefix", () => {
+    expect(normalizeCreatorPrefix("Nesha Denise!")).toBe("NeshaDenise");
+    expect(normalizeCreatorPrefix("")).toBe("");
+  });
+
+  it("applies the prefix once and never twice", () => {
+    expect(applyCreatorPrefix("DancerCareer", "NeshaDenise")).toBe("NeshaDenise_DancerCareer");
+    expect(applyCreatorPrefix("NeshaDenise_DancerCareer", "NeshaDenise")).toBe("NeshaDenise_DancerCareer");
+    expect(applyCreatorPrefix("DancerCareer", "")).toBe("DancerCareer");
+    expect(applyCreatorPrefix("DancerCareer", undefined)).toBe("DancerCareer");
+  });
+
+  it("combines with versioned file names", () => {
+    expect(versionedName("Dancer Career", "package", "1.2.0", "NeshaDenise")).toBe(
+      "NeshaDenise_DancerCareer_v1.2.0.package",
+    );
+    expect(folderName("Dancer Career", "1.2.0", "NeshaDenise")).toBe("NeshaDenise_DancerCareer_v1.2.0");
+    expect(versionedName("Dancer Career", "package", undefined)).toBe("DancerCareer.package");
+  });
+
+  it("prefixes exported files without touching internal tuning ids", async () => {
+    const plain = await runExport({ request: request({ exportType: "package-only" }), builder: builderContent() });
+    const prefixed = await runExport({
+      request: request({ exportType: "package-only", creatorPrefix: "NeshaDenise" }),
+      builder: builderContent(),
+    });
+    const plainPkg = plain.outputFiles.find((f) => f.kind === "package")!;
+    const prefixedPkg = prefixed.outputFiles.find((f) => f.kind === "package")!;
+
+    expect(prefixedPkg.name.startsWith("NeshaDenise_")).toBe(true);
+    expect(plainPkg.name.startsWith("NeshaDenise_")).toBe(false);
+
+    // Same resources, same instance ids — only the file name changed.
+    const a = readDbpf(plainPkg.bytes).entries.map((e) => e.instance.toString(16)).sort();
+    const b = readDbpf(prefixedPkg.bytes).entries.map((e) => e.instance.toString(16)).sort();
+    expect(b).toEqual(a);
+  });
+});
+
 describe("builder export", () => {
   it("writes a real DBPF package that reopens with the expected resources", async () => {
     const job = await runExport({ request: request({ exportType: "package-only" }), builder: builderContent() });
