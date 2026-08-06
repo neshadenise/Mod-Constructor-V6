@@ -200,7 +200,9 @@ function ConditionEditor({
             className="w-40"
             value={c.kind}
             onChange={(v) =>
-              onChange(conditions.map((x, n) => (n === i ? { ...x, kind: v } : x)))
+              onChange(
+                conditions.map((x, n) => (n === i ? { ...x, kind: v as RewardCondition["kind"] } : x)),
+              )
             }
             options={opts(REWARD_CONDITION_KINDS)}
           />
