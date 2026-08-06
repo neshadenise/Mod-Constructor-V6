@@ -14,8 +14,25 @@ import { createFileRoute } from "@tanstack/react-router";
 
 const UPSTREAM = "https://tdesc.lot51.cc/api";
 
-const BROWSER_UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+/**
+ * Lot51 sits behind a bot challenge that inspects the whole request, not just
+ * the User-Agent — a bare fetch gets a 403 interstitial. Sending the header set
+ * a real browser navigation would send clears it.
+ */
+const BROWSER_HEADERS: Record<string, string> = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+  Accept: "application/json, text/plain, */*",
+  "Accept-Language": "en-US,en;q=0.9",
+  Referer: "https://tdesc.lot51.cc/",
+  Origin: "https://tdesc.lot51.cc",
+  "sec-ch-ua": '"Chromium";v="126", "Not)A;Brand";v="24", "Google Chrome";v="126"',
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": '"Windows"',
+  "Sec-Fetch-Dest": "empty",
+  "Sec-Fetch-Mode": "cors",
+  "Sec-Fetch-Site": "same-origin",
+};
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
