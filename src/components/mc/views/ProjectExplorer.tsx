@@ -124,6 +124,7 @@ function encodeText(text: string, mimeType?: string): { dataUrl: string; size: n
 export function ProjectExplorer() {
   const store = useStore();
   const ex = useExplorer();
+  const nav = useAppNavigation();
   const project = store.state.projects.find((p) => p.id === store.state.activeProjectId);
   const projectId = project?.id;
 
