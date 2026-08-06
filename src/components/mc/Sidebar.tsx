@@ -1,4 +1,5 @@
 import {
+  Database,
   LayoutDashboard,
   FolderKanban,
   FolderTree,
