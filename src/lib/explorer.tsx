@@ -190,6 +190,17 @@ export interface ExplorerAPI {
     parentFolderId: string | null,
     files: { name: string; size: number; mimeType?: string; dataUrl?: string }[],
   ) => ProjectExplorerItem[];
+  /**
+   * Write files into a folder path (segments below the project root),
+   * creating any missing folders. Atomic: one state update, so repeated
+   * calls in the same tick never duplicate folders.
+   */
+  addFilesAtPath: (
+    projectId: string,
+    folderPath: string[],
+    files: { name: string; size: number; mimeType?: string; dataUrl?: string }[],
+  ) => number;
+
   replaceFile: (id: string, file: { name: string; size: number; mimeType?: string; dataUrl?: string }, keepName: boolean) => void;
 
   rename: (id: string, nextName: string) => string | null;
@@ -403,6 +414,71 @@ export function ExplorerProvider({
     },
     [mutate],
   );
+
+  const addFilesAtPath = useCallback<ExplorerAPI["addFilesAtPath"]>(
+    (projectId, folderPath, files) => {
+      if (!files.length) return 0;
+      mutate((s) => {
+        const stamp = nowIso();
+        const items = [...s.items];
+        let parentId: string | null = null;
+        for (const segment of folderPath) {
+          const name = segment.trim();
+          if (!name) continue;
+          const existing = items.find(
+            (i) =>
+              i.projectId === projectId &&
+              !i.deletedAt &&
+              i.itemType === "folder" &&
+              i.parentFolderId === parentId &&
+              i.name.toLowerCase() === name.toLowerCase(),
+          );
+          if (existing) {
+            parentId = existing.id;
+            continue;
+          }
+          const folder: ProjectExplorerItem = {
+            id: uid(),
+            projectId,
+            parentFolderId: parentId,
+            itemType: "folder",
+            name,
+            createdAt: stamp,
+            updatedAt: stamp,
+            deletedAt: null,
+          };
+          items.push(folder);
+          parentId = folder.id;
+        }
+        for (const f of files) {
+          const siblings = items.filter(
+            (i) => i.projectId === projectId && !i.deletedAt && i.parentFolderId === parentId,
+          );
+          const name = uniqueName(f.name, siblings, "file", "reject");
+          items.push({
+            id: uid(),
+            projectId,
+            parentFolderId: parentId,
+            itemType: "file",
+            name,
+            extension: extensionOf(name) || undefined,
+            mimeType: f.mimeType,
+            dataUrl: f.dataUrl,
+            storagePath: `project/${projectId}/${name}`,
+            size: f.size,
+            createdAt: stamp,
+            updatedAt: stamp,
+            deletedAt: null,
+          });
+        }
+        return { ...s, items };
+      });
+      return files.length;
+    },
+    [mutate],
+  );
+
+
 
   const replaceFile = useCallback<ExplorerAPI["replaceFile"]>(
     (id, file, keepName) => {
@@ -764,6 +840,7 @@ export function ExplorerProvider({
       ensureScaffold,
       createFolder,
       addFiles,
+      addFilesAtPath,
       replaceFile,
       rename,
       move,
@@ -782,7 +859,7 @@ export function ExplorerProvider({
     [
       hydrated, data.items, data.prefs, clipboard,
       listProject, listTrash, childrenOf, getItem, pathOf, descendantsOf, ensureScaffold,
-      createFolder, addFiles, replaceFile, rename, move, duplicate, trash, restore, purge,
+      createFolder, addFiles, addFilesAtPath, replaceFile, rename, move, duplicate, trash, restore, purge,
       emptyTrash, copyToProject, moveToProject, paste, setPrefs, purgeProject,
     ],
   );

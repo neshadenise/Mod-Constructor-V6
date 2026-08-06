@@ -10,7 +10,7 @@ import {
   FolderTree, Folder, FolderOpen, File as FileIcon, FileImage, FileCode2, FileText, Package,
   ChevronRight, ChevronDown, Search, Plus, Upload, Copy, Scissors, ClipboardPaste, Pencil,
   Trash2, Download, ArrowRightLeft, LayoutGrid, List, ArrowUpDown, RotateCcw, RefreshCw,
-  AlertTriangle, Home, X,
+  AlertTriangle, Home, X, Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -68,6 +68,13 @@ function decodeText(dataUrl?: string): string {
   }
 }
 
+function encodeText(text: string, mimeType?: string): { dataUrl: string; size: number } {
+  const bytes = new TextEncoder().encode(text);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return { dataUrl: `data:${mimeType || "text/plain"};base64,${btoa(binary)}`, size: bytes.byteLength };
+}
+
 /* ------------------------------ view ----------------------------------- */
 
 export function ProjectExplorer() {
@@ -77,6 +84,7 @@ export function ProjectExplorer() {
   const projectId = project?.id;
 
   const [cwd, setCwd] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{ id: string; text: string } | null>(null);
   const [selection, setSelection] = useState<string[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [query, setQuery] = useState("");
@@ -747,9 +755,33 @@ export function ProjectExplorer() {
                 </div>
               )}
               {isPreviewableText(single) && single.dataUrl && (
-                <pre className="max-h-48 overflow-auto rounded-md border border-border bg-muted/40 p-2 text-[10px] leading-relaxed">
-                  {decodeText(single.dataUrl).slice(0, 4000) || "(empty file)"}
-                </pre>
+                editing?.id === single.id ? (
+                  <div className="space-y-1.5">
+                    <textarea
+                      value={editing.text}
+                      onChange={(e) => setEditing({ id: single.id, text: e.target.value })}
+                      spellCheck={false}
+                      className="h-48 w-full resize-y rounded-md border border-border bg-background p-2 font-mono text-[10px] leading-relaxed outline-none focus:border-[var(--teal)]"
+                    />
+                    <div className="flex gap-1.5">
+                      <MiniBtn
+                        onClick={() => {
+                          const { dataUrl, size } = encodeText(editing.text, single.mimeType);
+                          ex.replaceFile(single.id, { name: single.name, size, mimeType: single.mimeType, dataUrl }, true);
+                          setEditing(null);
+                          toast.success("Saved changes");
+                        }}
+                        icon={Save}
+                        label="Save"
+                      />
+                      <MiniBtn onClick={() => setEditing(null)} icon={X} label="Cancel" />
+                    </div>
+                  </div>
+                ) : (
+                  <pre className="max-h-48 overflow-auto rounded-md border border-border bg-muted/40 p-2 text-[10px] leading-relaxed">
+                    {decodeText(single.dataUrl).slice(0, 4000) || "(empty file)"}
+                  </pre>
+                )
               )}
               {!isPreviewableImage(single) && !isPreviewableText(single) && single.itemType === "file" && (
                 <p className="text-[11px] text-muted-foreground">
@@ -761,6 +793,13 @@ export function ProjectExplorer() {
                   <>
                     <MiniBtn onClick={() => downloadItem(single)} icon={Download} label="Download" />
                     <MiniBtn onClick={() => { setReplaceTarget(single.id); replaceRef.current?.click(); }} icon={RefreshCw} label="Replace" />
+                    {isPreviewableText(single) && editing?.id !== single.id && (
+                      <MiniBtn
+                        onClick={() => setEditing({ id: single.id, text: decodeText(single.dataUrl) })}
+                        icon={Pencil}
+                        label="Edit contents"
+                      />
+                    )}
                   </>
                 )}
                 <MiniBtn onClick={() => startRename(single.id)} icon={Pencil} label="Rename" />
