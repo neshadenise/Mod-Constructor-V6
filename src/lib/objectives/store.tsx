@@ -185,7 +185,10 @@ export function useObjectiveLibrary(): ObjectiveLibrary {
             d.uuid === uuid
               ? {
                   ...d,
-                  parents: [...d.parents.filter((p) => p.parentId !== usage.parentId), usage],
+                  parents: [
+                    ...d.parents.filter((p) => p.parentResourceId !== usage.parentResourceId),
+                    usage,
+                  ],
                   updatedAt: Date.now(),
                 }
               : d,
@@ -195,9 +198,12 @@ export function useObjectiveLibrary(): ObjectiveLibrary {
         commit({
           ...bag,
           docs: bag.docs.map((d) =>
-            d.uuid === uuid ? { ...d, parents: d.parents.filter((p) => p.parentId !== parentId) } : d,
+            d.uuid === uuid
+              ? { ...d, parents: d.parents.filter((p) => p.parentResourceId !== parentId) }
+              : d,
           ),
         }),
+
       importJson: (json) => {
         try {
           const parsed = JSON.parse(json) as { docs?: ObjectiveDoc[] };
