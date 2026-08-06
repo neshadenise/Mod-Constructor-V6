@@ -20,6 +20,10 @@ import {
   Sparkles,
   Undo2,
   UserCheck,
+  Gift,
+  Zap,
+  Bell,
+  Radio,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -53,9 +57,15 @@ import {
   type AspirationSectionId,
   type SectionProps,
 } from "./sections";
+import {
+  EventsSection,
+  GameplaySection,
+  NotificationsSection,
+  RewardsSection,
+} from "./GameplaySections";
 
 const NAV: {
-  id: AspirationSectionId | "milestones";
+  id: AspirationSectionId | "milestones" | "rewards" | "gameplay" | "notifications" | "events";
   label: string;
   icon: typeof Sparkles;
   advanced?: boolean;
@@ -63,6 +73,10 @@ const NAV: {
   { id: "identity", label: "Basic info", icon: Sparkles },
   { id: "availability", label: "Availability", icon: UserCheck },
   { id: "milestones", label: "Milestones", icon: ListChecks },
+  { id: "rewards", label: "Rewards", icon: Gift },
+  { id: "gameplay", label: "Loot & buffs", icon: Zap },
+  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "events", label: "Events & completion", icon: Radio },
   { id: "resources", label: "Resources & IDs", icon: Link2 },
   { id: "strings", label: "Text", icon: Languages },
   { id: "dependencies", label: "Dependencies", icon: Link2 },
@@ -327,6 +341,10 @@ export function AspirationBuilder() {
         <div className="min-w-0">
           {section === "identity" && <IdentitySection {...sectionProps} />}
           {section === "availability" && <AvailabilitySection {...sectionProps} />}
+          {section === "rewards" && <RewardsSection {...sectionProps} />}
+          {section === "gameplay" && <GameplaySection {...sectionProps} />}
+          {section === "notifications" && <NotificationsSection {...sectionProps} />}
+          {section === "events" && <EventsSection {...sectionProps} />}
           {section === "milestones" && (
             <MilestonesSection
               {...sectionProps}
