@@ -117,12 +117,21 @@ export const Route = createFileRoute("/api/public/gamedata/$")({
 
           const text = await res.text();
           if (!res.ok) {
+            // Lot51 fronts its API with a Cloudflare bot check that rejects
+            // server-to-server requests outright (it wants a real browser to
+            // solve a JS challenge). Flag that case so the app can say so
+            // plainly instead of blaming the network.
+            const challenged =
+              res.status === 403 && /Just a moment|cf-browser-verification|challenge-platform/i.test(text);
             console.error(`Lot51 game-data request failed [${res.status}] ${upstreamUrl}: ${text.slice(0, 300)}`);
             return json(
               {
-                error: "Lot51 request failed",
+                error: challenged ? "Lot51 blocked this request" : "Lot51 request failed",
+                blocked: challenged,
                 status: res.status,
-                detail: text.slice(0, 400),
+                detail: challenged
+                  ? "Lot51's bot protection rejected the request. Offline schemas and your local index still work."
+                  : text.slice(0, 400),
               },
               res.status === 404 ? 404 : 502,
             );
