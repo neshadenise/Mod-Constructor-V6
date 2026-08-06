@@ -40,6 +40,10 @@ import {
   type ModComponent,
   type ModProject,
 } from "@/lib/modimport/types";
+import { buildImportFiles } from "@/lib/modimport/save-to-project";
+import { useExplorer } from "@/lib/explorer";
+import { useActiveProject } from "@/lib/store";
+import { FolderTree } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ACCEPT = ".package,.ts4script,.zip,.py,.xml,.json,.txt,.md,.cfg,.png,.jpg,.jpeg,.webp,.dds";
@@ -77,6 +81,40 @@ export function ModImporter() {
   const [stage, setStage] = useState<string>("");
   const [dragging, setDragging] = useState(false);
   const bytesRef = useRef<Map<string, Uint8Array>>(new Map());
+  const ex = useExplorer();
+  const activeProject = useActiveProject();
+
+  /** Write an imported mod into the current project's assets so it can be
+   *  opened and edited in the Project Explorer like any other file. */
+  const saveToProject = useCallback(
+    (project: ModProject) => {
+      if (!activeProject) {
+        toast.error("Open a project first", {
+          description: "Imported files are saved into the assets of the project you have open.",
+        });
+        return;
+      }
+      ex.ensureScaffold(activeProject.id);
+      const files = buildImportFiles(project, bytesRef.current);
+      const byFolder = new Map<string, typeof files>();
+      for (const f of files) {
+        const key = f.folder.join("/");
+        byFolder.set(key, [...(byFolder.get(key) ?? []), f]);
+      }
+      let saved = 0;
+      for (const [key, group] of byFolder) {
+        saved += ex.addFilesAtPath(
+          activeProject.id,
+          key.split("/"),
+          group.map((f) => ({ name: f.name, size: f.size, mimeType: f.mimeType, dataUrl: f.dataUrl })),
+        );
+      }
+      toast.success(`Saved ${saved} file${saved === 1 ? "" : "s"} to ${activeProject.name}`, {
+        description: "Find them under Imported → " + project.name + " in the Project Explorer.",
+      });
+    },
+    [activeProject, ex],
+  );
 
   // Publish analysed mods to the Export Center (memory only).
   useEffect(() => {
@@ -313,6 +351,7 @@ export function ModImporter() {
           others={projects.filter((p) => p.id !== project.id)}
           onRename={(name) => updateProject(project.id, { name })}
           onPatch={(patch) => updateProject(project.id, patch)}
+          onSave={() => saveToProject(project)}
 
           onConfirm={() => updateProject(project.id, { importStatus: "ready", confidence: "confirmed" })}
           onMergeInto={(targetId) => mergeProjects(project.id, targetId)}
@@ -367,6 +406,7 @@ function ProjectCard({
   others,
   onRename,
   onPatch,
+  onSave,
   onConfirm,
   onMergeInto,
   onSplit,
@@ -377,6 +417,7 @@ function ProjectCard({
   others: ModProject[];
   onRename: (name: string) => void;
   onPatch: (patch: Partial<ModProject>) => void;
+  onSave: () => void;
   onConfirm: () => void;
   onMergeInto: (targetId: string) => void;
   onSplit: (component: ModComponent) => void;
@@ -419,6 +460,12 @@ function ProjectCard({
             Confirm grouping
           </button>
         )}
+        <button
+          onClick={onSave}
+          className="flex items-center gap-1 rounded-md bg-[var(--teal)] px-2 py-1 text-[11px] font-semibold text-white hover:opacity-90"
+        >
+          <FolderTree className="h-3 w-3" /> Save to project
+        </button>
         <button
           onClick={onExport}
           className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-semibold hover:bg-accent"
