@@ -43,6 +43,13 @@ export interface ProjectExplorerItem {
 
   deletedAt?: string | null;
   originalParentFolderId?: string | null;
+
+  /**
+   * Set on files written by the mod importer: "type!group!instance" of the
+   * package resource this file represents, so edits can be rebuilt back into
+   * the original .package.
+   */
+  resourceKey?: string;
 }
 
 export type ExplorerView = "list" | "grid";
@@ -198,7 +205,7 @@ export interface ExplorerAPI {
   addFilesAtPath: (
     projectId: string,
     folderPath: string[],
-    files: { name: string; size: number; mimeType?: string; dataUrl?: string }[],
+    files: { name: string; size: number; mimeType?: string; dataUrl?: string; resourceKey?: string }[],
   ) => number;
 
   replaceFile: (id: string, file: { name: string; size: number; mimeType?: string; dataUrl?: string }, keepName: boolean) => void;
@@ -464,6 +471,7 @@ export function ExplorerProvider({
             extension: extensionOf(name) || undefined,
             mimeType: f.mimeType,
             dataUrl: f.dataUrl,
+            resourceKey: f.resourceKey,
             storagePath: `project/${projectId}/${name}`,
             size: f.size,
             createdAt: stamp,

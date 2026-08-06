@@ -106,7 +106,13 @@ export function ModImporter() {
         saved += ex.addFilesAtPath(
           activeProject.id,
           key.split("/"),
-          group.map((f) => ({ name: f.name, size: f.size, mimeType: f.mimeType, dataUrl: f.dataUrl })),
+          group.map((f) => ({
+            name: f.name,
+            size: f.size,
+            mimeType: f.mimeType,
+            dataUrl: f.dataUrl,
+            resourceKey: f.resourceKey,
+          })),
         );
       }
       toast.success(`Saved ${saved} file${saved === 1 ? "" : "s"} to ${activeProject.name}`, {
@@ -433,6 +439,17 @@ function ProjectCard({
   const coverage = project.resources.length
     ? Math.round(((editable + preserved) / project.resources.length) * 100)
     : 0;
+  // Type breakdown of what is preserved, so "preserved" never reads as a gap.
+  const preservedTypes = Object.entries(
+    project.resources
+      .filter((r) => r.editability === "read-only")
+      .reduce<Record<string, number>>((acc, r) => {
+        acc[r.typeLabel] = (acc[r.typeLabel] ?? 0) + 1;
+        return acc;
+      }, {}),
+  )
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6);
 
 
   return (
@@ -516,7 +533,8 @@ function ProjectCard({
               </span>
               <span className="tabular-nums font-semibold">{coverage}%</span>
               <span className="text-muted-foreground">
-                {editable} editable · {preserved} preserved as-is · {unknown} unrecognised
+                {editable} editable · {preserved} preserved byte-for-byte
+                {unknown ? ` · ${unknown} unknown` : ""}
               </span>
             </div>
             {project.importStatus !== "ready" && project.supportReasons?.length ? (
@@ -537,7 +555,20 @@ function ProjectCard({
                 Everything in this mod is either editable here or preserved byte-for-byte on export.
               </div>
             )}
+            {preservedTypes.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {preservedTypes.map(([label, count]) => (
+                  <span
+                    key={label}
+                    className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground"
+                  >
+                    {label} × {count}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
+
 
 
           <div className="rounded-lg border border-border bg-muted/30 p-2.5">

@@ -40,6 +40,7 @@ import {
   type ExportedFile,
 } from "@/lib/modexport/types";
 import { cn } from "@/lib/utils";
+import RebuildImportedPanel from "./RebuildImportedPanel";
 
 const TARGETS: { value: ExportType; label: string; hint: string }[] = [
   { value: "complete-mod", label: "Complete Mod ZIP", hint: "Every owned component in one installable folder." },
@@ -276,6 +277,8 @@ export default function ExportCenter() {
           )}
         </Card>
       </div>
+
+      {project ? <RebuildImportedPanel projectId={project.id} /> : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Included components">

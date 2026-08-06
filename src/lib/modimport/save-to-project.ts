@@ -9,7 +9,7 @@
  * Files are plain Explorer items, so the normal open / edit / rename / delete
  * flow works on them afterwards.
  */
-import type { ModProject } from "./types";
+import type { ImportedResource, ModProject, ResourceKey } from "./types";
 
 export interface SaveFileEntry {
   /** Folder path segments below the project root. */
@@ -18,7 +18,44 @@ export interface SaveFileEntry {
   size: number;
   mimeType?: string;
   dataUrl: string;
+  /** "type!group!instance" for files that came from a package resource. */
+  resourceKey?: string;
 }
+
+/** Sidecar written next to an imported mod so edits can be rebuilt back into it. */
+export interface ResourceManifest {
+  version: 1;
+  mod: string;
+  resources: {
+    key: ResourceKey;
+    /** Path relative to the imported mod folder. */
+    path: string;
+    /** File name of the .package this resource came from. */
+    sourceFile: string;
+    typeLabel: string;
+    encoding: "xml" | "stbl-json" | "preserved";
+    byteSize: number;
+  }[];
+}
+
+const BINARY_EXT: Record<string, string> = {
+  simdata: ".simdata",
+  image: ".dds",
+  audio: ".audio",
+  localization: ".stbl",
+  data: ".data",
+};
+
+function binaryExtension(resource: ImportedResource): string {
+  const sub = (resource.subtype ?? "").toLowerCase();
+  if (sub === "dds") return ".dds";
+  if (sub === "png") return ".png";
+  if (sub === "jpeg") return ".jpg";
+  if (sub === "zip") return ".zip";
+  if (sub === "rcol") return ".rcol";
+  return BINARY_EXT[sub] ?? ".bin";
+}
+
 
 const CHUNK = 0x8000;
 
@@ -81,32 +118,100 @@ export function buildImportFiles(
     });
   }
 
+  const manifest: ResourceManifest = { version: 1, mod: project.name, resources: [] };
+  // Two resources can share a display name (same tuning name under different
+  // type ids). Paths address files, so they must stay unique or edits to one
+  // resource would silently overwrite another.
+  const usedPaths = new Set<string>();
+  const uniqueName = (folder: string[], name: string, key: string) => {
+    const path = [...folder, name].join("/");
+    if (!usedPaths.has(path)) {
+      usedPaths.add(path);
+      return name;
+    }
+    const dot = name.indexOf(".");
+    const stem = dot === -1 ? name : name.slice(0, dot);
+    const ext = dot === -1 ? "" : name.slice(dot);
+    let candidate = `${stem} (${key})${ext}`;
+    let n = 2;
+    while (usedPaths.has([...folder, candidate].join("/"))) {
+      candidate = `${stem} (${key}-${n++})${ext}`;
+    }
+    usedPaths.add([...folder, candidate].join("/"));
+    return candidate;
+  };
+
   for (const resource of project.resources) {
+    const component = project.components.find((c) => c.id === resource.componentId);
     const base = safeName(resource.name || `${resource.key.type}_${resource.key.instance}`);
-    if (resource.text) {
-      const text = resource.text;
-      files.push({
-        folder: [...root, "Tuning"],
-        name: `${base}.xml`,
-        size: text.length,
-        mimeType: "text/xml",
-        dataUrl: textToDataUrl(text, "text/xml"),
-      });
+    const keyTag = `${resource.key.type}!${resource.key.group}!${resource.key.instance}`;
+
+    let folder: string[];
+    let fileName: string;
+    let mime: string;
+    let size: number;
+    let dataUrl: string;
+
+    if (resource.text !== undefined) {
+      folder = [...root, "Tuning"];
+      fileName = `${base}.xml`;
+      mime = "text/xml";
+      size = resource.text.length;
+      dataUrl = textToDataUrl(resource.text, mime);
     } else if (resource.strings?.length) {
+      folder = [...root, "Localization"];
+      fileName = `${base}.json`;
+      mime = "application/json";
       const json = JSON.stringify(
         Object.fromEntries(resource.strings.map((s) => [s.key, s.value])),
         null,
         2,
       );
-      files.push({
-        folder: [...root, "Localization"],
-        name: `${base}.json`,
-        size: json.length,
-        mimeType: "application/json",
-        dataUrl: textToDataUrl(json, "application/json"),
-      });
+      size = json.length;
+      dataUrl = textToDataUrl(json, mime);
+    } else {
+      // Preserved binary: recorded as a read-only stub file so it is visible,
+      // addressable, and rebuildable. Bytes stay in the original .package.
+      folder = [...root, "Preserved"];
+      fileName = `${base}${binaryExtension(resource)}.info.txt`;
+      mime = "text/plain";
+
+      const stub = [
+        `Resource ${keyTag}`,
+        `Type: ${resource.typeLabel}`,
+        `Format: ${resource.subtype ?? "binary"}`,
+        `Size: ${resource.byteSize} bytes`,
+        `Source: ${component?.originalFileName ?? "unknown"}`,
+        "",
+        "Preserved byte-for-byte. Rebuilding this package copies the original bytes.",
+      ].join("\n");
+      size = resource.byteSize;
+      dataUrl = textToDataUrl(stub, "text/plain");
     }
+
+    fileName = uniqueName(folder, fileName, `${resource.key.type}_${resource.key.instance}`);
+
+    files.push({ folder, name: fileName, size, mimeType: mime, dataUrl, resourceKey: keyTag });
+    manifest.resources.push({
+      key: resource.key,
+      path: [...folder.slice(root.length), fileName].join("/"),
+      sourceFile: component?.originalFileName ?? "",
+      typeLabel: resource.typeLabel,
+      encoding:
+        resource.text !== undefined ? "xml" : resource.strings?.length ? "stbl-json" : "preserved",
+      byteSize: resource.byteSize,
+    });
   }
+
+  const manifestJson = JSON.stringify(manifest, null, 2);
+  files.push({
+    folder: [...root],
+    name: "resources.json",
+    size: manifestJson.length,
+    mimeType: "application/json",
+    dataUrl: textToDataUrl(manifestJson, "application/json"),
+  });
+
 
   const summary = [
     `Mod: ${project.name}`,
