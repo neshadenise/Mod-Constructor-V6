@@ -8,7 +8,7 @@
  * is one entry in this file, not a new screen.
  */
 
-import type { ResourceRef } from "@/lib/traits/schema";
+import type { ResourceKind, ResourceRef } from "@/lib/traits/schema";
 
 /* ------------------------------------------------------------- field spec -- */
 
@@ -823,8 +823,6 @@ export const OBJECTIVE_TEMPLATES: ObjectiveTemplate[] = [
 ];
 
 /* --------------------------------------------------------- picker mapping -- */
-
-import type { ResourceKind } from "@/lib/traits/schema";
 
 /**
  * Goal fields name resources the way creators talk about them; the resource
