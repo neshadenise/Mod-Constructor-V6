@@ -81,32 +81,76 @@ export function buildImportFiles(
     });
   }
 
+  const manifest: ResourceManifest = { version: 1, mod: project.name, resources: [] };
+
   for (const resource of project.resources) {
+    const component = project.components.find((c) => c.id === resource.componentId);
     const base = safeName(resource.name || `${resource.key.type}_${resource.key.instance}`);
-    if (resource.text) {
-      const text = resource.text;
-      files.push({
-        folder: [...root, "Tuning"],
-        name: `${base}.xml`,
-        size: text.length,
-        mimeType: "text/xml",
-        dataUrl: textToDataUrl(text, "text/xml"),
-      });
+    const keyTag = `${resource.key.type}!${resource.key.group}!${resource.key.instance}`;
+
+    let folder: string[];
+    let fileName: string;
+    let mime: string;
+    let size: number;
+    let dataUrl: string;
+
+    if (resource.text !== undefined) {
+      folder = [...root, "Tuning"];
+      fileName = `${base}.xml`;
+      mime = "text/xml";
+      size = resource.text.length;
+      dataUrl = textToDataUrl(resource.text, mime);
     } else if (resource.strings?.length) {
+      folder = [...root, "Localization"];
+      fileName = `${base}.json`;
+      mime = "application/json";
       const json = JSON.stringify(
         Object.fromEntries(resource.strings.map((s) => [s.key, s.value])),
         null,
         2,
       );
-      files.push({
-        folder: [...root, "Localization"],
-        name: `${base}.json`,
-        size: json.length,
-        mimeType: "application/json",
-        dataUrl: textToDataUrl(json, "application/json"),
-      });
+      size = json.length;
+      dataUrl = textToDataUrl(json, mime);
+    } else {
+      // Preserved binary: recorded as a read-only stub file so it is visible,
+      // addressable, and rebuildable. Bytes stay in the original .package.
+      folder = [...root, "Preserved"];
+      fileName = `${base}${binaryExtension(resource)}`;
+      mime = "application/octet-stream";
+      const stub = [
+        `Resource ${keyTag}`,
+        `Type: ${resource.typeLabel}`,
+        `Format: ${resource.subtype ?? "binary"}`,
+        `Size: ${resource.byteSize} bytes`,
+        `Source: ${component?.originalFileName ?? "unknown"}`,
+        "",
+        "Preserved byte-for-byte. Rebuilding this package copies the original bytes.",
+      ].join("\n");
+      size = resource.byteSize;
+      dataUrl = textToDataUrl(stub, "text/plain");
     }
+
+    files.push({ folder, name: fileName, size, mimeType: mime, dataUrl, resourceKey: keyTag });
+    manifest.resources.push({
+      key: resource.key,
+      path: [...folder.slice(root.length), fileName].join("/"),
+      sourceFile: component?.originalFileName ?? "",
+      typeLabel: resource.typeLabel,
+      encoding:
+        resource.text !== undefined ? "xml" : resource.strings?.length ? "stbl-json" : "preserved",
+      byteSize: resource.byteSize,
+    });
   }
+
+  const manifestJson = JSON.stringify(manifest, null, 2);
+  files.push({
+    folder: [...root],
+    name: "resources.json",
+    size: manifestJson.length,
+    mimeType: "application/json",
+    dataUrl: textToDataUrl(manifestJson, "application/json"),
+  });
+
 
   const summary = [
     `Mod: ${project.name}`,
