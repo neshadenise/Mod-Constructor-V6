@@ -7,15 +7,22 @@
  */
 
 import { canSerializeSimData, requiresSimData } from "@/lib/modexport/simdata";
+import { REWARD_LABEL, REWARD_NUMERIC, objectiveTypeSpec } from "./goals";
 import {
+  allObjectives,
   aspirationTypeSpec,
   collectRefs,
+  dependencyCycles,
+  flattenObjectives,
   isVisible,
+  milestoneInternalName,
   objectiveCount,
+  objectiveInternalName,
   type AspirationDoc,
 } from "./schema";
 import { computeAspirationKeys, duplicateStringKeys, orphanStrings } from "./ids";
 import { projectAspirationDocs, requiredPacks, resolveRef, type ResolveContext } from "./resolver";
+
 
 export type IssueLevel = "error" | "warning" | "suggestion";
 
