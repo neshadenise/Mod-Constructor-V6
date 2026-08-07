@@ -146,103 +146,87 @@ export function PreviewStudio() {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-[260px_minmax(0,1fr)_minmax(0,420px)]">
-      {/* ---- library ---- */}
-      <aside className="rounded-xl border border-border bg-card p-3">
-        <div className="mb-2 flex items-center gap-2">
+    <div className="space-y-3">
+      {/* ---- compact toolbar (replaces the old library column) ---- */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-2.5">
+        <div className="flex items-center gap-1.5 pr-1">
           <Sparkles className="h-4 w-4 text-primary" />
-          <h3 className="text-[13px] font-bold">Preview Library</h3>
+          <span className="text-[12px] font-bold">Previews</span>
         </div>
-        <div className="relative mb-2">
+
+        <div className="relative">
           <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search previews"
-            className="w-full rounded-lg border border-border bg-background py-1.5 pl-7 pr-2 text-[12px] outline-none focus:border-primary"
+            placeholder="Search"
+            className="w-[150px] rounded-lg border border-border bg-background py-1.5 pl-7 pr-2 text-[12px] outline-none focus:border-primary"
           />
         </div>
 
-        <div className="max-h-[280px] space-y-1 overflow-auto">
+        <select
+          value={activeId ?? ""}
+          onChange={(e) => setActiveId(e.target.value || null)}
+          className="min-w-[200px] max-w-[280px] rounded-lg border border-border bg-background px-2 py-1.5 text-[12px] outline-none focus:border-primary"
+        >
+          <option value="">
+            {filtered.length ? "Select a saved preview…" : "No saved previews yet"}
+          </option>
           {filtered.map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              onClick={() => setActiveId(d.id)}
-              className={cn(
-                "flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left",
-                d.id === activeId ? "border-primary bg-primary/8" : "border-transparent hover:bg-muted",
-              )}
-            >
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[12px] font-semibold">{d.name}</span>
-                <span className="block truncate text-[10px] text-muted-foreground">
-                  {TEMPLATE_BY_KIND[d.kind].label}
-                </span>
-              </span>
-              <span
-                role="button"
-                tabIndex={0}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const next = docs.filter((x) => x.id !== d.id);
-                  persist(next);
-                  if (activeId === d.id) setActiveId(next[0]?.id ?? null);
-                }}
-                onKeyDown={() => {}}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </span>
-            </button>
+            <option key={d.id} value={d.id}>
+              {d.name} — {TEMPLATE_BY_KIND[d.kind].label}
+            </option>
           ))}
-          {filtered.length === 0 && (
-            <p className="px-1 py-3 text-[11.5px] text-muted-foreground">
-              No previews yet — start from a UI pattern below.
-            </p>
-          )}
-        </div>
+        </select>
 
-        <div className="mt-3 border-t border-border pt-2">
-          <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            New from UI pattern
-          </div>
-          <div className="max-h-[200px] space-y-1 overflow-auto">
-            {TEMPLATES.map((t) => (
-              <button
-                key={t.kind}
-                type="button"
-                onClick={() => addDoc(t.kind)}
-                className="flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-muted"
-              >
-                <Plus className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
-                <span className="min-w-0">
-                  <span className="block truncate text-[11.5px] font-semibold">{t.label}</span>
-                  <span className="block text-[10px] leading-snug text-muted-foreground">{t.blurb}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
+        <select
+          value=""
+          onChange={(e) => {
+            if (e.target.value) addDoc(e.target.value as PreviewKind);
+          }}
+          className="rounded-lg border border-border bg-background px-2 py-1.5 text-[12px] font-semibold outline-none focus:border-primary"
+        >
+          <option value="">+ New from UI pattern…</option>
+          {TEMPLATES.map((t) => (
+            <option key={t.kind} value={t.kind}>
+              {t.label}
+            </option>
+          ))}
+        </select>
 
-        <div className="mt-3 border-t border-border pt-2">
-          <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Career presets
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {CAREER_PREVIEW_PRESETS.map((p) => (
-              <button
-                key={p.label}
-                type="button"
-                onClick={() => addDoc(p.kind, p.overrides, p.label)}
-                className="rounded-full border border-border px-2 py-0.5 text-[10.5px] font-semibold text-muted-foreground hover:border-primary hover:text-primary"
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </aside>
+        <select
+          value=""
+          onChange={(e) => {
+            const p = CAREER_PREVIEW_PRESETS.find((x) => x.label === e.target.value);
+            if (p) addDoc(p.kind, p.overrides, p.label);
+          }}
+          className="rounded-lg border border-border bg-background px-2 py-1.5 text-[12px] font-semibold outline-none focus:border-primary"
+        >
+          <option value="">+ Career preset…</option>
+          {CAREER_PREVIEW_PRESETS.map((p) => (
+            <option key={p.label} value={p.label}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+
+        {doc && (
+          <button
+            type="button"
+            onClick={() => {
+              const next = docs.filter((x) => x.id !== doc.id);
+              persist(next);
+              setActiveId(next[0]?.id ?? null);
+            }}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[11.5px] font-semibold text-muted-foreground hover:border-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Delete
+          </button>
+        )}
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
+
 
       {/* ---- editor ---- */}
       <section className="rounded-xl border border-border bg-card p-4">
@@ -351,6 +335,8 @@ export function PreviewStudio() {
           through the sequence exactly as the player would experience them.
         </p>
       </section>
+      </div>
     </div>
   );
+
 }
