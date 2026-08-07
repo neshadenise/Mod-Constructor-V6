@@ -168,7 +168,7 @@ export function ProjectExplorer() {
    */
   const virtualItems = useMemo(() => {
     if (!projectId) return [] as ProjectExplorerItem[];
-    const groups: { folder: string; ext: string; rows: { id: string; name: string; updatedAt?: string; createdAt?: string }[] }[] = [
+    const groups: { folder: string; ext: string; rows: { id: string; name: string; updatedAt?: number; createdAt?: number }[] }[] = [
       { folder: "Careers", ext: "career", rows: store.state.careers.filter((c) => c.projectId === projectId) },
       { folder: "Traits", ext: "trait", rows: store.state.traits.filter((t) => t.projectId === projectId) },
       { folder: "Aspirations", ext: "aspiration", rows: store.state.aspirations.filter((a) => a.projectId === projectId) },
@@ -196,8 +196,8 @@ export function ProjectExplorer() {
           itemType: "file",
           name: `${r.name || "Untitled"}.${g.ext}`,
           extension: g.ext,
-          createdAt: (r as { createdAt?: string }).createdAt ?? new Date().toISOString(),
-          updatedAt: (r as { updatedAt?: string }).updatedAt ?? new Date().toISOString(),
+          createdAt: new Date(r.createdAt ?? Date.now()).toISOString(),
+          updatedAt: new Date(r.updatedAt ?? Date.now()).toISOString(),
           deletedAt: null,
         });
       }
