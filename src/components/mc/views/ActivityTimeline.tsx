@@ -9,7 +9,8 @@ import { useMemo, useState } from "react";
 import { History, Filter, CheckCircle2, Package, Pencil, Play, Upload, Trash2, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
-import { useNavigation } from "@/lib/navigation";
+import { useAppNavigation } from "@/lib/navigation";
+import type { SectionId } from "@/components/mc/sections";
 import type { ActivityEvent } from "@/lib/types";
 
 type Kind = ActivityEvent["kind"];
@@ -47,10 +48,10 @@ function timeOf(ts: number, bucket: Bucket): string {
 }
 
 /** Which builder view an entity type opens in. */
-const ROUTE_FOR: Partial<Record<ActivityEvent["entityType"], string>> = {
-  career: "careers",
-  trait: "traits",
-  aspiration: "aspirations",
+const ROUTE_FOR: Partial<Record<ActivityEvent["entityType"], SectionId>> = {
+  career: "career",
+  trait: "trait",
+  aspiration: "aspiration",
   asset: "assets",
   project: "projects",
   template: "templates",
@@ -59,7 +60,7 @@ const ROUTE_FOR: Partial<Record<ActivityEvent["entityType"], string>> = {
 
 export function ActivityTimeline() {
   const store = useStore();
-  const nav = useNavigation();
+  const nav = useAppNavigation();
   const [kind, setKind] = useState<"all" | Kind>("all");
 
   const projectId = store.state.activeProjectId;
@@ -165,7 +166,7 @@ export function ActivityTimeline() {
                                 <button
                                   onClick={() => {
                                     if (e.entityId) store.markRecent(e.entityId);
-                                    nav.go(route);
+                                    nav.navigate(route);
                                   }}
                                   className="inline-flex items-center gap-1 rounded border border-border bg-card px-1.5 py-0.5 text-[10px] hover:bg-accent"
                                 >
