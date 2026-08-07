@@ -381,15 +381,21 @@ function TemplateDialog({
             <input value={actionLabel} onChange={(e) => setActionLabel(e.target.value)} className={fieldClass} placeholder="View career" />
           </Field>
 
-          <div className="rounded-lg border border-border bg-[oklch(0.98_0.01_230)] p-3 [[data-preview-theme='dark']_&]:bg-[oklch(0.22_0.04_260)]">
-            <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Live preview</div>
+          <div className="space-y-2.5 rounded-lg border border-border bg-[oklch(0.98_0.01_230)] p-3 [[data-preview-theme='dark']_&]:bg-[oklch(0.22_0.04_260)]">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Live preview</div>
             <NotificationPopup
               kind={previewKind}
               title={title || "Title"}
               body={body || "Body copy will appear here."}
               action={actionLabel || undefined}
             />
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sim dialogue</div>
+            <SimDialogue
+              text={body || "Body copy will appear here."}
+              choices={actionLabel ? [actionLabel, "Not now"] : ["Okay", "Not now"]}
+            />
           </div>
+
         </div>
 
         <div className="mt-4 flex justify-end gap-2">
