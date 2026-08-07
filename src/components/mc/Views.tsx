@@ -1243,6 +1243,19 @@ function CareerBuilder() {
     },
   });
 
+  /* Mirror the active cover onto the stored career so previews, the explorer
+     and the export snapshot all see the same art. */
+  const coverStore = useStore();
+  const coverRecordId = record.currentId;
+  useEffect(() => {
+    if (!coverRecordId) return;
+    const rec = coverStore.state.careers.find((c) => c.id === coverRecordId);
+    if (!rec || rec.coverImage === activeCover?.master) return;
+    coverStore.updateCareer(coverRecordId, { coverImage: activeCover?.master });
+  }, [coverRecordId, activeCover?.master, coverStore]);
+
+
+
   // Hydrate the builder when a template is opened here.
   useBuilderSeed<CareerPayload>("career", (p) => {
     setName(p.name);
