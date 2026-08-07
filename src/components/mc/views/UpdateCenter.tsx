@@ -21,7 +21,7 @@ import {
 import { getLocalMeta, type LocalIndexMeta } from "@/lib/gamedata/index-scan";
 import { BUILTIN_REFS } from "@/lib/gamedata/builtin-ids";
 import type { TdescCacheMeta } from "@/lib/gamedata/types";
-import { useNavigation } from "@/lib/navigation";
+import { useAppNavigation } from "@/lib/navigation";
 
 const AUTO_KEY = "mc:gamedata:auto-check";
 const LAST_KEY = "mc:gamedata:last-check";
@@ -38,7 +38,7 @@ function relative(iso: string | null | undefined) {
 }
 
 export function UpdateCenter() {
-  const nav = useNavigation();
+  const nav = useAppNavigation();
   const [meta, setMeta] = useState<TdescCacheMeta | null>(null);
   const [local, setLocal] = useState<LocalIndexMeta | null>(null);
   const [remoteVersion, setRemoteVersion] = useState<string | null>(null);
@@ -212,13 +212,13 @@ export function UpdateCenter() {
             stale={!local}
             detail={
               local
-                ? `${local.tuningCount.toLocaleString()} tuning · ${local.stringCount.toLocaleString()} strings · ${local.packageCount} packages · scanned ${relative(local.scannedAt)}`
+                ? `${local.tuningCount.toLocaleString()} tuning · ${local.stringCount.toLocaleString()} strings · ${local.packagesScanned} packages · scanned ${relative(local.scannedAt)}`
                 : "No local index yet — resource pickers fall back to built-ins."
             }
             notes="Scanned from your own game folder. Nothing leaves this machine."
             action={
               <button
-                onClick={() => nav.go("gamedata")}
+                onClick={() => nav.navigate("gamedata")}
                 className="inline-flex items-center gap-1.5 rounded-md bg-[var(--teal)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90"
               >
                 {local ? "Rescan" : "Scan install"}
