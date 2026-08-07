@@ -1108,6 +1108,33 @@ function CareerBuilder() {
   const [branchId, setBranchId] = useState(branches[0].id);
   const branch = branches.find((b) => b.id === branchId) ?? branches[0];
 
+  /* --- Career Cover: prompt context + preview propagation --- */
+  const coverContext: CoverPromptContext = useMemo(
+    () => ({
+      careerName: name,
+      careerDescription: description,
+      branchName: branch?.name,
+      branchDescription: branch?.description,
+      category,
+      careerType,
+      promotionTitles: (branch?.ranks ?? []).map((r) => r.title).filter(Boolean),
+      rewards: (branch?.ranks ?? []).map((r) => r.promotionReward).filter(Boolean),
+      skills: (branch?.ranks ?? []).map((r) => r.objectiveSet).filter(Boolean).slice(0, 4),
+      events: (branch?.events ?? []).map((e) => e.name).filter(Boolean),
+      objects: (branch?.assignments ?? []).map((a) => a.name).filter(Boolean),
+      workOutfit: (branch?.ranks ?? []).find((r) => r.uniform)?.uniform,
+    }),
+    [name, description, branch, category, careerType],
+  );
+
+  // Every preview surface reads `coverImage`; keep it on the active branch's
+  // cover, falling back to the main career cover.
+  const activeCover = resolveCover(covers, branchId);
+  useEffect(() => {
+    setCoverImage(activeCover?.master);
+  }, [activeCover?.master]);
+
+
   // Sub-tab
   const [tab, setTab] = useState<
     "identity" | "levels" | "assignments" | "events" | "messages" | "advanced"
