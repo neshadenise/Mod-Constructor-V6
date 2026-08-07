@@ -561,6 +561,7 @@ function ProjectCard({
   onSplit: (component: ModComponent) => void;
   onToggleExternal: (component: ModComponent) => void;
   onExport: () => void;
+  onOpenBuilder: (detection: BuilderDetection) => void;
 }) {
   const [open, setOpen] = useState(true);
   const [tab, setTab] = useState<"files" | "resources" | "relationships" | "checks">("files");
@@ -571,6 +572,9 @@ function ProjectCard({
   const coverage = project.resources.length
     ? Math.round(((editable + preserved) / project.resources.length) * 100)
     : 0;
+  // Which builder(s) this mod belongs in, detected from its tuning.
+  const detections = useMemo(() => detectBuilders(project), [project]);
+  const primary = detections.find((d) => d.supported) ?? null;
   // Type breakdown of what is preserved, so "preserved" never reads as a gap.
   const preservedTypes = Object.entries(
     project.resources
@@ -582,6 +586,7 @@ function ProjectCard({
   )
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6);
+
 
 
   return (
