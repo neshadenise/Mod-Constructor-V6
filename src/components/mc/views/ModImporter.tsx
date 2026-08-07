@@ -550,6 +550,7 @@ function ProjectCard({
   onSplit,
   onToggleExternal,
   onExport,
+  onOpenBuilder,
 }: {
   project: ModProject;
   others: ModProject[];
