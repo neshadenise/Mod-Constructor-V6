@@ -501,6 +501,7 @@ export function ModImporter() {
             })
           }
           onExport={() => void doExport(project)}
+          onOpenBuilder={(d) => openInBuilder(project, d)}
         />
       ))}
 
