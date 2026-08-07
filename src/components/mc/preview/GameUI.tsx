@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import defaultSim from "@/assets/default-sim.png.asset.json";
+import secondSim from "@/assets/second-sim.png.asset.json";
 import {
   Sparkles,
   Star,
@@ -135,6 +136,69 @@ export function SimDialogue({
     </div>
   );
 }
+
+/** ---------- Two-sim conversation (second sim replies on the right) ---------- */
+export function SimConversation({
+  simA = { name: "Ada Nova", portrait: defaultSim.url },
+  simB = { name: "Nova Reign", portrait: secondSim.url },
+  lines,
+  choices,
+}: {
+  simA?: { name?: string; portrait?: string };
+  simB?: { name?: string; portrait?: string };
+  lines: { speaker: "a" | "b"; text: string }[];
+  choices?: string[];
+}) {
+  return (
+    <div className="space-y-2.5">
+      {lines.map((line, i) => {
+        const sim = line.speaker === "a" ? simA : simB;
+        const mine = line.speaker === "b";
+        return (
+          <div
+            key={i}
+            className={cn("flex items-start gap-2.5", mine && "flex-row-reverse")}
+          >
+            <SimPortrait name={sim.name} size={44} src={sim.portrait} showMeta={false} />
+            <div
+              className={cn(
+                "relative min-w-0 max-w-[78%] rounded-xl border border-black/5 bg-white px-3 py-2 shadow-[0_10px_28px_-18px_rgba(15,23,42,0.5)] [[data-preview-theme='dark']_&]:border-white/10 [[data-preview-theme='dark']_&]:bg-white/[0.08]",
+                mine && "bg-[oklch(0.95_0.05_200)] [[data-preview-theme='dark']_&]:bg-[oklch(0.35_0.06_210)]",
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute top-4 h-3 w-3 rotate-45 bg-white [[data-preview-theme='dark']_&]:bg-white/[0.08]",
+                  mine
+                    ? "-right-1.5 border-r border-t border-black/5 bg-[oklch(0.95_0.05_200)] [[data-preview-theme='dark']_&]:border-white/10 [[data-preview-theme='dark']_&]:bg-[oklch(0.35_0.06_210)]"
+                    : "-left-1.5 border-b border-l border-black/5 [[data-preview-theme='dark']_&]:border-white/10",
+                )}
+              />
+              <div className="text-[11px] font-bold uppercase tracking-wider opacity-60">{sim.name}</div>
+              <p className="mt-0.5 text-[12.5px] leading-relaxed">{line.text}</p>
+            </div>
+          </div>
+        );
+      })}
+      {choices && choices.length > 0 && (
+        <div className="flex flex-wrap justify-end gap-1.5">
+          {choices.map((c) => (
+            <button
+              key={c}
+              className="rounded-md bg-black/5 px-2 py-1 text-[10.5px] font-semibold transition-colors hover:bg-black/10 [[data-preview-theme='dark']_&]:bg-white/10 [[data-preview-theme='dark']_&]:hover:bg-white/15"
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export const DEFAULT_SIM_PORTRAIT = defaultSim.url;
+export const SECOND_SIM_PORTRAIT = secondSim.url;
+
 
 
 /** ---------- Preview card wrapper ---------- */
