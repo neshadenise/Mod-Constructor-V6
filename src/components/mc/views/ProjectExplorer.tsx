@@ -158,8 +158,55 @@ export function ProjectExplorer() {
     if (projectId && ex.hydrated) ex.ensureScaffold(projectId);
   }, [projectId, ex.hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const all = useMemo(() => (projectId ? ex.listProject(projectId) : []), [ex, projectId]);
+  const stored = useMemo(() => (projectId ? ex.listProject(projectId) : []), [ex, projectId]);
   const trashed = useMemo(() => (projectId ? ex.listTrash(projectId) : []), [ex, projectId]);
+
+  /**
+   * Records built in this project are surfaced as read-only virtual files so
+   * the Explorer always reflects the current project's actual contents, not
+   * just uploaded assets.
+   */
+  const virtualItems = useMemo(() => {
+    if (!projectId) return [] as ProjectExplorerItem[];
+    const groups: { folder: string; ext: string; rows: { id: string; name: string; updatedAt?: string; createdAt?: string }[] }[] = [
+      { folder: "Careers", ext: "career", rows: store.state.careers.filter((c) => c.projectId === projectId) },
+      { folder: "Traits", ext: "trait", rows: store.state.traits.filter((t) => t.projectId === projectId) },
+      { folder: "Aspirations", ext: "aspiration", rows: store.state.aspirations.filter((a) => a.projectId === projectId) },
+      { folder: "Notifications", ext: "notification", rows: store.state.notifications.filter((n) => n.projectId === projectId) },
+    ];
+    const out: ProjectExplorerItem[] = [];
+    for (const g of groups) {
+      if (!g.rows.length) continue;
+      const folderId = `virtual:${projectId}:${g.folder}`;
+      out.push({
+        id: folderId,
+        projectId,
+        parentFolderId: null,
+        itemType: "folder",
+        name: g.folder,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+      });
+      for (const r of g.rows) {
+        out.push({
+          id: `virtual:${g.ext}:${r.id}`,
+          projectId,
+          parentFolderId: folderId,
+          itemType: "file",
+          name: `${r.name || "Untitled"}.${g.ext}`,
+          extension: g.ext,
+          createdAt: (r as { createdAt?: string }).createdAt ?? new Date().toISOString(),
+          updatedAt: (r as { updatedAt?: string }).updatedAt ?? new Date().toISOString(),
+          deletedAt: null,
+        });
+      }
+    }
+    return out;
+  }, [projectId, store.state.careers, store.state.traits, store.state.aspirations, store.state.notifications]);
+
+  const all = useMemo(() => [...virtualItems, ...stored], [virtualItems, stored]);
+
 
   const childrenOf = useCallback(
     (parent: string | null) => all.filter((i) => i.parentFolderId === parent),
