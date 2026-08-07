@@ -75,6 +75,7 @@ import { AspirationPreview, type AspirationPreviewData } from "./preview/Aspirat
 import { AspirationBuilder } from "./aspiration/AspirationBuilder";
 import { DynastyBuilder } from "./dynasty/DynastyBuilder";
 import { NotificationLibrary } from "./preview/NotificationLibrary";
+import { PreviewStudio } from "./preview/PreviewStudio";
 import { useBuilderRecord } from "@/lib/builder-record";
 import { BuilderRecordBar } from "./BuilderRecordBar";
 import { ImageField } from "./ImageField";
@@ -1367,6 +1368,10 @@ function CareerBuilder() {
         .filter((r) => r.promotionReward)
         .map((r) => ({ name: r.promotionReward, tier: r.lvl })),
     })),
+    cover: resolveCover(covers)?.master,
+    branchCovers: Object.fromEntries(
+      branches.map((b) => [b.id, resolveCover(covers, b.id)?.master]),
+    ),
   };
 
   const tabs: {
@@ -5439,7 +5444,7 @@ export function SectionView({
     return (
       <div className="mx-auto max-w-[1600px] p-6">
         <RequireProject>
-          <NotificationLibrary />
+          <PreviewSection />
         </RequireProject>
       </div>
     );
@@ -5551,4 +5556,35 @@ export function SectionView({
       </div>
     );
   return null;
+}
+
+/* ---------------- In-game UI preview section ---------------- */
+
+function PreviewSection() {
+  const [tab, setTab] = useState<"studio" | "library">("studio");
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1">
+        {[
+          { id: "studio" as const, label: "In-Game UI Preview Engine" },
+          { id: "library" as const, label: "Notification Library" },
+        ].map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={
+              "rounded-lg px-3 py-1.5 text-[12.5px] font-semibold transition-colors " +
+              (tab === t.id
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground")
+            }
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {tab === "studio" ? <PreviewStudio /> : <NotificationLibrary />}
+    </div>
+  );
 }
