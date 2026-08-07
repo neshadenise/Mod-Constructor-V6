@@ -78,7 +78,14 @@ import { NotificationLibrary } from "./preview/NotificationLibrary";
 import { useBuilderRecord } from "@/lib/builder-record";
 import { BuilderRecordBar } from "./BuilderRecordBar";
 import { ImageField } from "./ImageField";
-import { CoverImageField } from "./CoverImageField";
+import { CareerCoverSection } from "./career/CareerCoverSection";
+import {
+  emptyCoverSet,
+  resolveCover,
+  type CoverPromptContext,
+  type CoverSet,
+} from "@/lib/cover";
+
 
 import {
   useAppHost,
