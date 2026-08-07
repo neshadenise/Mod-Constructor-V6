@@ -104,7 +104,7 @@ function Row({ checked, onChange, label, hint, required }: { checked: boolean; o
 export default function ExportCenter() {
   const store = useStore();
   const { advanced } = useAdvanced();
-  const imports = useSyncExternalStore(subscribeImports, listImportedProjects, () => []);
+  const imports = useSyncExternalStore(subscribeImports, listImportedProjects, listImportedProjects);
 
   const project = store.state.projects.find((p) => p.id === store.state.activeProjectId) ?? store.state.projects[0];
   const pid = project?.id;
