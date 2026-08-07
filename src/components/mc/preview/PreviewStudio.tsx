@@ -146,7 +146,7 @@ export function PreviewStudio() {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)_minmax(0,420px)]">
+    <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-[260px_minmax(0,1fr)_minmax(0,420px)]">
       {/* ---- library ---- */}
       <aside className="rounded-xl border border-border bg-card p-3">
         <div className="mb-2 flex items-center gap-2">
