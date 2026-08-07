@@ -57,44 +57,84 @@ export function IconFrame({
   );
 }
 
-/** ---------- Sim portrait placeholder ---------- */
+/** ---------- Sim portrait (default dialogue sim) ---------- */
 export function SimPortrait({
   name = "Ada Nova",
   age = "Young Adult",
   size = 56,
+  src = defaultSim.url,
+  showMeta = true,
 }: {
   name?: string;
   age?: string;
   size?: number;
+  src?: string;
+  showMeta?: boolean;
 }) {
   return (
     <div className="flex items-center gap-2.5">
       <div
-        className="relative overflow-hidden rounded-full ring-2 ring-white/60"
+        className="relative shrink-0 overflow-hidden rounded-full ring-2 ring-white/60"
         style={{
           width: size,
           height: size,
-          background:
-            "radial-gradient(circle at 50% 35%, oklch(0.86 0.06 60), oklch(0.68 0.09 30) 55%, oklch(0.45 0.09 30))",
+          background: "linear-gradient(160deg, oklch(0.88 0.05 200), oklch(0.78 0.06 190))",
         }}
-        aria-label={`${name} portrait placeholder`}
       >
-        <div
-          className="absolute left-1/2 top-[62%] h-[55%] w-[75%] -translate-x-1/2 rounded-t-[50%]"
-          style={{ background: "oklch(0.35 0.05 250)" }}
-        />
-        <div
-          className="absolute left-1/2 top-[30%] h-[38%] w-[54%] -translate-x-1/2 rounded-full"
-          style={{ background: "oklch(0.82 0.07 55)" }}
+        <img
+          src={src}
+          alt={`${name} portrait`}
+          loading="lazy"
+          className="h-full w-full object-cover"
+          style={{ objectPosition: "52% 22%", transform: "scale(1.25)" }}
         />
       </div>
-      <div>
-        <div className="text-[13px] font-bold leading-tight">{name}</div>
-        <div className="text-[10.5px] opacity-70">{age}</div>
+      {showMeta && (
+        <div>
+          <div className="text-[13px] font-bold leading-tight">{name}</div>
+          <div className="text-[10.5px] opacity-70">{age}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** ---------- Dialogue bubble with sim portrait ---------- */
+export function SimDialogue({
+  name = "Ada Nova",
+  text,
+  choices,
+  portrait = defaultSim.url,
+}: {
+  name?: string;
+  text: string;
+  choices?: string[];
+  portrait?: string;
+}) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <SimPortrait name={name} size={48} src={portrait} showMeta={false} />
+      <div className="relative min-w-0 flex-1 rounded-xl border border-black/5 bg-white px-3 py-2 shadow-[0_10px_28px_-18px_rgba(15,23,42,0.5)] [[data-preview-theme='dark']_&]:border-white/10 [[data-preview-theme='dark']_&]:bg-white/[0.08]">
+        <span className="absolute -left-1.5 top-4 h-3 w-3 rotate-45 border-b border-l border-black/5 bg-white [[data-preview-theme='dark']_&]:border-white/10 [[data-preview-theme='dark']_&]:bg-white/[0.08]" />
+        <div className="text-[11px] font-bold uppercase tracking-wider opacity-60">{name}</div>
+        <p className="mt-0.5 text-[12.5px] leading-relaxed">{text}</p>
+        {choices && choices.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {choices.map((c) => (
+              <button
+                key={c}
+                className="rounded-md bg-black/5 px-2 py-1 text-[10.5px] font-semibold transition-colors hover:bg-black/10 [[data-preview-theme='dark']_&]:bg-white/10 [[data-preview-theme='dark']_&]:hover:bg-white/15"
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
 
 /** ---------- Preview card wrapper ---------- */
 export function PreviewCard({
