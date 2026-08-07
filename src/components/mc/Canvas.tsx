@@ -93,7 +93,6 @@ export function Canvas() {
       },
     ];
 
-    const columns: { items: CanvasNode[]; x: number }[] = [];
     const mk = (kind: NodeKind, id: string, label: string, sub: string): CanvasNode => ({
       id: `${kind}:${id}`,
       kind,
@@ -108,8 +107,6 @@ export function Canvas() {
       ...traits.map((t) => mk("trait", t.id, t.name || "Untitled trait", "Trait")),
       ...aspirations.map((a) => mk("aspiration", a.id, a.name || "Untitled aspiration", "Aspiration")),
     ];
-    columns.push({ items: middle, x: 330 });
-
     middle.forEach((n, i) => {
       const gap = Math.min(78, (CANVAS_H - 60) / Math.max(middle.length, 1));
       n.x = 330;
