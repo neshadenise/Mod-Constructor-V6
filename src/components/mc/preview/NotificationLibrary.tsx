@@ -394,6 +394,15 @@ function TemplateDialog({
               text={body || "Body copy will appear here."}
               choices={actionLabel ? [actionLabel, "Not now"] : ["Okay", "Not now"]}
             />
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Two-sim conversation</div>
+            <SimConversation
+              lines={[
+                { speaker: "a", text: body || "Body copy will appear here." },
+                { speaker: "b", text: title ? `About "${title}" — count me in!` : "Sounds good to me!" },
+              ]}
+              choices={actionLabel ? [actionLabel, "Not now"] : ["Okay", "Not now"]}
+            />
+
           </div>
 
         </div>
