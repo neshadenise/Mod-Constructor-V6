@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import defaultSim from "@/assets/default-sim.png.asset.json";
 import {
   Sparkles,
   Star,
