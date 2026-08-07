@@ -401,8 +401,10 @@ function Scene({ kind, id, scene }: { kind: PreviewKind; id: string | null; scen
 
     return (
       <CareerCard
+        cover={c.coverImage}
         name={c.name || "Untitled Career"}
         description={c.description || "No description yet."}
+
         level={lvl?.rank ?? 1}
         levelTitle={lvl?.title || "Trainee"}
         pay={pay(lvl?.salary)}
