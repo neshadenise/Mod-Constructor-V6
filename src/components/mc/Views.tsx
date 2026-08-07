@@ -1189,6 +1189,8 @@ function CareerBuilder() {
     setIcon(d.icon ?? "");
     setImage(d.image ?? "");
     setCoverImage(d.coverImage);
+    setCovers(d.covers ?? emptyCoverSet());
+
     setAges(d.ages);
     setCompanyNames(d.companyNames ?? []);
     setPtoEnabled(!!d.ptoEnabled);
