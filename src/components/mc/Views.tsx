@@ -1473,7 +1473,16 @@ function CareerBuilder() {
             </div>
           </Card>
 
-          <Card title="Icon & Cover Art">
+          <CareerCoverSection
+            context={coverContext}
+            branches={branches.map((b) => ({ id: b.id, name: b.name }))}
+            activeBranchId={branchId}
+            value={covers}
+            onChange={setCovers}
+            advanced={advanced}
+          />
+
+          <Card title="Icons">
             <div className="grid grid-cols-2 gap-3">
               <ImageField
                 label="Icon"
@@ -1492,15 +1501,8 @@ function CareerBuilder() {
                 context={{ subject: `${name || "career"} splash`, style: "cinematic" }}
               />
             </div>
-            <div className="mt-3">
-              <CoverImageField
-                label="Career Cover Image"
-                value={coverImage}
-                onChange={setCoverImage}
-                subject={name || "career"}
-              />
-            </div>
           </Card>
+
 
           <Card
             title="Age Availability"
