@@ -89,6 +89,71 @@ export function ModImporter() {
   const bytesRef = useRef<Map<string, Uint8Array>>(new Map());
   const ex = useExplorer();
   const activeProject = useActiveProject();
+  const store = useStore();
+  const nav = useAppNavigation();
+
+  /**
+   * Open an imported mod in the builder that owns it. Each detected tuning
+   * becomes a record in the active project (existing records with the same
+   * name are reused), then we jump to that builder with the first one open.
+   */
+  const openInBuilder = useCallback(
+    (project: ModProject, detection: BuilderDetection) => {
+      if (!detection.supported) {
+        toast.error(`${detection.label} can't open imported files yet`, {
+          description: "Save the mod to your project and edit its tuning in the Project Explorer.",
+        });
+        return;
+      }
+      if (!activeProject) {
+        toast.error("Open a project first", {
+          description: "Imported mods are added to the project you have open.",
+        });
+        return;
+      }
+      const kind = detection.kind as BuilderKind;
+      const existing =
+        kind === "career"
+          ? store.state.careers
+          : kind === "trait"
+            ? store.state.traits
+            : store.state.aspirations;
+      const mine = existing.filter((r) => r.projectId === activeProject.id);
+
+      let firstId: string | null = null;
+      let created = 0;
+      for (const item of detection.items.slice(0, 25)) {
+        const name = item.name || item.source;
+        const hit = mine.find((r) => r.name.toLowerCase() === name.toLowerCase());
+        if (hit) {
+          firstId ??= hit.id;
+          continue;
+        }
+        const init = {
+          projectId: activeProject.id,
+          name,
+          description: `Imported from ${project.name}`,
+        };
+        const rec =
+          kind === "career"
+            ? store.createCareer(init as never)
+            : kind === "trait"
+              ? store.createTrait(init as never)
+              : store.createAspiration(init as never);
+        created++;
+        firstId ??= rec.id;
+      }
+
+      nav.navigate(kind);
+      if (firstId) requestRevealRecord(kind, firstId);
+      toast.success(`Opened in the ${detection.label}`, {
+        description: created
+          ? `${created} item${created === 1 ? "" : "s"} from "${project.name}" added to ${activeProject.name}.`
+          : `Using the matching record${detection.items.length === 1 ? "" : "s"} already in ${activeProject.name}.`,
+      });
+    },
+    [activeProject, nav, store],
+  );
 
   /* Bring back the last import: reloading or updating the app must never
      throw away work that is already analysed. */
