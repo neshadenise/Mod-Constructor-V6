@@ -78,7 +78,14 @@ import { NotificationLibrary } from "./preview/NotificationLibrary";
 import { useBuilderRecord } from "@/lib/builder-record";
 import { BuilderRecordBar } from "./BuilderRecordBar";
 import { ImageField } from "./ImageField";
-import { CoverImageField } from "./CoverImageField";
+import { CareerCoverSection } from "./career/CareerCoverSection";
+import {
+  emptyCoverSet,
+  resolveCover,
+  type CoverPromptContext,
+  type CoverSet,
+} from "@/lib/cover";
+
 
 import {
   useAppHost,
@@ -1060,6 +1067,8 @@ function CareerBuilder() {
   const [icon, setIcon] = useState("");
   const [image, setImage] = useState("");
   const [coverImage, setCoverImage] = useState<string | undefined>(undefined);
+  const [covers, setCovers] = useState<CoverSet>(() => emptyCoverSet());
+
 
   const [ages, setAges] = useState<Record<Age, boolean>>({
     Child: false,
@@ -1099,6 +1108,34 @@ function CareerBuilder() {
   const [branchId, setBranchId] = useState(branches[0].id);
   const branch = branches.find((b) => b.id === branchId) ?? branches[0];
 
+  /* --- Career Cover: prompt context + preview propagation --- */
+  const coverContext: CoverPromptContext = useMemo(
+    () => ({
+      careerName: name,
+      careerDescription: description,
+      branchName: branch?.name,
+      branchDescription: branch?.description,
+      category,
+      careerType,
+      promotionTitles: (branch?.ranks ?? []).map((r) => r.title).filter(Boolean),
+      rewards: (branch?.ranks ?? []).map((r) => r.promotionReward).filter(Boolean),
+      skills: (branch?.ranks ?? []).map((r) => r.objectiveSet).filter(Boolean).slice(0, 4),
+      events: (branch?.events ?? []).map((e) => e.name).filter(Boolean),
+      objects: (branch?.assignments ?? []).map((a) => a.name).filter(Boolean),
+      workOutfit: (branch?.ranks ?? []).find((r) => r.uniform)?.uniform,
+    }),
+    [name, description, branch, category, careerType],
+  );
+
+  // Every preview surface reads `coverImage`; keep it on the active branch's
+  // cover, falling back to the main career cover.
+  const activeCover = resolveCover(covers, branchId);
+  useEffect(() => {
+    setCoverImage(activeCover?.master);
+  }, [activeCover?.master]);
+
+
+
   // Sub-tab
   const [tab, setTab] = useState<
     "identity" | "levels" | "assignments" | "events" | "messages" | "advanced"
@@ -1113,6 +1150,8 @@ function CareerBuilder() {
     icon: string;
     image: string;
     coverImage?: string;
+    covers?: CoverSet;
+
     ages: Record<Age, boolean>;
     companyNames: string[];
     ptoEnabled: boolean;
@@ -1131,6 +1170,8 @@ function CareerBuilder() {
     icon,
     image,
     coverImage,
+    covers,
+
     ages,
     companyNames,
     ptoEnabled,
@@ -1149,6 +1190,8 @@ function CareerBuilder() {
     setIcon(d.icon ?? "");
     setImage(d.image ?? "");
     setCoverImage(d.coverImage);
+    setCovers(d.covers ?? emptyCoverSet());
+
     setAges(d.ages);
     setCompanyNames(d.companyNames ?? []);
     setPtoEnabled(!!d.ptoEnabled);
@@ -1168,6 +1211,8 @@ function CareerBuilder() {
     icon: "",
     image: "",
     coverImage: undefined,
+    covers: emptyCoverSet(),
+
     ages: { Child: false, Teen: false, YoungAdult: true, Adult: true, Elder: true },
     companyNames: [],
     ptoEnabled: true,
@@ -1197,6 +1242,19 @@ function CareerBuilder() {
       };
     },
   });
+
+  /* Mirror the active cover onto the stored career so previews, the explorer
+     and the export snapshot all see the same art. */
+  const coverStore = useStore();
+  const coverRecordId = record.currentId;
+  useEffect(() => {
+    if (!coverRecordId) return;
+    const rec = coverStore.state.careers.find((c) => c.id === coverRecordId);
+    if (!rec || rec.coverImage === activeCover?.master) return;
+    coverStore.updateCareer(coverRecordId, { coverImage: activeCover?.master });
+  }, [coverRecordId, activeCover?.master, coverStore]);
+
+
 
   // Hydrate the builder when a template is opened here.
   useBuilderSeed<CareerPayload>("career", (p) => {
@@ -1473,7 +1531,16 @@ function CareerBuilder() {
             </div>
           </Card>
 
-          <Card title="Icon & Cover Art">
+          <CareerCoverSection
+            context={coverContext}
+            branches={branches.map((b) => ({ id: b.id, name: b.name }))}
+            activeBranchId={branchId}
+            value={covers}
+            onChange={setCovers}
+            advanced={advanced}
+          />
+
+          <Card title="Icons">
             <div className="grid grid-cols-2 gap-3">
               <ImageField
                 label="Icon"
@@ -1492,15 +1559,8 @@ function CareerBuilder() {
                 context={{ subject: `${name || "career"} splash`, style: "cinematic" }}
               />
             </div>
-            <div className="mt-3">
-              <CoverImageField
-                label="Career Cover Image"
-                value={coverImage}
-                onChange={setCoverImage}
-                subject={name || "career"}
-              />
-            </div>
           </Card>
+
 
           <Card
             title="Age Availability"

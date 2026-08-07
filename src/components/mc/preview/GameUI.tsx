@@ -334,6 +334,7 @@ export function CareerCard({
   emoji = "🚀",
   requirements,
   rewards,
+  cover,
 }: {
   name: string;
   description: string;
@@ -347,10 +348,18 @@ export function CareerCard({
   emoji?: string;
   requirements: { label: string; met?: boolean }[];
   rewards: { label: string; kind?: "trait" | "perk" | "item" | "money" }[];
+  /** 2:1 promotional cover art for the career / active branch. */
+  cover?: string;
 }) {
   return (
     <PreviewCard>
+      {cover && (
+        <div className="mb-3 overflow-hidden rounded-lg" style={{ aspectRatio: "2 / 1" }}>
+          <img src={cover} alt={`${name} cover`} className="h-full w-full object-cover" />
+        </div>
+      )}
       <div className="flex items-start gap-3">
+
         <IconFrame emoji={emoji} color={color} size={54} label={name} />
         <div className="min-w-0 flex-1">
           <div className="text-[14px] font-bold leading-tight">{name}</div>
