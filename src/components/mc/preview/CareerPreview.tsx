@@ -16,6 +16,8 @@ import {
   PerformanceMeter,
 } from "./GameUI";
 import { cn } from "@/lib/utils";
+import { PreviewRenderer, type PreviewBranch } from "./engine/Templates";
+import { CAREER_PREVIEW_PRESETS, createDoc } from "@/lib/preview-engine/registry";
 
 export type CareerPreviewData = {
   name: string;
@@ -36,6 +38,10 @@ export type CareerPreviewData = {
     perks: { name: string; tier: number }[];
   }[];
   activeBranch: string;
+  /** Career-level cover art (fitted master). */
+  cover?: string;
+  /** Branch cover overrides, keyed by branch id. */
+  branchCovers?: Record<string, string | undefined>;
 };
 
 const CAREER_TABS = [
@@ -51,6 +57,12 @@ const CAREER_TABS = [
   "Performance Review",
   "Missed Work",
 ] as const;
+
+/** Engine-driven Sims 4 UI patterns that the legacy tabs do not already cover. */
+const ENGINE_TABS = CAREER_PREVIEW_PRESETS.filter(
+  (p) => !(CAREER_TABS as readonly string[]).includes(p.label),
+);
+
 
 function scenarioLevel(s: Scenario, maxRank: number): number {
   switch (s) {
@@ -79,7 +91,7 @@ function scenarioPerformance(s: Scenario): number {
 export function CareerPreview({ data }: { data: CareerPreviewData }) {
   const toolbar = usePreviewToolbar({
     previewType: CAREER_TABS[0],
-    types: [...CAREER_TABS],
+    types: [...CAREER_TABS, ...ENGINE_TABS.map((t) => t.label)],
   });
   const [selectedBranchKey, setSelectedBranchKey] = useState(data.activeBranch);
 
@@ -111,11 +123,52 @@ export function CareerPreview({ data }: { data: CareerPreviewData }) {
     branch.ranks.find((r) => r.lvl === level + 1) ?? null;
   const performance = scenarioPerformance(toolbar.scenario);
 
+  /* Engine-driven Sims 4 UI patterns (chance cards, calls, pickers, …). */
+  const enginePreset = ENGINE_TABS.find((p) => p.label === toolbar.previewType);
+  const engineDoc = useMemo(() => {
+    if (!enginePreset) return null;
+    const base = createDoc(enginePreset.kind, "career-builder", enginePreset.label);
+    return {
+      ...base,
+      ...enginePreset.overrides,
+      careerName: name,
+      icon: emoji,
+      image:
+        enginePreset.kind === "promotion" || enginePreset.kind === "demotion"
+          ? data.branchCovers?.[branch.key] ?? data.cover
+          : base.image,
+      toTitle: base.toTitle ?? currentRank.title,
+      fromTitle: base.fromTitle ?? currentRank.title,
+    };
+  }, [enginePreset, name, emoji, data.cover, data.branchCovers, branch.key, currentRank.title]);
+
+  const engineBranches: PreviewBranch[] = useMemo(
+    () =>
+      data.branches.map((b) => ({
+        key: b.key,
+        name: b.name,
+        description: b.description,
+        emoji: b.emoji,
+        color: b.color,
+        cover: data.branchCovers?.[b.key] ?? data.cover,
+        levels: b.ranks.map((r) => ({ level: r.lvl, title: r.title, pay: r.pay })),
+      })),
+    [data.branches, data.branchCovers, data.cover],
+  );
+
   return (
     <div>
       <PreviewToolbar state={toolbar} accent="blue" title="Career Live Preview" />
       <PreviewSurface state={toolbar}>
+        {engineDoc && (
+          <PreviewRenderer
+            key={`${engineDoc.kind}-${enginePreset?.label}`}
+            doc={engineDoc}
+            ctx={{ branches: engineBranches, cover: data.cover }}
+          />
+        )}
         {toolbar.previewType === "Career Panel" && (
+
           <CareerCard
             name={name}
             description={description}
