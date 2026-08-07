@@ -36,6 +36,9 @@ const BUILDER_LABEL: Record<BuilderKind, string> = {
   aspiration: "Aspiration Builder",
 };
 
+/** Virtual (builder-backed) explorer entries are read-only in the Explorer. */
+const isVirtual = (id: string) => id.startsWith("virtual:");
+
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
 
 export type BuilderTarget = { kind: BuilderKind; id?: string; label: string };
@@ -291,6 +294,7 @@ export function ProjectExplorer() {
   /* ------------------------- actions ------------------------- */
 
   const startRename = (id: string) => {
+    if (isVirtual(id)) { toast.message("Rename this record from its builder instead."); return; }
     const item = all.find((i) => i.id === id) ?? trashed.find((i) => i.id === id);
     if (!item) return;
     setRenaming(id);
@@ -307,6 +311,7 @@ export function ProjectExplorer() {
 
   const newFolder = (parent: string | null) => {
     if (!projectId) return;
+    if (parent && isVirtual(parent)) { toast.message("Builder folders are managed by their builder."); return; }
     const created = ex.createFolder(projectId, parent, "New Folder");
     if (!created) {
       toast.error("Could not create folder.");
@@ -322,6 +327,7 @@ export function ProjectExplorer() {
   const uploadInto = useCallback(
     async (parent: string | null, files: FileList | File[]) => {
       if (!projectId) return;
+      if (parent && isVirtual(parent)) { toast.message("Builder folders are managed by their builder."); return; }
       const list = Array.from(files);
       if (!list.length) return;
       const payloads = await Promise.all(list.map(readFilePayload));
@@ -340,6 +346,7 @@ export function ProjectExplorer() {
   };
 
   const requestDelete = (ids: string[]) => {
+    if (ids.some(isVirtual)) { toast.message("Delete this record from its builder instead."); return; }
     if (!ids.length) return;
     const items = ids.map((id) => all.find((i) => i.id === id)).filter(Boolean) as ProjectExplorerItem[];
     const needsConfirm =
