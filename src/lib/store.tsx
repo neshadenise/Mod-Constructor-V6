@@ -473,7 +473,10 @@ export function StoreProvider({ children, adapter = localStorageAdapter }: Provi
   const log = useCallback((e: Omit<ActivityEvent, "id" | "createdAt">) => {
     mutate((s) => ({
       ...s,
-      activity: [{ ...e, id: uid(), createdAt: now() }, ...s.activity].slice(0, 500),
+      activity: [
+        { ...e, projectId: e.projectId ?? s.activeProjectId, id: uid(), createdAt: now() },
+        ...s.activity,
+      ].slice(0, 500),
     }));
   }, [mutate]);
 

@@ -1,49 +1,22 @@
+/**
+ * Dependency Graph — a real map of the active project.
+ *
+ * Nodes and edges are derived from the project's own records: the output
+ * package, its careers / traits / aspirations / notifications, and the assets
+ * those records reference. Selecting a node shows its true dependencies.
+ */
+
 import { useMemo, useState } from "react";
 import { Network, Briefcase, Sparkles, Target, Bell, Package, Boxes } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { CompatibilityTile } from "@/components/mc/HealthMetrics";
 import { DependencyCheckerCard } from "@/components/mc/Dashboard";
+import { useStore } from "@/lib/store";
+import { scopeProject } from "@/lib/project-analysis";
 
 type NodeKind = "career" | "trait" | "aspiration" | "notification" | "asset" | "package";
 
-type GNode = {
-  id: string;
-  label: string;
-  kind: NodeKind;
-  x: number;
-  y: number;
-};
-
+type GNode = { id: string; label: string; kind: NodeKind; x: number; y: number };
 type GEdge = { from: string; to: string };
-
-const NODES: GNode[] = [
-  { id: "pkg", label: "epic_careers.package", kind: "package", x: 480, y: 60 },
-  { id: "c1", label: "Marine Biologist", kind: "career", x: 220, y: 200 },
-  { id: "c2", label: "Reef Guardian", kind: "career", x: 480, y: 200 },
-  { id: "c3", label: "Deep-Sea Engineer", kind: "career", x: 740, y: 200 },
-  { id: "t1", label: "Ocean Lover", kind: "trait", x: 140, y: 360 },
-  { id: "t2", label: "Analytical", kind: "trait", x: 340, y: 360 },
-  { id: "as1", label: "Peak Diver", kind: "aspiration", x: 560, y: 360 },
-  { id: "n1", label: "Promotion Toast", kind: "notification", x: 760, y: 360 },
-  { id: "a1", label: "diver_uniform.png", kind: "asset", x: 220, y: 500 },
-  { id: "a2", label: "reef_icon.png", kind: "asset", x: 480, y: 500 },
-  { id: "a3", label: "engineer_icon.png", kind: "asset", x: 740, y: 500 },
-];
-
-const EDGES: GEdge[] = [
-  { from: "pkg", to: "c1" },
-  { from: "pkg", to: "c2" },
-  { from: "pkg", to: "c3" },
-  { from: "c1", to: "t1" },
-  { from: "c1", to: "t2" },
-  { from: "c2", to: "as1" },
-  { from: "c1", to: "n1" },
-  { from: "c2", to: "n1" },
-  { from: "c3", to: "n1" },
-  { from: "c1", to: "a1" },
-  { from: "c2", to: "a2" },
-  { from: "c3", to: "a3" },
-];
 
 const META: Record<NodeKind, { icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; color: string; label: string }> = {
   career: { icon: Briefcase, color: "var(--blue)", label: "Career" },
@@ -54,21 +27,108 @@ const META: Record<NodeKind, { icon: React.ComponentType<React.SVGProps<SVGSVGEl
   package: { icon: Package, color: "var(--green)", label: "Package" },
 };
 
+const WIDTH = 900;
+
+/** Lays a row of nodes out evenly across the canvas at a given height. */
+function row<T>(items: T[], y: number, make: (item: T, x: number, y: number) => GNode): GNode[] {
+  const n = items.length;
+  return items.map((item, i) => make(item, ((i + 1) / (n + 1)) * WIDTH, y));
+}
+
 export function DependencyGraph() {
-  const [selected, setSelected] = useState<string | null>("c1");
+  const store = useStore();
+  const project = store.state.projects.find((p) => p.id === store.state.activeProjectId);
+  const scope = useMemo(() => scopeProject(store.state, project?.id), [store.state, project?.id]);
+
+  const { nodes, edges } = useMemo(() => {
+    if (!scope) return { nodes: [] as GNode[], edges: [] as GEdge[] };
+    const { careers, traits, aspirations, notifications, assets } = scope;
+
+    const nodes: GNode[] = [
+      { id: "pkg", label: `${scope.project.name}.package`, kind: "package", x: WIDTH / 2, y: 50 },
+    ];
+    const edges: GEdge[] = [];
+
+    const contentRows: GNode[] = [
+      ...row(careers, 180, (c, x, y) => ({ id: `career:${c.id}`, label: c.name, kind: "career", x, y })),
+    ];
+    nodes.push(...contentRows);
+
+    const mid = [
+      ...row(traits, 320, (t, x, y) => ({ id: `trait:${t.id}`, label: t.name, kind: "trait", x, y })),
+    ];
+    const asp = row(aspirations, 320, (a, x, y) => ({
+      id: `aspiration:${a.id}`,
+      label: a.name,
+      kind: "aspiration",
+      x,
+      y: y + 70,
+    }));
+    const notes = row(notifications, 460, (n, x, y) => ({
+      id: `notification:${n.id}`,
+      label: n.name,
+      kind: "notification",
+      x,
+      y,
+    }));
+    nodes.push(...mid, ...asp, ...notes);
+
+    const usedAssetIds = new Set(
+      [...careers, ...traits, ...aspirations, ...notifications]
+        .map((r) => r.iconAssetId)
+        .filter(Boolean) as string[],
+    );
+    const usedAssets = assets.filter((a) => usedAssetIds.has(a.id));
+    nodes.push(
+      ...row(usedAssets, 560, (a, x, y) => ({ id: `asset:${a.id}`, label: a.name, kind: "asset", x, y })),
+    );
+
+    // Package owns every top-level record.
+    for (const n of [...contentRows, ...mid, ...asp, ...notes]) edges.push({ from: "pkg", to: n.id });
+
+    // Records depend on the icon asset they reference.
+    for (const r of [...careers, ...traits, ...aspirations, ...notifications]) {
+      if (r.iconAssetId && usedAssetIds.has(r.iconAssetId)) {
+        const kind: NodeKind = "careerType" in r ? "career" : "buffs" in r ? "trait" : "milestones" in r ? "aspiration" : "notification";
+        edges.push({ from: `${kind}:${r.id}`, to: `asset:${r.iconAssetId}` });
+      }
+    }
+
+    // Careers depend on the reward trait each branch grants.
+    for (const c of careers)
+      for (const b of c.branches ?? [])
+        if (b.rewardTraitId && traits.some((t) => t.id === b.rewardTraitId))
+          edges.push({ from: `career:${c.id}`, to: `trait:${b.rewardTraitId}` });
+
+    // Aspirations depend on their reward trait.
+    for (const a of aspirations)
+      if (a.rewardTraitId && traits.some((t) => t.id === a.rewardTraitId))
+        edges.push({ from: `aspiration:${a.id}`, to: `trait:${a.rewardTraitId}` });
+
+    return { nodes, edges };
+  }, [scope]);
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = nodes.find((n) => n.id === selectedId) ? selectedId : null;
 
   const connected = useMemo(() => {
     if (!selected) return new Set<string>();
     const s = new Set<string>([selected]);
-    EDGES.forEach((e) => {
+    edges.forEach((e) => {
       if (e.from === selected) s.add(e.to);
       if (e.to === selected) s.add(e.from);
     });
     return s;
-  }, [selected]);
+  }, [selected, edges]);
 
-  const activeNode = NODES.find((n) => n.id === selected) ?? null;
+  const activeNode = nodes.find((n) => n.id === selected) ?? null;
   const activeMeta = activeNode ? META[activeNode.kind] : null;
+
+  if (!project || !scope) {
+    return <p className="text-sm text-muted-foreground">Open a project to see its dependency graph.</p>;
+  }
+
+  const contentCount = nodes.length - 1;
 
   return (
     <div className="space-y-4">
@@ -79,7 +139,7 @@ export function DependencyGraph() {
           </div>
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Workspace
+              {project.name}
             </div>
             <h1 className="text-xl font-bold tracking-tight">Dependency Graph</h1>
           </div>
@@ -97,7 +157,6 @@ export function DependencyGraph() {
         </div>
       </div>
 
-      {/* Compatibility — moved here from the Dashboard */}
       <CompatibilityTile />
 
       <DependencyCheckerCard />
@@ -105,59 +164,67 @@ export function DependencyGraph() {
       <div className="grid grid-cols-12 gap-4">
         <section className="col-span-12 rounded-xl border border-border bg-card p-2 card-elevated lg:col-span-9">
           <div className="overflow-hidden rounded-lg grid-canvas" style={{ height: 620 }}>
-            <svg viewBox="0 0 900 600" className="h-full w-full">
-              <defs>
-                <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                  <path d="M0,0 L10,5 L0,10 z" fill="currentColor" className="text-muted-foreground" />
-                </marker>
-              </defs>
-              {EDGES.map((e, i) => {
-                const a = NODES.find((n) => n.id === e.from)!;
-                const b = NODES.find((n) => n.id === e.to)!;
-                const highlighted = !selected || (connected.has(a.id) && connected.has(b.id));
-                return (
-                  <line
-                    key={i}
-                    x1={a.x}
-                    y1={a.y}
-                    x2={b.x}
-                    y2={b.y}
-                    stroke={highlighted ? "var(--blue)" : "currentColor"}
-                    strokeOpacity={highlighted ? 0.5 : 0.15}
-                    strokeWidth={highlighted ? 1.8 : 1}
-                    markerEnd="url(#arrow)"
-                    className="text-muted-foreground"
-                  />
-                );
-              })}
-              {NODES.map((n) => {
-                const m = META[n.kind];
-                const dim = selected && !connected.has(n.id);
-                return (
-                  <g
-                    key={n.id}
-                    transform={`translate(${n.x}, ${n.y})`}
-                    onClick={() => setSelected(n.id)}
-                    style={{ cursor: "pointer", opacity: dim ? 0.35 : 1 }}
-                  >
-                    <rect
-                      x={-72}
-                      y={-22}
-                      width={144}
-                      height={44}
-                      rx={10}
-                      fill="var(--card)"
-                      stroke={selected === n.id ? m.color : "var(--border)"}
-                      strokeWidth={selected === n.id ? 2 : 1}
+            {contentCount === 0 ? (
+              <div className="flex h-full items-center justify-center px-8 text-center text-xs text-muted-foreground">
+                {project.name} has no content yet. Create a career, trait or aspiration and it will appear here
+                with its real dependencies.
+              </div>
+            ) : (
+              <svg viewBox="0 0 900 620" className="h-full w-full">
+                <defs>
+                  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                    <path d="M0,0 L10,5 L0,10 z" fill="currentColor" className="text-muted-foreground" />
+                  </marker>
+                </defs>
+                {edges.map((e, i) => {
+                  const a = nodes.find((n) => n.id === e.from);
+                  const b = nodes.find((n) => n.id === e.to);
+                  if (!a || !b) return null;
+                  const highlighted = !selected || (connected.has(a.id) && connected.has(b.id));
+                  return (
+                    <line
+                      key={i}
+                      x1={a.x}
+                      y1={a.y}
+                      x2={b.x}
+                      y2={b.y}
+                      stroke={highlighted ? "var(--blue)" : "currentColor"}
+                      strokeOpacity={highlighted ? 0.5 : 0.15}
+                      strokeWidth={highlighted ? 1.8 : 1}
+                      markerEnd="url(#arrow)"
+                      className="text-muted-foreground"
                     />
-                    <circle cx={-52} cy={0} r={9} fill={m.color} />
-                    <text x={-32} y={4} className="fill-foreground" fontSize={11} fontWeight={600}>
-                      {n.label.length > 18 ? n.label.slice(0, 17) + "…" : n.label}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
+                  );
+                })}
+                {nodes.map((n) => {
+                  const m = META[n.kind];
+                  const dim = selected && !connected.has(n.id);
+                  return (
+                    <g
+                      key={n.id}
+                      transform={`translate(${n.x}, ${n.y})`}
+                      onClick={() => setSelectedId(n.id === selected ? null : n.id)}
+                      style={{ cursor: "pointer", opacity: dim ? 0.35 : 1 }}
+                    >
+                      <rect
+                        x={-72}
+                        y={-22}
+                        width={144}
+                        height={44}
+                        rx={10}
+                        fill="var(--card)"
+                        stroke={selected === n.id ? m.color : "var(--border)"}
+                        strokeWidth={selected === n.id ? 2 : 1}
+                      />
+                      <circle cx={-52} cy={0} r={9} fill={m.color} />
+                      <text x={-32} y={4} className="fill-foreground" fontSize={11} fontWeight={600}>
+                        {n.label.length > 18 ? n.label.slice(0, 17) + "…" : n.label}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            )}
           </div>
         </section>
 
@@ -184,51 +251,34 @@ export function DependencyGraph() {
                 </div>
               </div>
 
-              <div>
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Depends on
-                </div>
-                <ul className="space-y-1 text-xs">
-                  {EDGES.filter((e) => e.from === activeNode.id).map((e, i) => {
-                    const n = NODES.find((x) => x.id === e.to)!;
-                    const m = META[n.kind];
-                    return (
-                      <li key={i} className="flex items-center gap-1.5 rounded border border-border/70 bg-background/40 px-2 py-1">
-                        <m.icon className="h-3 w-3" style={{ color: m.color }} />
-                        {n.label}
-                      </li>
-                    );
-                  })}
-                  {EDGES.filter((e) => e.from === activeNode.id).length === 0 && (
-                    <li className="text-[11px] text-muted-foreground">None</li>
-                  )}
-                </ul>
-              </div>
-
-              <div>
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Used by
-                </div>
-                <ul className="space-y-1 text-xs">
-                  {EDGES.filter((e) => e.to === activeNode.id).map((e, i) => {
-                    const n = NODES.find((x) => x.id === e.from)!;
-                    const m = META[n.kind];
-                    return (
-                      <li key={i} className="flex items-center gap-1.5 rounded border border-border/70 bg-background/40 px-2 py-1">
-                        <m.icon className="h-3 w-3" style={{ color: m.color }} />
-                        {n.label}
-                      </li>
-                    );
-                  })}
-                  {EDGES.filter((e) => e.to === activeNode.id).length === 0 && (
-                    <li className="text-[11px] text-muted-foreground">None</li>
-                  )}
-                </ul>
-              </div>
+              <Relations title="Depends on" ids={edges.filter((e) => e.from === activeNode.id).map((e) => e.to)} nodes={nodes} />
+              <Relations title="Used by" ids={edges.filter((e) => e.to === activeNode.id).map((e) => e.from)} nodes={nodes} />
             </div>
           )}
         </aside>
       </div>
+    </div>
+  );
+}
+
+function Relations({ title, ids, nodes }: { title: string; ids: string[]; nodes: GNode[] }) {
+  return (
+    <div>
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
+      <ul className="space-y-1 text-xs">
+        {ids.map((id, i) => {
+          const n = nodes.find((x) => x.id === id);
+          if (!n) return null;
+          const m = META[n.kind];
+          return (
+            <li key={i} className="flex items-center gap-1.5 rounded border border-border/70 bg-background/40 px-2 py-1">
+              <m.icon className="h-3 w-3" style={{ color: m.color }} />
+              {n.label}
+            </li>
+          );
+        })}
+        {ids.length === 0 && <li className="text-[11px] text-muted-foreground">None</li>}
+      </ul>
     </div>
   );
 }

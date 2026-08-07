@@ -13,18 +13,29 @@ export interface RegisteredImport {
 const registry = new Map<string, RegisteredImport>();
 const listeners = new Set<() => void>();
 
+/**
+ * Cached snapshot. useSyncExternalStore requires a referentially stable value
+ * between notifications — rebuilding the array on every read caused an
+ * infinite render loop in the Export Center.
+ */
+let snapshot: RegisteredImport[] = [];
+
+function refresh() {
+  snapshot = [...registry.values()];
+  listeners.forEach((l) => l());
+}
+
 export function registerImportedProject(project: ModProject, originals: Map<string, Uint8Array>) {
   registry.set(project.id, { project, originals });
-  listeners.forEach((l) => l());
+  refresh();
 }
 
 export function unregisterImportedProject(id: string) {
-  registry.delete(id);
-  listeners.forEach((l) => l());
+  if (registry.delete(id)) refresh();
 }
 
 export function listImportedProjects(): RegisteredImport[] {
-  return [...registry.values()];
+  return snapshot;
 }
 
 export function getImportedProject(id: string) {
@@ -33,5 +44,8 @@ export function getImportedProject(id: string) {
 
 export function subscribeImports(fn: () => void) {
   listeners.add(fn);
-  return () => listeners.delete(fn);
+  return () => {
+    listeners.delete(fn);
+  };
 }
+

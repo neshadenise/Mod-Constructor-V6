@@ -430,6 +430,8 @@ export interface ActivityEvent {
   kind: "create" | "update" | "delete" | "build" | "export" | "import";
   entityType: "project" | "career" | "trait" | "aspiration" | "asset" | "template" | "snippet";
   entityId?: ID;
+  /** Project the event happened in. Defaults to the active project when logged. */
+  projectId?: ID;
   summary: string;
   createdAt: Timestamp;
 }
