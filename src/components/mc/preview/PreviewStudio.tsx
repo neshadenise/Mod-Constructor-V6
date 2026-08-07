@@ -335,6 +335,8 @@ export function PreviewStudio() {
           through the sequence exactly as the player would experience them.
         </p>
       </section>
+      </div>
     </div>
   );
+
 }
