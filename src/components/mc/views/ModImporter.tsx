@@ -42,9 +42,12 @@ import {
 } from "@/lib/modimport/types";
 import { buildImportFiles } from "@/lib/modimport/save-to-project";
 import { clearImportSession, loadImportSession, saveImportSession } from "@/lib/modimport/session-store";
+import { detectBuilders, type BuilderDetection } from "@/lib/modimport/detect-builder";
 import { useExplorer } from "@/lib/explorer";
-import { useActiveProject } from "@/lib/store";
-import { FolderTree } from "lucide-react";
+import { useActiveProject, useStore } from "@/lib/store";
+import { requestRevealRecord, type BuilderKind } from "@/lib/builder-record";
+import { useAppNavigation } from "@/lib/navigation";
+import { FolderTree, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ACCEPT = ".package,.ts4script,.zip,.py,.xml,.json,.txt,.md,.cfg,.png,.jpg,.jpeg,.webp,.dds";
