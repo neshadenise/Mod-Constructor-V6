@@ -1210,6 +1210,8 @@ function CareerBuilder() {
     icon: "",
     image: "",
     coverImage: undefined,
+    covers: emptyCoverSet(),
+
     ages: { Child: false, Teen: false, YoungAdult: true, Adult: true, Elder: true },
     companyNames: [],
     ptoEnabled: true,
