@@ -36,6 +36,9 @@ const BUILDER_LABEL: Record<BuilderKind, string> = {
   aspiration: "Aspiration Builder",
 };
 
+/** Virtual (builder-backed) explorer entries are read-only in the Explorer. */
+const isVirtual = (id: string) => id.startsWith("virtual:");
+
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
 
 export type BuilderTarget = { kind: BuilderKind; id?: string; label: string };
@@ -158,8 +161,55 @@ export function ProjectExplorer() {
     if (projectId && ex.hydrated) ex.ensureScaffold(projectId);
   }, [projectId, ex.hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const all = useMemo(() => (projectId ? ex.listProject(projectId) : []), [ex, projectId]);
+  const stored = useMemo(() => (projectId ? ex.listProject(projectId) : []), [ex, projectId]);
   const trashed = useMemo(() => (projectId ? ex.listTrash(projectId) : []), [ex, projectId]);
+
+  /**
+   * Records built in this project are surfaced as read-only virtual files so
+   * the Explorer always reflects the current project's actual contents, not
+   * just uploaded assets.
+   */
+  const virtualItems = useMemo(() => {
+    if (!projectId) return [] as ProjectExplorerItem[];
+    const groups: { folder: string; ext: string; rows: { id: string; name: string; updatedAt?: number; createdAt?: number }[] }[] = [
+      { folder: "Careers", ext: "career", rows: store.state.careers.filter((c) => c.projectId === projectId) },
+      { folder: "Traits", ext: "trait", rows: store.state.traits.filter((t) => t.projectId === projectId) },
+      { folder: "Aspirations", ext: "aspiration", rows: store.state.aspirations.filter((a) => a.projectId === projectId) },
+      { folder: "Notifications", ext: "notification", rows: store.state.notifications.filter((n) => n.projectId === projectId) },
+    ];
+    const out: ProjectExplorerItem[] = [];
+    for (const g of groups) {
+      if (!g.rows.length) continue;
+      const folderId = `virtual:${projectId}:${g.folder}`;
+      out.push({
+        id: folderId,
+        projectId,
+        parentFolderId: null,
+        itemType: "folder",
+        name: g.folder,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+      });
+      for (const r of g.rows) {
+        out.push({
+          id: `virtual:${g.ext}:${r.id}`,
+          projectId,
+          parentFolderId: folderId,
+          itemType: "file",
+          name: `${r.name || "Untitled"}.${g.ext}`,
+          extension: g.ext,
+          createdAt: new Date(r.createdAt ?? Date.now()).toISOString(),
+          updatedAt: new Date(r.updatedAt ?? Date.now()).toISOString(),
+          deletedAt: null,
+        });
+      }
+    }
+    return out;
+  }, [projectId, store.state.careers, store.state.traits, store.state.aspirations, store.state.notifications]);
+
+  const all = useMemo(() => [...virtualItems, ...stored], [virtualItems, stored]);
+
 
   const childrenOf = useCallback(
     (parent: string | null) => all.filter((i) => i.parentFolderId === parent),
@@ -244,6 +294,7 @@ export function ProjectExplorer() {
   /* ------------------------- actions ------------------------- */
 
   const startRename = (id: string) => {
+    if (isVirtual(id)) { toast.message("Rename this record from its builder instead."); return; }
     const item = all.find((i) => i.id === id) ?? trashed.find((i) => i.id === id);
     if (!item) return;
     setRenaming(id);
@@ -260,6 +311,7 @@ export function ProjectExplorer() {
 
   const newFolder = (parent: string | null) => {
     if (!projectId) return;
+    if (parent && isVirtual(parent)) { toast.message("Builder folders are managed by their builder."); return; }
     const created = ex.createFolder(projectId, parent, "New Folder");
     if (!created) {
       toast.error("Could not create folder.");
@@ -275,6 +327,7 @@ export function ProjectExplorer() {
   const uploadInto = useCallback(
     async (parent: string | null, files: FileList | File[]) => {
       if (!projectId) return;
+      if (parent && isVirtual(parent)) { toast.message("Builder folders are managed by their builder."); return; }
       const list = Array.from(files);
       if (!list.length) return;
       const payloads = await Promise.all(list.map(readFilePayload));
@@ -293,6 +346,7 @@ export function ProjectExplorer() {
   };
 
   const requestDelete = (ids: string[]) => {
+    if (ids.some(isVirtual)) { toast.message("Delete this record from its builder instead."); return; }
     if (!ids.length) return;
     const items = ids.map((id) => all.find((i) => i.id === id)).filter(Boolean) as ProjectExplorerItem[];
     const needsConfirm =
