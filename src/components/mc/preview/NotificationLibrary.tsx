@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Bell, Search, Copy, Check, Plus, Trash2, Pencil, BookOpen, FolderKanban } from "lucide-react";
-import { NotificationPopup, SimDialogue, type NotificationKind } from "./GameUI";
+import { NotificationPopup, SimDialogue, SimConversation, type NotificationKind } from "./GameUI";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
