@@ -614,6 +614,15 @@ function ProjectCard({
             Confirm grouping
           </button>
         )}
+        {primary && (
+          <button
+            onClick={() => onOpenBuilder(primary)}
+            className="flex items-center gap-1 rounded-md bg-[var(--blue)] px-2 py-1 text-[11px] font-semibold text-white hover:opacity-90"
+            title={`Detected: ${primary.label}`}
+          >
+            <Wand2 className="h-3 w-3" /> Open in {primary.label.replace(" Builder", "")} Builder
+          </button>
+        )}
         <button
           onClick={onSave}
           className="flex items-center gap-1 rounded-md bg-[var(--teal)] px-2 py-1 text-[11px] font-semibold text-white hover:opacity-90"
@@ -630,6 +639,42 @@ function ProjectCard({
 
       {open && (
         <div className="space-y-3 p-3">
+          {/* Builder detection — what this mod is, and where to edit it. */}
+          <div className="rounded-lg border border-border bg-muted/30 p-2.5">
+            <div className="mb-1.5 flex items-center gap-1.5 text-[11px]">
+              <Wand2 className="h-3.5 w-3.5 text-[var(--blue)]" />
+              <span className="font-semibold uppercase tracking-wider text-muted-foreground">
+                Detected builders
+              </span>
+            </div>
+            {detections.length ? (
+              <div className="flex flex-wrap gap-1.5">
+                {detections.map((d) => (
+                  <button
+                    key={d.kind}
+                    onClick={() => onOpenBuilder(d)}
+                    title={d.reasons.join(" · ")}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold",
+                      d.supported
+                        ? "border-[var(--blue)]/30 bg-[var(--blue)]/10 text-[var(--blue)] hover:bg-[var(--blue)]/20"
+                        : "border-border text-muted-foreground hover:bg-accent",
+                    )}
+                  >
+                    {d.label}
+                    <span className="rounded-full bg-background/60 px-1.5 tabular-nums">{d.items.length}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                No career, trait or aspiration tuning found — save this mod to your project and edit its
+                files in the Project Explorer.
+              </p>
+            )}
+          </div>
+
+
           {/* Mod details — filled from the manifest when present, editable here. */}
           <div className="grid gap-2 sm:grid-cols-3">
             {(
