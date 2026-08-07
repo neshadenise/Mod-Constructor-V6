@@ -1149,6 +1149,8 @@ function CareerBuilder() {
     icon: string;
     image: string;
     coverImage?: string;
+    covers?: CoverSet;
+
     ages: Record<Age, boolean>;
     companyNames: string[];
     ptoEnabled: boolean;
