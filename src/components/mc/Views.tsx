@@ -1169,6 +1169,8 @@ function CareerBuilder() {
     icon,
     image,
     coverImage,
+    covers,
+
     ages,
     companyNames,
     ptoEnabled,
