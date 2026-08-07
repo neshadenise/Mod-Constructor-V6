@@ -1060,6 +1060,8 @@ function CareerBuilder() {
   const [icon, setIcon] = useState("");
   const [image, setImage] = useState("");
   const [coverImage, setCoverImage] = useState<string | undefined>(undefined);
+  const [covers, setCovers] = useState<CoverSet>(() => emptyCoverSet());
+
 
   const [ages, setAges] = useState<Record<Age, boolean>>({
     Child: false,
