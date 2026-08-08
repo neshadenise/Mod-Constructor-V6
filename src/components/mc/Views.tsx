@@ -807,80 +807,22 @@ const mkRank = (lvl: number, title: string, pay: number, req = "—"): Rank => (
   },
 });
 
+/** A single empty track — the starting point for a brand-new career. No demo data. */
 const INITIAL_BRANCHES: Branch[] = [
   {
-    id: "b_astro",
-    name: "Astronaut",
-    description: "Chart deep-space routes and command the fleet.",
+    id: "b_main",
+    name: "Main Track",
+    description: "",
     icon: "",
     color: "blue",
-    emoji: "🚀",
-    ranks: [
-      mkRank(1, "Junior Cadet", 52, "—"),
-      mkRank(2, "Navigator", 102, "Logic 3"),
-      mkRank(3, "Space Ranger", 205, "Logic 5 · Fitness 3"),
-      mkRank(4, "Commander", 360, "Logic 7 · Fitness 5"),
-      mkRank(5, "Admiral", 535, "Logic 9 · Fitness 7"),
-    ],
-    assignments: [
-      {
-        id: "a1",
-        name: "Analyze star charts",
-        levelMin: 1,
-        levelMax: 3,
-        weight: 1,
-        isFirst: true,
-        conditions: "Has telescope",
-      },
-      {
-        id: "a2",
-        name: "Simulate re-entry",
-        levelMin: 3,
-        levelMax: 5,
-        weight: 2,
-        isFirst: false,
-        conditions: "Fitness ≥ 4",
-      },
-    ],
-    events: [
-      {
-        id: "e1",
-        name: "First Launch",
-        situation: "career_astro_launch",
-        zoneDirector: "zd_launchpad",
-        venue: "Science Facility",
-        noMedalText: "The launch was a disaster!",
-        bronzeText: "Barely made orbit.",
-        silverText: "A clean launch.",
-        goldText: "Historic flight!",
-        showEndOfDayReport: true,
-        endOfDayTitle: "Launch Report",
-        endOfDayText: "Your first mission returned {medal} results.",
-        lootOnStart: "loot_confidence_up",
-        lootOnEnd: "loot_reward_medal",
-      },
-    ],
-    children: [],
-  },
-  {
-    id: "b_smuggler",
-    name: "Interstellar Smuggler",
-    description: "Move contraband through hostile sectors.",
-    icon: "",
-    color: "violet",
-    emoji: "🛰️",
-    ranks: [
-      mkRank(1, "Dock Runner", 47, "—"),
-      mkRank(2, "Cargo Hauler", 97, "Mischief 2"),
-      mkRank(3, "Fixer", 192, "Mischief 5"),
-      mkRank(4, "Kingpin", 362, "Mischief 7 · Charisma 4"),
-      mkRank(5, "Ghost Captain", 575, "Mischief 9 · Charisma 6"),
-    ],
+    emoji: "💼",
+    ranks: [mkRank(1, "Level 1", 0, "—")],
     assignments: [],
     events: [],
     children: [],
   },
 ];
+
 
 /* --- template payload → builder state mapping --- */
 

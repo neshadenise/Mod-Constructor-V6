@@ -43,6 +43,8 @@ import {
 import { buildImportFiles } from "@/lib/modimport/save-to-project";
 import { clearImportSession, loadImportSession, saveImportSession } from "@/lib/modimport/session-store";
 import { detectBuilders, type BuilderDetection } from "@/lib/modimport/detect-builder";
+import { extractBuilderRecords, type ExtractedKind } from "@/lib/modimport/to-builder";
+
 import { useExplorer } from "@/lib/explorer";
 import { useActiveProject, useStore } from "@/lib/store";
 import { requestRevealRecord, type BuilderKind } from "@/lib/builder-record";
@@ -120,20 +122,34 @@ export function ModImporter() {
             : store.state.aspirations;
       const mine = existing.filter((r) => r.projectId === activeProject.id);
 
+      // Real content parsed out of the uploaded tuning — never a blank template.
+      const parsed = extractBuilderRecords(project, kind as ExtractedKind);
+      const payloads = parsed.length
+        ? parsed
+        : detection.items.slice(0, 25).map((item) => ({ name: item.name || item.source }));
+
       let firstId: string | null = null;
       let created = 0;
-      for (const item of detection.items.slice(0, 25)) {
-        const name = item.name || item.source;
+      let updated = 0;
+      for (const payload of payloads.slice(0, 50)) {
+        const name = String(payload.name ?? "").trim();
+        if (!name) continue;
+        const init = {
+          ...payload,
+          projectId: activeProject.id,
+          name,
+          description: (payload as { description?: string }).description || `Imported from ${project.name}`,
+        };
         const hit = mine.find((r) => r.name.toLowerCase() === name.toLowerCase());
         if (hit) {
+          // Refresh the existing record with what the uploaded file says.
+          if (kind === "career") store.updateCareer(hit.id, init as never);
+          else if (kind === "trait") store.updateTrait(hit.id, init as never);
+          else store.updateAspiration(hit.id, init as never);
+          updated++;
           firstId ??= hit.id;
           continue;
         }
-        const init = {
-          projectId: activeProject.id,
-          name,
-          description: `Imported from ${project.name}`,
-        };
         const rec =
           kind === "career"
             ? store.createCareer(init as never)
@@ -147,13 +163,12 @@ export function ModImporter() {
       nav.navigate(kind);
       if (firstId) requestRevealRecord(kind, firstId);
       toast.success(`Opened in the ${detection.label}`, {
-        description: created
-          ? `${created} item${created === 1 ? "" : "s"} from "${project.name}" added to ${activeProject.name}.`
-          : `Using the matching record${detection.items.length === 1 ? "" : "s"} already in ${activeProject.name}.`,
+        description: `${created} added, ${updated} updated in ${activeProject.name} from "${project.name}".`,
       });
     },
     [activeProject, nav, store],
   );
+
 
   /* Bring back the last import: reloading or updating the app must never
      throw away work that is already analysed. */
