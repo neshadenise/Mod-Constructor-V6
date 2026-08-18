@@ -41,6 +41,8 @@ import {
   type DerivedIssue,
 } from "@/lib/project-analysis";
 import type { ProjectStatus } from "@/lib/types";
+import type { Template } from "@/lib/types";
+import { BUILT_IN_TEMPLATES } from "@/lib/builtin-templates";
 import { toast } from "sonner";
 import { useImportPackage } from "./ImportPackageDialog";
 
@@ -456,13 +458,28 @@ function RecentTemplates() {
   const project = useActiveProject();
   const { navigate } = useAppNavigation();
 
-  const items = useMemo(
-    () => [...store.state.templates].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 4),
+  const templates = useMemo<Template[]>(
+    () => [
+      ...store.state.templates,
+      ...BUILT_IN_TEMPLATES.map((template) => ({
+        ...template,
+        createdAt: 0,
+        updatedAt: 0,
+      })),
+    ],
     [store.state.templates],
+  );
+  const items = useMemo(
+    () => [...templates].sort((a, b) => {
+      if (a.id === "builtin_career_ministry") return -1;
+      if (b.id === "builtin_career_ministry") return 1;
+      return b.updatedAt - a.updatedAt;
+    }).slice(0, 4),
+    [templates],
   );
 
   function apply(id: string) {
-    const t = store.state.templates.find((x) => x.id === id);
+    const t = templates.find((x) => x.id === id);
     if (!t) return;
     if (!project) {
       toast.error("Select or create a project first");
@@ -492,7 +509,7 @@ function RecentTemplates() {
   return (
     <SectionCard
       title="Recent Mod Templates"
-      subtitle={`${store.state.templates.length} available`}
+      subtitle={`${templates.length} available`}
       icon={Layers3}
       accent="violet"
       action="Browse all"

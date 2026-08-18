@@ -120,6 +120,10 @@ export function TemplatesGallery() {
         t.summary.toLowerCase().includes(q) ||
         (t.includes ?? []).some((i) => i.toLowerCase().includes(q))
       );
+    }).sort((a, b) => {
+      if (a.id === "builtin_career_ministry") return -1;
+      if (b.id === "builtin_career_ministry") return 1;
+      return 0;
     });
   }, [all, query, filter]);
 
