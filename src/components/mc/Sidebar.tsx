@@ -37,6 +37,7 @@ import { useStore, useActiveProject } from "@/lib/store";
 import { requestNewRecord } from "@/lib/builder-record";
 import { useAppHost } from "@/lib/app-host";
 import { toast } from "sonner";
+import { BUILT_IN_TEMPLATES } from "@/lib/builtin-templates";
 
 
 type Item = {
@@ -118,7 +119,7 @@ export function AppSidebar({
       (b) => (!pid || b.projectId === pid) && (b.status === "running" || b.status === "queued"),
     ).length,
     snippets: store.state.snippets.length,
-    templates: store.state.templates.length,
+    templates: store.state.templates.length + BUILT_IN_TEMPLATES.length,
   };
 
   function quickNew(kind: NonNullable<Item["quickNew"]>, section: SectionId) {
