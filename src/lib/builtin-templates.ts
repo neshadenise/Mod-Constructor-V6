@@ -19,6 +19,7 @@ import type {
   Milestone,
   NotificationTemplate,
 } from "./types";
+import { ministryCareerPayload } from "./careers/ministry";
 
 export type CareerPayload = Omit<
   Career,
@@ -370,6 +371,21 @@ export const BUILT_IN_TEMPLATES: BuiltIn[] = [
     targetGameVersion: TARGET_GAME_VERSION,
     tested: "tested",
     payload: wfhCareer,
+  },
+  {
+    id: "builtin_career_ministry",
+    name: "Ministry Career",
+    kind: "Career",
+    summary:
+      "Five-level church ministry career with a branch point after Level 3 into Church Leadership, Hospitality Ministry, or Worship & Creative Arts.",
+    source: "built-in-original",
+    builtIn: true,
+    difficulty: "intermediate",
+    requiredPacks: ["Base Game"],
+    includes: ["4 tracks", "9 levels total", "Branch split at 3", "3 WFH events"],
+    targetGameVersion: TARGET_GAME_VERSION,
+    tested: "tested",
+    payload: ministryCareerPayload(),
   },
   // Traits
   {

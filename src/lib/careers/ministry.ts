@@ -259,3 +259,18 @@ export function makeMinistryCareer({ projectId, uid, stamp }: MinistryCareerOpti
     updatedAt: stamp,
   };
 }
+
+/**
+ * Template payload form — deterministic ids, no project binding. Used by the
+ * Templates workspace to scaffold a Ministry career into the active project.
+ */
+export function ministryCareerPayload(): Omit<
+  Career,
+  "id" | "projectId" | "createdAt" | "updatedAt"
+> {
+  let n = 0;
+  const seq = () => `min_${++n}`;
+  const { id: _id, projectId: _p, createdAt: _c, updatedAt: _u, ...rest } =
+    makeMinistryCareer({ projectId: "", uid: seq, stamp: 0 });
+  return rest;
+}
