@@ -33,7 +33,6 @@ import { localStorageAdapter, type StorageAdapter } from "./storage-adapter";
 import type { PackModule, PackModuleData, PackModuleKind } from "./packs/types";
 import { newPackModule } from "./packs/factories";
 import { makeDancerCareer } from "./careers/dancer";
-import { MINISTRY_INTERNAL_ID, makeMinistryCareer } from "./careers/ministry";
 
 const STATE_KEY = "state";
 const SCHEMA_VERSION: AppState["version"] = 2;
@@ -237,10 +236,9 @@ export function makeDemoContent(projectId: ID) {
   ];
 
   const dancer = makeDancerCareer({ projectId, uid, stamp });
-  const ministry = makeMinistryCareer({ projectId, uid, stamp });
 
   return {
-    careers: [career, dancer, ministry],
+    careers: [career, dancer],
     traits: [trait],
     aspirations: [aspiration],
     notifications,
@@ -287,9 +285,6 @@ function backfillDancerCareer(state: AppState, demoId: ID): AppState {
   const added: Career[] = [];
   if (!state.careers.some((c) => c.projectId === demoId && c.internalId === "dancer")) {
     added.push(makeDancerCareer({ projectId: demoId, uid, stamp: now() }));
-  }
-  if (!state.careers.some((c) => c.projectId === demoId && c.internalId === MINISTRY_INTERNAL_ID)) {
-    added.push(makeMinistryCareer({ projectId: demoId, uid, stamp: now() }));
   }
   if (!added.length) return state;
   return {
