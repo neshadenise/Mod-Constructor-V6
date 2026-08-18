@@ -282,21 +282,24 @@ export function backfillDemoContent(state: AppState): AppState {
   };
 }
 
-/** Existing demo projects predate the Dancer career — add it once. */
+/** Existing demo projects predate the built-in careers — add them once. */
 function backfillDancerCareer(state: AppState, demoId: ID): AppState {
-  const exists = state.careers.some(
-    (c) => c.projectId === demoId && c.internalId === "dancer",
-  );
-  if (exists) return state;
-  const dancer = makeDancerCareer({ projectId: demoId, uid, stamp: now() });
+  const added: Career[] = [];
+  if (!state.careers.some((c) => c.projectId === demoId && c.internalId === "dancer")) {
+    added.push(makeDancerCareer({ projectId: demoId, uid, stamp: now() }));
+  }
+  if (!state.careers.some((c) => c.projectId === demoId && c.internalId === MINISTRY_INTERNAL_ID)) {
+    added.push(makeMinistryCareer({ projectId: demoId, uid, stamp: now() }));
+  }
+  if (!added.length) return state;
   return {
     ...state,
     projects: state.projects.map((p) =>
       p.id === demoId
-        ? { ...p, careerIds: [...(p.careerIds ?? []), dancer.id] }
+        ? { ...p, careerIds: [...(p.careerIds ?? []), ...added.map((c) => c.id)] }
         : p,
     ),
-    careers: [...state.careers, dancer],
+    careers: [...state.careers, ...added],
   };
 }
 
