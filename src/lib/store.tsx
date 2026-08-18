@@ -33,6 +33,7 @@ import { localStorageAdapter, type StorageAdapter } from "./storage-adapter";
 import type { PackModule, PackModuleData, PackModuleKind } from "./packs/types";
 import { newPackModule } from "./packs/factories";
 import { makeDancerCareer } from "./careers/dancer";
+import { MINISTRY_INTERNAL_ID, makeMinistryCareer } from "./careers/ministry";
 
 const STATE_KEY = "state";
 const SCHEMA_VERSION: AppState["version"] = 2;
