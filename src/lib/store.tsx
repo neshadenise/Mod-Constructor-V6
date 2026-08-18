@@ -237,8 +237,14 @@ export function makeDemoContent(projectId: ID) {
   ];
 
   const dancer = makeDancerCareer({ projectId, uid, stamp });
+  const ministry = makeMinistryCareer({ projectId, uid, stamp });
 
-  return { careers: [career, dancer], traits: [trait], aspirations: [aspiration], notifications };
+  return {
+    careers: [career, dancer, ministry],
+    traits: [trait],
+    aspirations: [aspiration],
+    notifications,
+  };
 }
 
 /**
