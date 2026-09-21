@@ -220,27 +220,7 @@ export function ModImporter() {
         });
         return;
       }
-      ex.ensureScaffold(activeProject.id);
-      const files = buildImportFiles(project, bytesRef.current);
-      const byFolder = new Map<string, typeof files>();
-      for (const f of files) {
-        const key = f.folder.join("/");
-        byFolder.set(key, [...(byFolder.get(key) ?? []), f]);
-      }
-      let saved = 0;
-      for (const [key, group] of byFolder) {
-        saved += ex.addFilesAtPath(
-          activeProject.id,
-          key.split("/"),
-          group.map((f) => ({
-            name: f.name,
-            size: f.size,
-            mimeType: f.mimeType,
-            dataUrl: f.dataUrl,
-            resourceKey: f.resourceKey,
-          })),
-        );
-      }
+      const saved = saveModFilesToProject(project, bytesRef.current, ex, activeProject.id);
       toast.success(`Saved ${saved} file${saved === 1 ? "" : "s"} to ${activeProject.name}`, {
         description: "Find them under Imported → " + project.name + " in the Project Explorer.",
       });
