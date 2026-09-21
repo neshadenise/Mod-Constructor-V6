@@ -49,6 +49,11 @@ export interface SnapshotInput {
   request: ExportRequest;
   builder?: BuilderContent;
   imported?: ImportedContent;
+  /**
+   * Extra imported mods used only as SimData donors for generated tuning.
+   * Their own resources are never added to the output.
+   */
+  donorSources?: ImportedContent[];
 }
 
 export interface SnapshotResult {
@@ -181,7 +186,15 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
     builder && request.mode !== "preserve-original" &&
     (builder.careers.length || builder.traits.length || builder.aspirations.length);
 
-  const donors = await buildDonorIndex(imported?.project, imported?.originals);
+  const donorPool: ImportedContent[] = [
+    ...(imported ? [imported] : []),
+    ...(input.donorSources ?? []),
+  ];
+  const donors = new Map<Awaited<ReturnType<typeof buildDonorIndex>> extends Map<infer K, unknown> ? K : never, Awaited<ReturnType<typeof buildDonorIndex>> extends Map<unknown, infer V> ? V : never>();
+  for (const source of donorPool) {
+    const found = await buildDonorIndex(source.project, source.originals);
+    for (const [kind, donor] of found) if (!donors.has(kind)) donors.set(kind, donor);
+  }
 
   if (wantsBuilderOutput && builder) {
     const ctx: SerializerContext = { namespace: namespaceFor(builder), ids };
