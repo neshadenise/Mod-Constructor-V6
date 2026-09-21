@@ -170,6 +170,11 @@ export default function ExportCenter() {
       request: { ...request, projectId: project.id, creatorPrefix, selectedComponentIds: selected.length === components.length ? undefined : selected },
       builder: imported ? undefined : builder,
       imported: imported ? { project: imported.project, originals: imported.originals } : undefined,
+      // Any imported mod can lend a SimData companion to generated tuning,
+      // even when it is not the export source itself.
+      donorSources: imports
+        .filter((i) => i.project.id !== imported?.project.id)
+        .map((i) => ({ project: i.project, originals: i.originals })),
       onProgress: (j) => setJob({ ...j }),
     });
     setJob(result);
