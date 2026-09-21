@@ -94,7 +94,7 @@ export function PackageImporter() {
     const games: File[] = [];
     for (const file of files) {
       const ext = file.name.toLowerCase().split(".").pop() ?? "";
-      if (["package", "ts4script", "py", "pyo", "pyc"].includes(ext)) {
+      if (["package", "ts4script", "py", "pyo", "pyc", "zip", "xml", "stbl"].includes(ext)) {
         games.push(file);
         continue;
       }
@@ -109,8 +109,34 @@ export function PackageImporter() {
       }
     }
     if (games.length) {
-      setGameFiles((prev) => [...games, ...prev]);
-      toast.success(`Staged ${games.length} game file${games.length === 1 ? "" : "s"}`);
+      // Same analysis the Mod Importer runs: companion files are grouped into
+      // one mod, then validated and dependency-checked before anything is saved.
+      setAnalyzing(true);
+      setStage(IMPORT_STAGES[0]);
+      try {
+        const inputs: UploadInput[] = [];
+        for (const file of games) {
+          inputs.push({
+            name: file.name,
+            relativePath:
+              (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name,
+            bytes: new Uint8Array(await file.arrayBuffer()),
+          });
+        }
+        const { session, bytes } = await analyzeUpload(inputs, (s) => setStage(s));
+        bytesRef.current = new Map([...bytesRef.current, ...bytes]);
+        setMods((prev) => [...session.projects, ...prev]);
+        toast.success(
+          `Analyzed ${session.files.length} file${session.files.length === 1 ? "" : "s"} into ${session.projects.length} mod${session.projects.length === 1 ? "" : "s"}`,
+        );
+      } catch (e) {
+        toast.error("Couldn't read those mod files", {
+          description: String((e as Error)?.message ?? e),
+        });
+      } finally {
+        setAnalyzing(false);
+        setStage("");
+      }
     }
     if (next.length) {
       setStaged((prev) => [...next, ...prev]);
@@ -118,42 +144,30 @@ export function PackageImporter() {
     }
   }, []);
 
-  /** Store staged .package / .ts4script files as assets on the target project. */
-  const importGameFiles = async (projectId: string) => {
-    const MAX_INLINE = 8 * 1024 * 1024;
-    let linkedOnly = 0;
-    for (const file of gameFiles) {
-      const isScript = !file.name.toLowerCase().endsWith(".package");
-      const inline = file.size <= MAX_INLINE;
-      if (!inline) linkedOnly++;
-      const dataUrl = inline
-        ? await new Promise<string>((resolve) => {
-            const r = new FileReader();
-            r.onload = () => resolve(String(r.result));
-            r.readAsDataURL(file);
-          })
-        : undefined;
-      store.addAsset({
-        projectId,
-        name: file.name,
-        folder: isScript ? "/Scripts" : "/Packages",
-        kind: isScript ? "script" : "package",
-        mimeType: file.type || (isScript ? "application/x-ts4script" : "application/x-sims4-package"),
-        sizeBytes: file.size,
-        dataUrl,
-        filePath: file.name,
-        source: "upload",
-        tags: [isScript ? "script" : "package"],
-      });
+  /** Save analysed mods into the target project (assets + editable records). */
+  const importGameFiles = (projectId: string) => {
+    if (!mods.length) return;
+    let savedFiles = 0;
+    let records = 0;
+    for (const mod of mods) {
+      savedFiles += saveModFilesToProject(mod, bytesRef.current, ex, projectId);
+      registerImportedProject(mod, bytesRef.current);
+      const primary = primaryBuilder(detectBuilders(mod));
+      if (primary?.supported) {
+        const res = importModIntoBuilders(
+          mod,
+          primary.kind as "career" | "trait" | "aspiration",
+          store as never,
+          projectId,
+          primary,
+        );
+        records += res.created + res.updated;
+      }
     }
-    if (gameFiles.length) {
-      toast.success(`Added ${gameFiles.length} game file${gameFiles.length === 1 ? "" : "s"} to Assets`, {
-        description: linkedOnly
-          ? `${linkedOnly} large file${linkedOnly === 1 ? "" : "s"} referenced by name only (over 8 MB). Game files are stored as assets — they can't be opened in a builder.`
-          : "Stored under /Packages and /Scripts. Game files are binary, so they can't be opened in the Career Builder — use a .mcbundle.json to edit careers.",
-      });
-      setGameFiles([]);
-    }
+    toast.success(`Imported ${mods.length} mod${mods.length === 1 ? "" : "s"}`, {
+      description: `${savedFiles} file${savedFiles === 1 ? "" : "s"} saved to the project · ${records} item${records === 1 ? "" : "s"} opened for editing. Scripts are never executed.`,
+    });
+    setMods([]);
   };
 
 
