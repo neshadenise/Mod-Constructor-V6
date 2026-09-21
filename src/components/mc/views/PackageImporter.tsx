@@ -226,7 +226,7 @@ export function PackageImporter() {
   };
 
   const mergeAll = () => {
-    if (!staged.length && !gameFiles.length) return toast.error("Add a file first");
+    if (!staged.length && !mods.length) return toast.error("Add a file first");
     if (!projects.length) return toast.error("Create a project first");
     try {
       let total = 0;
@@ -240,8 +240,8 @@ export function PackageImporter() {
           first = records;
         }
       });
-      const hadGameFiles = gameFiles.length > 0;
-      void importGameFiles(target);
+      const hadGameFiles = mods.length > 0;
+      importGameFiles(target);
       if (staged.length) toast.success(`Added ${total} item${total === 1 ? "" : "s"} to "${name}"`);
       setStaged([]);
       if (first && openFirstRecord(first)) return;
@@ -261,7 +261,7 @@ export function PackageImporter() {
       last = p.name;
       lastId = p.id;
     });
-    if (lastId) void importGameFiles(lastId);
+    if (lastId) importGameFiles(lastId);
     toast.success(`Imported "${last}" as a new project`);
     setStaged([]);
     navigate("projects");
@@ -319,37 +319,67 @@ export function PackageImporter() {
         />
       </div>
 
-      {gameFiles.length > 0 && (
+      {analyzing && (
+        <div className="rounded-xl border border-border bg-card p-3 text-xs font-semibold">
+          Analyzing mod files… {stage}
+        </div>
+      )}
+
+      {mods.length > 0 && (
         <div className="space-y-2 rounded-xl border border-border bg-card p-3">
           <div className="flex items-center justify-between">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Game files ({gameFiles.length})
+              Detected mods ({mods.length})
             </div>
-            <Button variant="ghost" size="sm" onClick={() => setGameFiles([])}>
+            <Button variant="ghost" size="sm" onClick={() => setMods([])}>
               <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Clear
             </Button>
           </div>
-          {gameFiles.map((f, i) => (
-            <div key={`${f.name}-${i}`} className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 p-2">
-              <FileJson className="h-4 w-4 text-[var(--blue)]" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-xs font-semibold">{f.name}</div>
-                <div className="font-mono text-[10px] text-muted-foreground">
-                  {f.name.toLowerCase().endsWith(".package") ? "Package" : "Script"} · {(f.size / 1024).toFixed(1)} KB
+          {mods.map((m, i) => {
+            const errors = m.validationResults.filter((v) => v.severity === "error").length;
+            const warnings = m.validationResults.filter((v) => v.severity === "warning").length;
+            const builder = primaryBuilder(detectBuilders(m));
+            return (
+              <div key={m.id} className="rounded-lg border border-border bg-muted/20 p-2">
+                <div className="flex items-start gap-2">
+                  <FileJson className="mt-0.5 h-4 w-4 text-[var(--blue)]" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-semibold">{m.name}</div>
+                    <div className="font-mono text-[10px] text-muted-foreground">
+                      {m.components.length} file{m.components.length === 1 ? "" : "s"} grouped ·{" "}
+                      {m.resources.length} resource{m.resources.length === 1 ? "" : "s"} ·{" "}
+                      {m.dependencies.length} dependenc{m.dependencies.length === 1 ? "y" : "ies"} ·{" "}
+                      {m.importStatus}
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-1 text-[10px]">
+                      <span className={cn("rounded border px-1.5 py-0.5", errors ? "border-destructive/40 text-destructive" : "border-border text-muted-foreground")}>
+                        {errors} error{errors === 1 ? "" : "s"}
+                      </span>
+                      <span className="rounded border border-border px-1.5 py-0.5 text-muted-foreground">
+                        {warnings} warning{warnings === 1 ? "" : "s"}
+                      </span>
+                      <span className="rounded border border-border px-1.5 py-0.5 text-muted-foreground">
+                        {builder?.supported ? `Opens in ${builder.label}` : "Assets only"}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setMods((p) => p.filter((_, j) => j !== i))}
+                    className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                    aria-label="Remove mod"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               </div>
-              <button
-                onClick={() => setGameFiles((p) => p.filter((_, j) => j !== i))}
-                className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                aria-label="Remove file"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))}
+            );
+          })}
+          <p className="text-[10.5px] text-muted-foreground">
+            Companion files are grouped into one mod. Scripts are read, never executed.
+          </p>
           {!staged.length && (
-            <Button size="sm" className="w-full" disabled={!projects.length} onClick={() => { void importGameFiles(target); navigate("assets"); }}>
-              <FolderInput className="mr-1.5 h-3.5 w-3.5" /> Add game files to selected project
+            <Button size="sm" className="w-full" disabled={!projects.length} onClick={() => { importGameFiles(target); navigate("explorer"); }}>
+              <FolderInput className="mr-1.5 h-3.5 w-3.5" /> Import into selected project
             </Button>
           )}
         </div>
