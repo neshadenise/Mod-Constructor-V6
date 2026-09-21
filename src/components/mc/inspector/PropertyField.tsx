@@ -30,6 +30,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useInspectorHistory } from "@/lib/inspector-history";
+import { IconPicker } from "@/components/mc/icons/IconPicker";
 
 export type ValidationState =
   | { level: "ok"; message?: string }
