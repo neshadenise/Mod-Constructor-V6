@@ -19,6 +19,7 @@ import {
   type ValidationResult as SerializerIssue,
 } from "./serializers";
 import { requiresSimData } from "./simdata";
+import { buildDonorIndex, makeCompanion } from "./simdata-companion";
 import { FALLBACK_LOCALE, mergeLocalization, serializeStbl, stblInstance, type LocalizationEntry } from "./stbl";
 import { versionedName } from "./filenames";
 import {
