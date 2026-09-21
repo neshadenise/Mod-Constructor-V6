@@ -79,7 +79,8 @@ export function CommandPalette({ open, onOpenChange }: Props) {
         push({ kind: "info", title: "Find References", description: "Select an item to see its reference graph." });
         break;
       case "ai.icon":
-        push({ kind: "info", title: "AI icon generator", description: "Opening icon field in current builder…" });
+        navigate("icons");
+        push({ kind: "info", title: "Icon Library", description: "Generate or pick an icon here." });
         break;
       case "ai.description":
         push({ kind: "info", title: "Improve description", description: "Select a description field to rewrite." });
