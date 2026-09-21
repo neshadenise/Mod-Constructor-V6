@@ -4128,6 +4128,11 @@ function ExporterView() {
     ? store.state.assets.filter((a) => a.projectId === project.id).length
     : 0;
 
+  /**
+   * Writes a real .mcbundle.json containing the selected records. Binary
+   * .package output is produced by the Export Center above this panel; this
+   * button never pretends to have written one.
+   */
   function build() {
     if (!project) {
       toast.error("Select a project first");
@@ -4138,15 +4143,26 @@ function ExporterView() {
       return;
     }
     setCompressing(true);
-    const label =
-      bundleMode === "single"
-        ? `${packageName}.package (${totalSelected} items)`
-        : `${totalSelected} .package files`;
-    toast(`Building ${label}…`);
-    setTimeout(() => {
+    try {
+      const keep = (id: string) => selected.has(id);
+      const bundle: ProjectBundle = {
+        version: 1,
+        exportedAt: Date.now(),
+        exportedFrom: "desktop",
+        project: { id: project.id, name: packageName || project.name, author: project.author ?? "" },
+        careers: store.state.careers.filter((r) => r.projectId === project.id && keep(r.id)),
+        traits: store.state.traits.filter((r) => r.projectId === project.id && keep(r.id)),
+        aspirations: store.state.aspirations.filter((r) => r.projectId === project.id && keep(r.id)),
+        notifications: store.state.notifications.filter((r) => r.projectId === project.id && keep(r.id)),
+        assets: [],
+      };
+      downloadBundle(bundle);
+      toast.success(`Exported ${totalSelected} item(s) as .mcbundle.json`);
+    } catch {
+      toast.error("Could not write the bundle file");
+    } finally {
       setCompressing(false);
-      toast.success(`Built ${label}`);
-    }, 1600);
+    }
   }
 
   return (
@@ -4154,17 +4170,16 @@ function ExporterView() {
       <PageHeader
         icon={Package}
         subtitle="Pipeline"
-        title="Package Exporter"
+        title="Share a bundle"
         accent="violet"
         actions={
-          <>
-            <GhostBtn icon={FileCode2}>Preview Manifest</GhostBtn>
-            <PrimaryBtn icon={Download} onClick={build}>
-              {compressing ? "Building…" : "Build Package"}
-            </PrimaryBtn>
-          </>
+          <PrimaryBtn icon={Download} onClick={build}>
+            {compressing ? "Writing…" : "Download .mcbundle.json"}
+          </PrimaryBtn>
         }
       />
+
+
 
       {project ? (
         <div className="flex items-center gap-2 rounded-md border border-border bg-background/60 px-3 py-2 text-[11px]">
