@@ -69,7 +69,7 @@ export function saveModFilesToProject(
       group.map((f) => ({
         name: f.name,
         size: f.size,
-        mimeType: f.mimeType,
+        mimeType: f.mimeType ?? "application/octet-stream",
         dataUrl: f.dataUrl,
         resourceKey: f.resourceKey,
       })),

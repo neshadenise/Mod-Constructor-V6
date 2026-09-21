@@ -223,7 +223,7 @@ export function PreviewToolbar({
         <IconBtn onClick={state.reset} title="Reset preview">
           <RotateCcw className="h-3.5 w-3.5" />
         </IconBtn>
-        <IconBtn onClick={() => toast("Detached preview window (simulated)")} title="Detach preview">
+        <IconBtn onClick={toggleFullscreen} title="Expand preview to full screen">
           <ExternalLink className="h-3.5 w-3.5" />
         </IconBtn>
       </div>
