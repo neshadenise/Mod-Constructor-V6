@@ -190,7 +190,7 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
     ...(imported ? [imported] : []),
     ...(input.donorSources ?? []),
   ];
-  const donors = new Map<Awaited<ReturnType<typeof buildDonorIndex>> extends Map<infer K, unknown> ? K : never, Awaited<ReturnType<typeof buildDonorIndex>> extends Map<unknown, infer V> ? V : never>();
+  const donors = new Map<BuilderKind, SimDataDonor>();
   for (const source of donorPool) {
     const found = await buildDonorIndex(source.project, source.originals);
     for (const [kind, donor] of found) if (!donors.has(kind)) donors.set(kind, donor);
