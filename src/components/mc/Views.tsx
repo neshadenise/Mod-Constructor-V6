@@ -4392,111 +4392,22 @@ function ExporterView() {
   );
 }
 
-/* ---------- Validation ---------- */
-
-function ValidationView() {
-  const [running, setRunning] = useState(false);
-  const items = [
-    {
-      level: "ok",
-      msg: "All tuning IDs unique",
-      src: "tuning/*.xml",
-      icon: CheckCircle2,
-      c: "green",
-    },
-    {
-      level: "ok",
-      msg: "Manifest schema valid",
-      src: "manifest.json",
-      icon: CheckCircle2,
-      c: "green",
-    },
-    {
-      level: "warn",
-      msg: "Missing STBL for 3 strings",
-      src: "strings/en_US.stbl",
-      icon: AlertTriangle,
-      c: "orange",
-    },
-    {
-      level: "warn",
-      msg: "Icon dimensions non-power-of-two",
-      src: "ic_asp_trailblazer.png",
-      icon: AlertTriangle,
-      c: "orange",
-    },
-    {
-      level: "err",
-      msg: "Ref chain broken: 0xA112E8",
-      src: "career_astro.xml",
-      icon: XCircle,
-      c: "destructive",
-    },
-  ];
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        icon={ShieldCheck}
-        subtitle="Pipeline"
-        title="Validation"
-        accent="green"
-        actions={
-          <PrimaryBtn
-            icon={Play}
-            onClick={() => {
-              setRunning(true);
-              toast("Running validation…");
-              setTimeout(() => {
-                setRunning(false);
-                toast.success("Validation complete · 1 error, 2 warnings");
-              }, 1500);
-            }}
-          >
-            {running ? "Running…" : "Run All Checks"}
-          </PrimaryBtn>
-        }
-      />
-      <Card
-        title="Latest Results"
-        action={<span className="text-[11px] text-muted-foreground">5 checks</span>}
-      >
-        <ul className="divide-y divide-border text-xs">
-          {items.map((it, i) => {
-            const Icon = it.icon;
-            return (
-              <li key={i} className="flex items-start gap-3 py-2">
-                <Icon className="mt-0.5 h-4 w-4 shrink-0" style={{ color: `var(--${it.c})` }} />
-                <div className="flex-1">
-                  <div className="font-medium">{it.msg}</div>
-                  <div className="font-mono text-[10.5px] text-muted-foreground">{it.src}</div>
-                </div>
-                <span
-                  className="rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase"
-                  style={{
-                    color: `var(--${it.c})`,
-                    backgroundColor: `color-mix(in oklab, var(--${it.c}) 12%, transparent)`,
-                  }}
-                >
-                  {it.level}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      </Card>
-    </div>
-  );
-}
-
 /* ---------- Queue ---------- */
 
+const QUEUE_TONE: Record<string, string> = {
+  running: "blue",
+  queued: "orange",
+  success: "green",
+  failed: "destructive",
+  cancelled: "violet",
+};
+
 function QueueView() {
-  const rows = [
-    { name: "epic_careers.package", stage: "Compiling", pct: 65, c: "blue", state: "run" },
-    { name: "lucid_traits.package", stage: "Queued", pct: 0, c: "orange", state: "wait" },
-    { name: "trailblazer_asp.package", stage: "Validated", pct: 100, c: "green", state: "done" },
-    { name: "marine_biologist.package", stage: "Draft", pct: 0, c: "violet", state: "wait" },
-  ];
+  const store = useStore();
+  const project = useActiveProject();
+  const builds = project ? store.state.builds.filter((b) => b.projectId === project.id) : [];
+  const pending = builds.filter((b) => b.status === "queued" || b.status === "running");
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -4506,9 +4417,31 @@ function QueueView() {
         accent="teal"
         actions={
           <>
-            <GhostBtn icon={Pause}>Pause All</GhostBtn>
-            <PrimaryBtn icon={Play} onClick={() => toast.success("Queue started")}>
-              Run Queue
+            <GhostBtn
+              icon={Pause}
+              onClick={() => {
+                if (!pending.length) {
+                  toast("Nothing is building right now");
+                  return;
+                }
+                pending.forEach((b) => store.cancelBuild(b.id));
+                toast.success(`Cancelled ${pending.length} job(s)`);
+              }}
+            >
+              Cancel All
+            </GhostBtn>
+            <PrimaryBtn
+              icon={Play}
+              onClick={() => {
+                if (!project) {
+                  toast.error("Select a project first");
+                  return;
+                }
+                store.enqueueBuild(`${project.name} v${project.version}`, project.id);
+                toast.success("Build queued");
+              }}
+            >
+              Queue Build
             </PrimaryBtn>
           </>
         }
@@ -4516,35 +4449,64 @@ function QueueView() {
       <BuildProgressCard />
       <BuildLog />
       <Card>
-        <ul className="space-y-2.5">
-          {rows.map((r) => (
-            <li key={r.name} className="rounded-md border border-border bg-background/60 p-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="truncate font-mono font-medium">{r.name}</span>
-                <span
-                  className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
-                  style={{
-                    color: `var(--${r.c})`,
-                    backgroundColor: `color-mix(in oklab, var(--${r.c}) 12%, transparent)`,
-                  }}
-                >
-                  {r.stage}
-                </span>
-              </div>
-              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full"
-                  style={{ width: `${r.pct}%`, backgroundColor: `var(--${r.c})` }}
-                />
-              </div>
-              <div className="mt-1 text-[10.5px] text-muted-foreground">{r.pct}%</div>
-            </li>
-          ))}
-        </ul>
+        {!project ? (
+          <div className="p-4 text-center text-xs text-muted-foreground">
+            No project selected. Open Projects to create or activate one.
+          </div>
+        ) : builds.length === 0 ? (
+          <div className="p-8 text-center text-xs text-muted-foreground">
+            No builds yet for {project.name}. Use “Queue Build” to compile this project.
+          </div>
+        ) : (
+          <ul className="space-y-2.5">
+            {builds.map((b) => {
+              const c = QUEUE_TONE[b.status] ?? "blue";
+              return (
+                <li key={b.id} className="rounded-md border border-border bg-background/60 p-3">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="truncate font-mono font-medium">{b.label}</span>
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold capitalize"
+                      style={{
+                        color: `var(--${c})`,
+                        backgroundColor: `color-mix(in oklab, var(--${c}) 12%, transparent)`,
+                      }}
+                    >
+                      {b.status}
+                    </span>
+                  </div>
+                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: `${Math.round(b.progress)}%`, backgroundColor: `var(--${c})` }}
+                    />
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-[10.5px] text-muted-foreground">
+                    <span>{Math.round(b.progress)}%</span>
+                    <span className="flex gap-2">
+                      {(b.status === "queued" || b.status === "running") && (
+                        <button className="hover:text-foreground" onClick={() => store.cancelBuild(b.id)}>
+                          Cancel
+                        </button>
+                      )}
+                      {(b.status === "failed" || b.status === "cancelled") && (
+                        <button className="hover:text-foreground" onClick={() => store.retryBuild(b.id)}>
+                          Retry
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                  {b.error && <div className="mt-1 text-[10.5px] text-destructive">{b.error}</div>}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </Card>
     </div>
   );
 }
+
 
 /* ---------- OS detection + path helpers ---------- */
 
