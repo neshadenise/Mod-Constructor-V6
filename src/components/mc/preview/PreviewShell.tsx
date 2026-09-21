@@ -174,8 +174,28 @@ export function PreviewToolbar({
   accent?: string;
   title?: string;
 }) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  /** Blow the preview up to full screen (and back) so it can be reviewed large. */
+  const toggleFullscreen = () => {
+    const target = rootRef.current?.parentElement ?? rootRef.current;
+    if (!target) return;
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+      return;
+    }
+    if (typeof target.requestFullscreen !== "function") {
+      toast("Full screen isn't available here");
+      return;
+    }
+    void target.requestFullscreen().catch(() => toast("Couldn't open full screen"));
+  };
+
   return (
-    <div className="flex flex-wrap items-center gap-1.5 rounded-t-xl border border-b-0 border-border bg-card/80 px-2.5 py-2 backdrop-blur">
+    <div
+      ref={rootRef}
+      className="flex flex-wrap items-center gap-1.5 rounded-t-xl border border-b-0 border-border bg-card/80 px-2.5 py-2 backdrop-blur"
+    >
       <div className="mr-2 flex items-center gap-1.5">
         <span
           className="flex h-5 w-5 items-center justify-center rounded-md text-white shadow-sm"
@@ -223,7 +243,7 @@ export function PreviewToolbar({
         <IconBtn onClick={state.reset} title="Reset preview">
           <RotateCcw className="h-3.5 w-3.5" />
         </IconBtn>
-        <IconBtn onClick={() => toast("Detached preview window (simulated)")} title="Detach preview">
+        <IconBtn onClick={toggleFullscreen} title="Expand preview to full screen">
           <ExternalLink className="h-3.5 w-3.5" />
         </IconBtn>
       </div>

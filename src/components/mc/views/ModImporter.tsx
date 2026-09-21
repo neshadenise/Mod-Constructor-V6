@@ -40,10 +40,10 @@ import {
   type ModComponent,
   type ModProject,
 } from "@/lib/modimport/types";
-import { buildImportFiles } from "@/lib/modimport/save-to-project";
+import { importModIntoBuilders, saveModFilesToProject } from "@/lib/modimport/pipeline-actions";
 import { clearImportSession, loadImportSession, saveImportSession } from "@/lib/modimport/session-store";
 import { detectBuilders, type BuilderDetection } from "@/lib/modimport/detect-builder";
-import { extractBuilderRecords, type ExtractedKind } from "@/lib/modimport/to-builder";
+import { type ExtractedKind } from "@/lib/modimport/to-builder";
 
 import { useExplorer } from "@/lib/explorer";
 import { useActiveProject, useStore } from "@/lib/store";
@@ -114,51 +114,14 @@ export function ModImporter() {
         return;
       }
       const kind = detection.kind as BuilderKind;
-      const existing =
-        kind === "career"
-          ? store.state.careers
-          : kind === "trait"
-            ? store.state.traits
-            : store.state.aspirations;
-      const mine = existing.filter((r) => r.projectId === activeProject.id);
-
       // Real content parsed out of the uploaded tuning — never a blank template.
-      const parsed = extractBuilderRecords(project, kind as ExtractedKind);
-      const payloads = parsed.length
-        ? parsed
-        : detection.items.slice(0, 25).map((item) => ({ name: item.name || item.source }));
-
-      let firstId: string | null = null;
-      let created = 0;
-      let updated = 0;
-      for (const payload of payloads.slice(0, 50)) {
-        const name = String(payload.name ?? "").trim();
-        if (!name) continue;
-        const init = {
-          ...payload,
-          projectId: activeProject.id,
-          name,
-          description: (payload as { description?: string }).description || `Imported from ${project.name}`,
-        };
-        const hit = mine.find((r) => r.name.toLowerCase() === name.toLowerCase());
-        if (hit) {
-          // Refresh the existing record with what the uploaded file says.
-          if (kind === "career") store.updateCareer(hit.id, init as never);
-          else if (kind === "trait") store.updateTrait(hit.id, init as never);
-          else store.updateAspiration(hit.id, init as never);
-          updated++;
-          firstId ??= hit.id;
-          continue;
-        }
-        const rec =
-          kind === "career"
-            ? store.createCareer(init as never)
-            : kind === "trait"
-              ? store.createTrait(init as never)
-              : store.createAspiration(init as never);
-        created++;
-        firstId ??= rec.id;
-      }
+      const { created, updated, firstId } = importModIntoBuilders(
+        project,
+        kind as ExtractedKind,
+        store as never,
+        activeProject.id,
+        detection,
+      );
 
       nav.navigate(kind);
       if (firstId) requestRevealRecord(kind, firstId);
@@ -220,27 +183,7 @@ export function ModImporter() {
         });
         return;
       }
-      ex.ensureScaffold(activeProject.id);
-      const files = buildImportFiles(project, bytesRef.current);
-      const byFolder = new Map<string, typeof files>();
-      for (const f of files) {
-        const key = f.folder.join("/");
-        byFolder.set(key, [...(byFolder.get(key) ?? []), f]);
-      }
-      let saved = 0;
-      for (const [key, group] of byFolder) {
-        saved += ex.addFilesAtPath(
-          activeProject.id,
-          key.split("/"),
-          group.map((f) => ({
-            name: f.name,
-            size: f.size,
-            mimeType: f.mimeType,
-            dataUrl: f.dataUrl,
-            resourceKey: f.resourceKey,
-          })),
-        );
-      }
+      const saved = saveModFilesToProject(project, bytesRef.current, ex, activeProject.id);
       toast.success(`Saved ${saved} file${saved === 1 ? "" : "s"} to ${activeProject.name}`, {
         description: "Find them under Imported → " + project.name + " in the Project Explorer.",
       });

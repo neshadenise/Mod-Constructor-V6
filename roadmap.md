@@ -9,7 +9,8 @@
 - [x] Status bar shows real saved time, storage usage, cached game version and project version.
 - [x] Deleted the dead duplicate validation screen.
 
+- [x] Package Importer now runs game files through the same analyze/group/validate pipeline as the Mod Importer (shared `modimport/pipeline-actions.ts`), saving files + hydrating builders.
+- [x] Detach-preview button replaced with a working full-screen toggle; AI icon button in the property inspector opens the icon generator; command palette "AI icon" opens the Icon Library.
+
 ## Remaining
-- [ ] Package Importer path does not group companion files (main Mod Importer does) — unify on the grouping pipeline.
-- [ ] Remaining stub buttons: detach preview window (simulated), AI icon generator action in the property inspector.
 - [ ] Pack mechanics: some build generators are still unimplemented (already marked in the UI).

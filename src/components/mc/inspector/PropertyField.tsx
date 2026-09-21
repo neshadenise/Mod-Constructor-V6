@@ -30,6 +30,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useInspectorHistory } from "@/lib/inspector-history";
+import { IconPicker } from "@/components/mc/icons/IconPicker";
 
 export type ValidationState =
   | { level: "ok"; message?: string }
@@ -866,6 +867,7 @@ type AssetProps = BaseProps<string> & { placeholder?: string; onOpenAssetPicker?
 export function AssetField(p: AssetProps) {
   if (p.showWhen && !p.showWhen()) return null;
   const { commit, copy, paste, reset, isRecent } = useFieldOps(p.id, p.label, p.value, p.defaultValue, p.onChange);
+  const [pickerOpen, setPickerOpen] = useState(false);
   return (
     <FieldFrame
       id={p.id}
@@ -903,12 +905,25 @@ export function AssetField(p: AssetProps) {
           Browse
         </button>
         <button
-          onClick={() => toast("AI icon generator", { description: "Opens image generation dialog" })}
+          onClick={() => setPickerOpen(true)}
           className="inline-flex h-9 items-center gap-1 rounded-md border border-[var(--violet)]/30 bg-[var(--violet)]/10 px-2.5 text-[11px] font-medium text-[var(--violet)] hover:bg-[var(--violet)]/20"
         >
           <Sparkles className="h-3 w-3" /> AI
         </button>
       </div>
+      {pickerOpen && (
+        <IconPicker
+          open
+          initialTab="ai"
+          suggestion={p.label}
+          title={`AI icon · ${p.label}`}
+          onClose={() => setPickerOpen(false)}
+          onPick={(ref) => {
+            commit(ref.kind === "builtin" ? ref.id : `custom:${ref.id}`);
+            setPickerOpen(false);
+          }}
+        />
+      )}
     </FieldFrame>
   );
 }

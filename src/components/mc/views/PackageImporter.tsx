@@ -13,6 +13,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useStore } from "@/lib/store";
+import { useExplorer } from "@/lib/explorer";
+import { analyzeUpload, type UploadInput } from "@/lib/modimport/analyze";
+import { IMPORT_STAGES, type ModProject } from "@/lib/modimport/types";
+import { detectBuilders, primaryBuilder } from "@/lib/modimport/detect-builder";
+import { importModIntoBuilders, saveModFilesToProject } from "@/lib/modimport/pipeline-actions";
+import { registerImportedProject } from "@/lib/modexport/registry";
 import { setBuilderSeed } from "@/lib/builder-seed";
 import { useAppNavigation } from "@/lib/navigation";
 import type { ProjectBundle } from "@/lib/types";
@@ -74,8 +80,12 @@ export function PackageImporter() {
   const active = store.state.activeProjectId ?? projects[0]?.id ?? "";
 
   const [staged, setStaged] = useState<Staged[]>([]);
-  const [gameFiles, setGameFiles] = useState<File[]>([]);
+  const [mods, setMods] = useState<ModProject[]>([]);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [stage, setStage] = useState("");
   const [dragging, setDragging] = useState(false);
+  const bytesRef = useRef<Map<string, Uint8Array>>(new Map());
+  const ex = useExplorer();
 
   const [targetId, setTargetId] = useState<string>("");
   const [selected, setSelected] = useState<Record<Kind, boolean>>({
@@ -94,7 +104,7 @@ export function PackageImporter() {
     const games: File[] = [];
     for (const file of files) {
       const ext = file.name.toLowerCase().split(".").pop() ?? "";
-      if (["package", "ts4script", "py", "pyo", "pyc"].includes(ext)) {
+      if (["package", "ts4script", "py", "pyo", "pyc", "zip", "xml", "stbl"].includes(ext)) {
         games.push(file);
         continue;
       }
@@ -109,8 +119,34 @@ export function PackageImporter() {
       }
     }
     if (games.length) {
-      setGameFiles((prev) => [...games, ...prev]);
-      toast.success(`Staged ${games.length} game file${games.length === 1 ? "" : "s"}`);
+      // Same analysis the Mod Importer runs: companion files are grouped into
+      // one mod, then validated and dependency-checked before anything is saved.
+      setAnalyzing(true);
+      setStage(IMPORT_STAGES[0]);
+      try {
+        const inputs: UploadInput[] = [];
+        for (const file of games) {
+          inputs.push({
+            name: file.name,
+            relativePath:
+              (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name,
+            bytes: new Uint8Array(await file.arrayBuffer()),
+          });
+        }
+        const { session, bytes } = await analyzeUpload(inputs, (s) => setStage(s));
+        bytesRef.current = new Map([...bytesRef.current, ...bytes]);
+        setMods((prev) => [...session.projects, ...prev]);
+        toast.success(
+          `Analyzed ${session.files.length} file${session.files.length === 1 ? "" : "s"} into ${session.projects.length} mod${session.projects.length === 1 ? "" : "s"}`,
+        );
+      } catch (e) {
+        toast.error("Couldn't read those mod files", {
+          description: String((e as Error)?.message ?? e),
+        });
+      } finally {
+        setAnalyzing(false);
+        setStage("");
+      }
     }
     if (next.length) {
       setStaged((prev) => [...next, ...prev]);
@@ -118,42 +154,30 @@ export function PackageImporter() {
     }
   }, []);
 
-  /** Store staged .package / .ts4script files as assets on the target project. */
-  const importGameFiles = async (projectId: string) => {
-    const MAX_INLINE = 8 * 1024 * 1024;
-    let linkedOnly = 0;
-    for (const file of gameFiles) {
-      const isScript = !file.name.toLowerCase().endsWith(".package");
-      const inline = file.size <= MAX_INLINE;
-      if (!inline) linkedOnly++;
-      const dataUrl = inline
-        ? await new Promise<string>((resolve) => {
-            const r = new FileReader();
-            r.onload = () => resolve(String(r.result));
-            r.readAsDataURL(file);
-          })
-        : undefined;
-      store.addAsset({
-        projectId,
-        name: file.name,
-        folder: isScript ? "/Scripts" : "/Packages",
-        kind: isScript ? "script" : "package",
-        mimeType: file.type || (isScript ? "application/x-ts4script" : "application/x-sims4-package"),
-        sizeBytes: file.size,
-        dataUrl,
-        filePath: file.name,
-        source: "upload",
-        tags: [isScript ? "script" : "package"],
-      });
+  /** Save analysed mods into the target project (assets + editable records). */
+  const importGameFiles = (projectId: string) => {
+    if (!mods.length) return;
+    let savedFiles = 0;
+    let records = 0;
+    for (const mod of mods) {
+      savedFiles += saveModFilesToProject(mod, bytesRef.current, ex, projectId);
+      registerImportedProject(mod, bytesRef.current);
+      const primary = primaryBuilder(detectBuilders(mod));
+      if (primary?.supported) {
+        const res = importModIntoBuilders(
+          mod,
+          primary.kind as "career" | "trait" | "aspiration",
+          store as never,
+          projectId,
+          primary,
+        );
+        records += res.created + res.updated;
+      }
     }
-    if (gameFiles.length) {
-      toast.success(`Added ${gameFiles.length} game file${gameFiles.length === 1 ? "" : "s"} to Assets`, {
-        description: linkedOnly
-          ? `${linkedOnly} large file${linkedOnly === 1 ? "" : "s"} referenced by name only (over 8 MB). Game files are stored as assets — they can't be opened in a builder.`
-          : "Stored under /Packages and /Scripts. Game files are binary, so they can't be opened in the Career Builder — use a .mcbundle.json to edit careers.",
-      });
-      setGameFiles([]);
-    }
+    toast.success(`Imported ${mods.length} mod${mods.length === 1 ? "" : "s"}`, {
+      description: `${savedFiles} file${savedFiles === 1 ? "" : "s"} saved to the project · ${records} item${records === 1 ? "" : "s"} opened for editing. Scripts are never executed.`,
+    });
+    setMods([]);
   };
 
 
@@ -202,7 +226,7 @@ export function PackageImporter() {
   };
 
   const mergeAll = () => {
-    if (!staged.length && !gameFiles.length) return toast.error("Add a file first");
+    if (!staged.length && !mods.length) return toast.error("Add a file first");
     if (!projects.length) return toast.error("Create a project first");
     try {
       let total = 0;
@@ -216,8 +240,8 @@ export function PackageImporter() {
           first = records;
         }
       });
-      const hadGameFiles = gameFiles.length > 0;
-      void importGameFiles(target);
+      const hadGameFiles = mods.length > 0;
+      importGameFiles(target);
       if (staged.length) toast.success(`Added ${total} item${total === 1 ? "" : "s"} to "${name}"`);
       setStaged([]);
       if (first && openFirstRecord(first)) return;
@@ -237,7 +261,7 @@ export function PackageImporter() {
       last = p.name;
       lastId = p.id;
     });
-    if (lastId) void importGameFiles(lastId);
+    if (lastId) importGameFiles(lastId);
     toast.success(`Imported "${last}" as a new project`);
     setStaged([]);
     navigate("projects");
@@ -295,37 +319,67 @@ export function PackageImporter() {
         />
       </div>
 
-      {gameFiles.length > 0 && (
+      {analyzing && (
+        <div className="rounded-xl border border-border bg-card p-3 text-xs font-semibold">
+          Analyzing mod files… {stage}
+        </div>
+      )}
+
+      {mods.length > 0 && (
         <div className="space-y-2 rounded-xl border border-border bg-card p-3">
           <div className="flex items-center justify-between">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Game files ({gameFiles.length})
+              Detected mods ({mods.length})
             </div>
-            <Button variant="ghost" size="sm" onClick={() => setGameFiles([])}>
+            <Button variant="ghost" size="sm" onClick={() => setMods([])}>
               <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Clear
             </Button>
           </div>
-          {gameFiles.map((f, i) => (
-            <div key={`${f.name}-${i}`} className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 p-2">
-              <FileJson className="h-4 w-4 text-[var(--blue)]" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-xs font-semibold">{f.name}</div>
-                <div className="font-mono text-[10px] text-muted-foreground">
-                  {f.name.toLowerCase().endsWith(".package") ? "Package" : "Script"} · {(f.size / 1024).toFixed(1)} KB
+          {mods.map((m, i) => {
+            const errors = m.validationResults.filter((v) => v.level === "error").length;
+            const warnings = m.validationResults.filter((v) => v.level === "warning").length;
+            const builder = primaryBuilder(detectBuilders(m));
+            return (
+              <div key={m.id} className="rounded-lg border border-border bg-muted/20 p-2">
+                <div className="flex items-start gap-2">
+                  <FileJson className="mt-0.5 h-4 w-4 text-[var(--blue)]" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-semibold">{m.name}</div>
+                    <div className="font-mono text-[10px] text-muted-foreground">
+                      {m.components.length} file{m.components.length === 1 ? "" : "s"} grouped ·{" "}
+                      {m.resources.length} resource{m.resources.length === 1 ? "" : "s"} ·{" "}
+                      {m.dependencies.length} dependenc{m.dependencies.length === 1 ? "y" : "ies"} ·{" "}
+                      {m.importStatus}
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-1 text-[10px]">
+                      <span className={cn("rounded border px-1.5 py-0.5", errors ? "border-destructive/40 text-destructive" : "border-border text-muted-foreground")}>
+                        {errors} error{errors === 1 ? "" : "s"}
+                      </span>
+                      <span className="rounded border border-border px-1.5 py-0.5 text-muted-foreground">
+                        {warnings} warning{warnings === 1 ? "" : "s"}
+                      </span>
+                      <span className="rounded border border-border px-1.5 py-0.5 text-muted-foreground">
+                        {builder?.supported ? `Opens in ${builder.label}` : "Assets only"}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setMods((p) => p.filter((_, j) => j !== i))}
+                    className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                    aria-label="Remove mod"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               </div>
-              <button
-                onClick={() => setGameFiles((p) => p.filter((_, j) => j !== i))}
-                className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                aria-label="Remove file"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))}
+            );
+          })}
+          <p className="text-[10.5px] text-muted-foreground">
+            Companion files are grouped into one mod. Scripts are read, never executed.
+          </p>
           {!staged.length && (
-            <Button size="sm" className="w-full" disabled={!projects.length} onClick={() => { void importGameFiles(target); navigate("assets"); }}>
-              <FolderInput className="mr-1.5 h-3.5 w-3.5" /> Add game files to selected project
+            <Button size="sm" className="w-full" disabled={!projects.length} onClick={() => { importGameFiles(target); navigate("explorer"); }}>
+              <FolderInput className="mr-1.5 h-3.5 w-3.5" /> Import into selected project
             </Button>
           )}
         </div>
