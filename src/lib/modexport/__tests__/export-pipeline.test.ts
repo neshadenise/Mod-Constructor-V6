@@ -334,11 +334,11 @@ describe("builder export", () => {
     expect(keys(first.outputFiles[0]!.bytes)).toEqual(keys(second.outputFiles[0]!.bytes));
   });
 
-  it("blocks tuning-only packages unless the user acknowledges the SimData gap", async () => {
+  it("warns about missing SimData companions but still produces a package", async () => {
     const job = await runExport({ request: request({ exportType: "package-only", allowTuningOnly: false }), builder: builderContent() });
-    expect(job.status).toBe("failed");
-    expect(job.errors[0]!.code).toBe("SIMDATA_UNSUPPORTED");
-    expect(job.outputFiles).toHaveLength(0);
+    expect(job.status).toBe("ready");
+    expect(job.validationReport!.results.some((r) => r.code === "SIMDATA_UNSUPPORTED" && r.severity === "warning")).toBe(true);
+    expect(job.outputFiles.length).toBeGreaterThan(0);
   });
 
   it("blocks export when a required field is missing", async () => {
