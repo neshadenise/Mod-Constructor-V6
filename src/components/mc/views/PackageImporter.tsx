@@ -336,8 +336,8 @@ export function PackageImporter() {
             </Button>
           </div>
           {mods.map((m, i) => {
-            const errors = m.validationResults.filter((v) => v.severity === "error").length;
-            const warnings = m.validationResults.filter((v) => v.severity === "warning").length;
+            const errors = m.validationResults.filter((v) => v.level === "error").length;
+            const warnings = m.validationResults.filter((v) => v.level === "warning").length;
             const builder = primaryBuilder(detectBuilders(m));
             return (
               <div key={m.id} className="rounded-lg border border-border bg-muted/20 p-2">
