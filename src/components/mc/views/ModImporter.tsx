@@ -43,7 +43,7 @@ import {
 import { importModIntoBuilders, saveModFilesToProject } from "@/lib/modimport/pipeline-actions";
 import { clearImportSession, loadImportSession, saveImportSession } from "@/lib/modimport/session-store";
 import { detectBuilders, type BuilderDetection } from "@/lib/modimport/detect-builder";
-import { extractBuilderRecords, type ExtractedKind } from "@/lib/modimport/to-builder";
+import { type ExtractedKind } from "@/lib/modimport/to-builder";
 
 import { useExplorer } from "@/lib/explorer";
 import { useActiveProject, useStore } from "@/lib/store";
