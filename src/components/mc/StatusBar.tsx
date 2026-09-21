@@ -143,7 +143,7 @@ export function StatusBar({ active }: { active: SectionId }) {
           )}
           <span>{online ? "Online" : "Offline"}</span>
         </StatusChip>
-        {storageMb !== null && (
+        {storageMb !== null && storageMb * 1024 >= 1 && (
           <StatusChip>
             <HardDrive className="h-3 w-3" /> {storageMb < 1 ? `${Math.round(storageMb * 1024)} KB` : `${storageMb.toFixed(1)} MB`}
           </StatusChip>
