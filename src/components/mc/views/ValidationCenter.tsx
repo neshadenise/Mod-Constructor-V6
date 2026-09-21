@@ -1,3 +1,11 @@
+/**
+ * Validation Center.
+ *
+ * Every finding on this screen comes from the live project analysis
+ * (`analyzeProject`) and the health engine (`computeProjectHealth`) for the
+ * ACTIVE project only. Nothing here is sample data, and every row links to the
+ * exact record that needs fixing.
+ */
 import { useMemo, useState } from "react";
 import {
   ShieldCheck,
@@ -7,184 +15,120 @@ import {
   Search,
   AlertTriangle,
   XCircle,
+  Lightbulb,
   CheckCircle2,
-  Info,
-  Wand2,
   ChevronRight,
+  ArrowRight,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { BuildHealthTile } from "@/components/mc/HealthMetrics";
 import { ValidationResultsCard } from "@/components/mc/Dashboard";
+import { useHealthReport } from "@/components/mc/HealthInspector";
+import { useActiveProject } from "@/lib/store";
+import { useAppNavigation } from "@/lib/navigation";
+import { requestRevealRecord } from "@/lib/builder-record";
+import type { FindingSeverity, HealthFinding } from "@/lib/project-health";
 import { toast } from "sonner";
 
-type Severity = "error" | "warning" | "info" | "ok";
-type Scope = "Career" | "Trait" | "Aspiration" | "Assets" | "Package";
-
-type Finding = {
-  id: string;
-  severity: Severity;
-  scope: Scope;
-  project: string;
-  location: string;
-  rule: string;
-  message: string;
-  fixable?: boolean;
-};
-
-const INITIAL: Finding[] = [
-  {
-    id: "f1",
-    severity: "error",
-    scope: "Career",
-    project: "Epic Careers Overhaul",
-    location: "Marine Biologist › Level 4 › salary",
-    rule: "REQUIRED_FIELD",
-    message: "Salary per hour is missing on rank 4. Career cannot promote past level 3.",
-    fixable: true,
-  },
-  {
-    id: "f2",
-    severity: "error",
-    scope: "Trait",
-    project: "Lucid Dreamer Traits",
-    location: "Dreamweaver › buffs[2].emotion",
-    rule: "INVALID_ENUM",
-    message: "Emotion 'Whimsy' is not a valid Sims 4 emotion value.",
-    fixable: true,
-  },
-  {
-    id: "f3",
-    severity: "warning",
-    scope: "Career",
-    project: "Epic Careers Overhaul",
-    location: "Reef Guardian › work_days",
-    rule: "SCHEDULE_GAP",
-    message: "Weekly schedule has 6 shifts under 4 hours. Sims may not accumulate promotion progress.",
-    fixable: false,
-  },
-  {
-    id: "f4",
-    severity: "warning",
-    scope: "Assets",
-    project: "Lucid Dreamer Traits",
-    location: "Traits/Portraits/dreamer_portrait.png",
-    rule: "LARGE_ASSET",
-    message: "Portrait is 128 KB. Recommended max is 96 KB for CAS thumbnails.",
-    fixable: true,
-  },
-  {
-    id: "f5",
-    severity: "info",
-    scope: "Package",
-    project: "Trailblazer Aspirations",
-    location: "manifest.json",
-    rule: "STYLE",
-    message: "Package name uses spaces. Consider snake_case for cross-platform paths.",
-  },
-  {
-    id: "f6",
-    severity: "ok",
-    scope: "Career",
-    project: "Epic Careers Overhaul",
-    location: "Marine Biologist › identity",
-    rule: "ALL_CLEAR",
-    message: "All identity fields validated against V5 schema.",
-  },
-  {
-    id: "f7",
-    severity: "warning",
-    scope: "Trait",
-    project: "Lucid Dreamer Traits",
-    location: "Sleepwalker › conflicts",
-    rule: "REDUNDANT_CONFLICT",
-    message: "Conflict list contains 'Insomniac' twice.",
-    fixable: true,
-  },
-  {
-    id: "f8",
-    severity: "error",
-    scope: "Assets",
-    project: "Epic Careers Overhaul",
-    location: "Careers/Uniforms/diver_uniform_m.png",
-    rule: "MISSING_REF",
-    message: "Uniform referenced by rank 3 but file is missing from asset folder.",
-    fixable: false,
-  },
-];
-
-const SEV_META: Record<Severity, { icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; color: string; label: string }> = {
-  error: { icon: XCircle, color: "var(--red)", label: "Error" },
+const SEV_META: Record<
+  FindingSeverity,
+  { icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; color: string; label: string }
+> = {
+  critical: { icon: XCircle, color: "var(--red, #ef4444)", label: "Critical" },
   warning: { icon: AlertTriangle, color: "var(--orange)", label: "Warning" },
-  info: { icon: Info, color: "var(--blue)", label: "Info" },
-  ok: { icon: CheckCircle2, color: "var(--green)", label: "OK" },
+  suggestion: { icon: Lightbulb, color: "var(--blue)", label: "Suggestion" },
 };
 
-const SEV_FILTERS: (Severity | "all")[] = ["all", "error", "warning", "info", "ok"];
+const SEV_FILTERS: (FindingSeverity | "all")[] = ["all", "critical", "warning", "suggestion"];
+
+const CATEGORY_LABEL: Record<string, string> = {
+  errors: "Errors",
+  warnings: "Warnings",
+  completion: "Completion",
+  assets: "Assets",
+  compatibility: "Compatibility",
+  testing: "Testing",
+  organization: "Organization",
+};
 
 export function ValidationCenter() {
-  const [findings, setFindings] = useState<Finding[]>(INITIAL);
+  const project = useActiveProject();
+  const report = useHealthReport();
+  const { navigate } = useAppNavigation();
+
   const [sev, setSev] = useState<(typeof SEV_FILTERS)[number]>("all");
-  const [scope, setScope] = useState<"All" | Scope>("All");
+  const [category, setCategory] = useState<"All" | string>("All");
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<string | null>("f1");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [running, setRunning] = useState(false);
 
+  const findings = useMemo(
+    () => report.findings.filter((f) => !hidden.has(f.id)),
+    [report.findings, hidden],
+  );
+
   const totals = useMemo(() => {
-    const t = { error: 0, warning: 0, info: 0, ok: 0 };
+    const t = { critical: 0, warning: 0, suggestion: 0 };
     findings.forEach((f) => (t[f.severity] += 1));
     return t;
+  }, [findings]);
+
+  const categories = useMemo(() => {
+    const set = new Set(findings.map((f) => f.category as string));
+    return ["All", ...[...set]];
   }, [findings]);
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     return findings.filter((f) => {
       if (sev !== "all" && f.severity !== sev) return false;
-      if (scope !== "All" && f.scope !== scope) return false;
+      if (category !== "All" && f.category !== category) return false;
       if (!q) return true;
       return (
-        f.message.toLowerCase().includes(q) ||
-        f.rule.toLowerCase().includes(q) ||
-        f.location.toLowerCase().includes(q) ||
-        f.project.toLowerCase().includes(q)
+        f.title.toLowerCase().includes(q) ||
+        (f.fix ?? "").toLowerCase().includes(q) ||
+        String(f.category).toLowerCase().includes(q)
       );
     });
-  }, [findings, sev, scope, query]);
+  }, [findings, sev, category, query]);
 
   const active = findings.find((f) => f.id === selected) ?? shown[0] ?? null;
 
   const runScan = () => {
+    if (!project) {
+      toast.error("Select a project first");
+      return;
+    }
+    // The analysis is live, so a "scan" is a recompute plus an honest readout.
     setRunning(true);
-    toast("Running validation across workspace...");
-    setTimeout(() => {
+    window.setTimeout(() => {
       setRunning(false);
-      toast.success("Validation complete", {
-        description: `${totals.error} errors · ${totals.warning} warnings · ${totals.ok} passed`,
+      toast.success(`Validated ${project.name}`, {
+        description: `${totals.critical} critical · ${totals.warning} warnings · ${totals.suggestion} suggestions`,
       });
-    }, 1400);
+    }, 350);
   };
 
-  const applyFix = (id: string) => {
-    setFindings((s) =>
-      s.map((f) => (f.id === id ? { ...f, severity: "ok", message: "Auto-fix applied. " + f.message } : f)),
+  const openFinding = (f: HealthFinding) => {
+    navigate(f.section);
+    if (f.record && f.record.kind !== "notification") {
+      requestRevealRecord(f.record.kind, f.record.id);
+    }
+  };
+
+  if (!project) {
+    return (
+      <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center">
+        <ShieldCheck className="mx-auto h-6 w-6 text-muted-foreground" />
+        <p className="mt-2 text-sm font-medium">No project selected</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Open a project to validate its careers, traits, aspirations and assets.
+        </p>
+      </div>
     );
-    toast.success("Auto-fix applied");
-  };
-
-  const fixAll = () => {
-    setFindings((s) =>
-      s.map((f) =>
-        f.fixable && (f.severity === "error" || f.severity === "warning")
-          ? { ...f, severity: "ok", message: "Auto-fix applied. " + f.message }
-          : f,
-      ),
-    );
-    toast.success("All auto-fixes applied");
-  };
-
-  const scopes: ("All" | Scope)[] = ["All", "Career", "Trait", "Aspiration", "Assets", "Package"];
-  const total = findings.length;
-  const health = Math.round((totals.ok / Math.max(total, 1)) * 100);
+  }
 
   return (
     <div className="space-y-4">
@@ -195,18 +139,20 @@ export function ValidationCenter() {
           </div>
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Quality
+              Quality · {project.name}
             </div>
             <h1 className="text-xl font-bold tracking-tight">Validation Center</h1>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={fixAll}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
-          >
-            <Wand2 className="h-3.5 w-3.5" /> Fix All
-          </button>
+          {hidden.size > 0 && (
+            <button
+              onClick={() => setHidden(new Set())}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Show {hidden.size} hidden
+            </button>
+          )}
           <button
             onClick={runScan}
             disabled={running}
@@ -218,24 +164,20 @@ export function ValidationCenter() {
         </div>
       </div>
 
-      {/* Build Health — moved here from the Dashboard */}
       <BuildHealthTile />
 
       <ValidationResultsCard />
 
-      {/* KPI strip */}
+      {/* KPI strip — all values live */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         {[
-          { k: "Health", v: `${health}%`, c: "var(--green)" },
-          { k: "Errors", v: totals.error, c: "var(--red)" },
+          { k: "Health", v: `${report.score}%`, c: report.color },
+          { k: "Critical", v: totals.critical, c: "var(--red, #ef4444)" },
           { k: "Warnings", v: totals.warning, c: "var(--orange)" },
-          { k: "Info", v: totals.info, c: "var(--blue)" },
-          { k: "Passed", v: totals.ok, c: "var(--green)" },
+          { k: "Suggestions", v: totals.suggestion, c: "var(--blue)" },
+          { k: "Export safe", v: report.exportSafe ? "Yes" : "No", c: report.exportSafe ? "var(--green)" : "var(--red, #ef4444)" },
         ].map((s) => (
-          <div
-            key={s.k}
-            className="rounded-xl border border-border bg-card p-3 card-elevated"
-          >
+          <div key={s.k} className="rounded-xl border border-border bg-card p-3 card-elevated">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               {s.k}
             </div>
@@ -249,7 +191,6 @@ export function ValidationCenter() {
       </div>
 
       <div className="grid grid-cols-12 gap-4">
-        {/* Findings list */}
         <section className="col-span-12 rounded-xl border border-border bg-card p-4 card-elevated lg:col-span-7">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <div className="relative min-w-[180px] flex-1">
@@ -257,7 +198,7 @@ export function ValidationCenter() {
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search rules, messages..."
+                placeholder="Search findings..."
                 className="h-8 pl-7 text-xs"
               />
             </div>
@@ -281,24 +222,32 @@ export function ValidationCenter() {
 
           <div className="mb-3 flex flex-wrap items-center gap-1">
             <Filter className="mr-1 h-3 w-3 text-muted-foreground" />
-            {scopes.map((s) => (
+            {categories.map((s) => (
               <button
                 key={s}
-                onClick={() => setScope(s)}
+                onClick={() => setCategory(s)}
                 className={cn(
                   "rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors",
-                  scope === s
+                  category === s
                     ? "border-[var(--blue)] bg-[var(--blue)]/10 text-[var(--blue)]"
                     : "border-border bg-background text-muted-foreground hover:bg-accent",
                 )}
               >
-                {s}
+                {s === "All" ? "All" : (CATEGORY_LABEL[s] ?? s)}
               </button>
             ))}
           </div>
 
           <div className="max-h-[560px] space-y-1 overflow-y-auto pr-1">
-            {shown.length === 0 ? (
+            {findings.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-md border border-dashed border-border p-10 text-center">
+                <CheckCircle2 className="h-6 w-6" style={{ color: "var(--green)" }} />
+                <p className="text-sm font-medium">Nothing to fix</p>
+                <p className="text-[11px] text-muted-foreground">
+                  This project passes every check the validator runs.
+                </p>
+              </div>
+            ) : shown.length === 0 ? (
               <div className="rounded-md border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
                 No findings match these filters.
               </div>
@@ -312,7 +261,7 @@ export function ValidationCenter() {
                     onClick={() => setSelected(f.id)}
                     className={cn(
                       "flex w-full items-start gap-2 rounded-md border p-2.5 text-left transition-all",
-                      selected === f.id
+                      active?.id === f.id
                         ? "border-[var(--blue)]/60 bg-[var(--blue)]/5"
                         : "border-border/70 bg-background/40 hover:border-border hover:bg-accent/50",
                     )}
@@ -320,17 +269,15 @@ export function ValidationCenter() {
                     <Icon className="mt-0.5 h-4 w-4 shrink-0" style={{ color: meta.color }} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="rounded bg-background px-1.5 py-0.5 font-mono text-[9.5px] font-semibold text-muted-foreground">
-                          {f.rule}
+                        <span className="rounded bg-background px-1.5 py-0.5 font-mono text-[9.5px] font-semibold uppercase text-muted-foreground">
+                          {CATEGORY_LABEL[f.category] ?? f.category}
                         </span>
-                        <span className="text-[10px] text-muted-foreground">{f.scope}</span>
-                        <span className="text-[10px] text-muted-foreground">·</span>
-                        <span className="truncate text-[10px] text-muted-foreground">{f.project}</span>
+                        <span className="text-[10px] text-muted-foreground">{meta.label}</span>
                       </div>
-                      <div className="mt-0.5 truncate text-xs font-medium">{f.message}</div>
-                      <div className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
-                        {f.location}
-                      </div>
+                      <div className="mt-0.5 truncate text-xs font-medium">{f.title}</div>
+                      {f.fix && (
+                        <div className="mt-0.5 truncate text-[10px] text-muted-foreground">{f.fix}</div>
+                      )}
                     </div>
                     <ChevronRight className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   </button>
@@ -340,7 +287,6 @@ export function ValidationCenter() {
           </div>
         </section>
 
-        {/* Detail */}
         <aside className="col-span-12 rounded-xl border border-border bg-card p-5 card-elevated lg:col-span-5">
           {!active ? (
             <div className="text-xs text-muted-foreground">Select a finding to inspect it.</div>
@@ -361,42 +307,33 @@ export function ValidationCenter() {
                 })()}
                 <div className="min-w-0 flex-1">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {SEV_META[active.severity].label} · {active.scope}
+                    {SEV_META[active.severity].label} · {CATEGORY_LABEL[active.category] ?? active.category}
                   </div>
-                  <div className="text-sm font-bold">{active.rule}</div>
-                  <div className="mt-0.5 text-[11px] text-muted-foreground">{active.project}</div>
+                  <div className="text-sm font-bold">{active.title}</div>
+                  <div className="mt-0.5 text-[11px] text-muted-foreground">{project.name}</div>
                 </div>
               </div>
 
-              <p className="text-sm">{active.message}</p>
-
-              <div className="rounded-md border border-border bg-background/60 p-3 font-mono text-[11px]">
-                {active.location}
-              </div>
+              {active.fix && <p className="text-sm">{active.fix}</p>}
 
               <div className="flex flex-wrap gap-2">
-                {active.fixable && active.severity !== "ok" && (
-                  <button
-                    onClick={() => applyFix(active.id)}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-[var(--blue)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90"
-                  >
-                    <Wand2 className="h-3.5 w-3.5" /> Apply Auto-fix
-                  </button>
-                )}
                 <button
-                  onClick={() => toast("Opening in builder...")}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                  onClick={() => openFinding(active)}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-[var(--blue)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90"
                 >
-                  Open in Builder
+                  Open in Builder <ArrowRight className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => {
-                    setFindings((s) => s.filter((x) => x.id !== active.id));
-                    toast("Finding dismissed");
+                    setHidden((s) => new Set(s).add(active.id));
+                    setSelected(null);
+                    toast("Hidden until the next scan", {
+                      description: "The underlying issue is still counted in Project Health.",
+                    });
                   }}
                   className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
                 >
-                  Dismiss
+                  Hide
                 </button>
               </div>
             </div>

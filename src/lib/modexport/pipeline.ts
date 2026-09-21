@@ -162,15 +162,17 @@ export function validateSnapshot(
       );
   }
 
-  // SimData capability.
+  // SimData capability. Never blocks the export: companions are reused from
+  // imported mods when available, and the remainder ships as tuning-only with
+  // a loud warning instead of a dead end.
   if (simDataGaps.length) {
-    const severity = req.allowTuningOnly ? "warning" : "error";
+    const kinds = [...new Set(simDataGaps.map((g) => g.kind))].join(", ");
     results.push(
-      v(severity, "SIMDATA_UNSUPPORTED",
-        `${simDataGaps.length} generated resource(s) require a SimData companion this build cannot generate (${nonExportableKinds().join(", ")}). ` +
-        (req.allowTuningOnly
-          ? "Exporting tuning only — the game may ignore these resources."
-          : "Enable “Allow tuning-only package” in advanced options to export anyway, or keep using imported SimData."),
+      v("warning", "SIMDATA_UNSUPPORTED",
+        `${simDataGaps.length} generated resource(s) (${kinds}) are exported without a SimData companion. ` +
+        "The Sims 4 needs one for these classes, so import a mod containing the same resource type (or a Lot51 tuning template) " +
+        "and this exporter will reuse its SimData automatically. Non-exportable classes in this build: " +
+        `${nonExportableKinds().join(", ")}.`,
       ),
     );
   }

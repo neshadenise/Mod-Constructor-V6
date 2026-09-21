@@ -2,15 +2,14 @@ import {
   GitBranch,
   WifiOff,
   Wifi,
-  Cpu,
   HardDrive,
   Circle,
   Wrench,
   Save,
-  MousePointer2,
   Package as PackageIcon,
   ShieldCheck,
   Sparkles,
+  Gamepad2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useAdvanced } from "@/lib/advanced-mode";
@@ -19,6 +18,17 @@ import { SECTION_LABEL, type SectionId } from "./sections";
 import { cn } from "@/lib/utils";
 import { useStore, useActiveProject } from "@/lib/store";
 import { scopeProject, analyzeProject } from "@/lib/project-analysis";
+import { getCacheMeta } from "@/lib/gamedata/tdesc";
+
+function relative(ms: number) {
+  const s = Math.max(0, Math.round(ms / 1000));
+  if (s < 60) return `${s}s ago`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.round(h / 24)}d ago`;
+}
 
 export function StatusBar({ active }: { active: SectionId }) {
   const { advanced } = useAdvanced();
@@ -34,7 +44,9 @@ export function StatusBar({ active }: { active: SectionId }) {
   const running = store.state.builds.find((b) => b.status === "running");
   const queued = store.state.builds.filter((b) => b.status === "queued").length;
   const [online, setOnline] = useState<boolean>(typeof navigator !== "undefined" ? navigator.onLine : true);
-  const [savedAgo, setSavedAgo] = useState(12);
+  const [tick, setTick] = useState(0);
+  const [storageMb, setStorageMb] = useState<number | null>(null);
+  const [gameVersion, setGameVersion] = useState<string | null>(null);
 
   useEffect(() => {
     const up = () => setOnline(true);
@@ -47,10 +59,48 @@ export function StatusBar({ active }: { active: SectionId }) {
     };
   }, []);
 
+  // Re-render once a second so the "saved" readout stays truthful.
   useEffect(() => {
-    const id = window.setInterval(() => setSavedAgo((s) => (s + 1) % 240), 1000);
+    const id = window.setInterval(() => setTick((t) => t + 1), 1000);
     return () => window.clearInterval(id);
   }, []);
+
+  // Real on-device usage for everything this app has written.
+  useEffect(() => {
+    let alive = true;
+    const measure = async () => {
+      try {
+        const est = await navigator.storage?.estimate?.();
+        if (alive && est?.usage != null) setStorageMb(est.usage / (1024 * 1024));
+      } catch {
+        /* storage estimate unavailable */
+      }
+    };
+    void measure();
+    const id = window.setInterval(measure, 30_000);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, []);
+
+  // Game version comes from the cached Lot 51 game-data snapshot.
+  useEffect(() => {
+    let alive = true;
+    void getCacheMeta()
+      .then((meta) => {
+        if (alive && meta?.version) setGameVersion(meta.version);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const savedLabel = project?.updatedAt
+    ? relative(Date.now() - new Date(project.updatedAt).getTime())
+    : "no project";
+  void tick;
 
   return (
     <footer className="fixed bottom-0 left-60 right-[var(--preview-w,0px)] z-30 flex h-7 items-center gap-4 border-t border-border bg-card/95 px-4 text-[10.5px] text-muted-foreground backdrop-blur">
@@ -71,7 +121,7 @@ export function StatusBar({ active }: { active: SectionId }) {
 
       <StatusChip>
         <Save className="h-3 w-3 text-[var(--teal)]" />
-        <span>Autosaved · {savedAgo}s ago</span>
+        <span>Saved · {savedLabel}</span>
       </StatusChip>
 
       {advanced && (
@@ -81,9 +131,6 @@ export function StatusBar({ active }: { active: SectionId }) {
       )}
 
       <span className="ml-auto flex items-center gap-3">
-        <StatusChip>
-          <MousePointer2 className="h-3 w-3" /> 0 selected
-        </StatusChip>
         <StatusChip>
           <Sparkles className="h-3 w-3 text-[var(--violet)]" />
           <span>Provider: <span className="text-foreground/80">{PROVIDER_LABEL[imageProvider]}</span></span>
@@ -96,17 +143,20 @@ export function StatusBar({ active }: { active: SectionId }) {
           )}
           <span>{online ? "Online" : "Offline"}</span>
         </StatusChip>
+        {storageMb !== null && storageMb * 1024 >= 1 && (
+          <StatusChip>
+            <HardDrive className="h-3 w-3" /> {storageMb < 1 ? `${Math.round(storageMb * 1024)} KB` : `${storageMb.toFixed(1)} MB`}
+          </StatusChip>
+        )}
+        {gameVersion && (
+          <StatusChip>
+            <Gamepad2 className="h-3 w-3" /> Game {gameVersion}
+          </StatusChip>
+        )}
         <StatusChip>
-          <Cpu className="h-3 w-3" /> 4%
+          <GitBranch className="h-3 w-3" /> {project?.name ?? "no project"}
         </StatusChip>
-        <StatusChip>
-          <HardDrive className="h-3 w-3" /> 428 MB
-        </StatusChip>
-        <StatusChip>
-          <GitBranch className="h-3 w-3" /> main
-        </StatusChip>
-        <span className="tabular-nums">Game 1.108.318 · Project v0.8.2</span>
-        {advanced && <span className="font-mono">UTF-8 · LF · XML · Ln 142, Col 18</span>}
+        {project && <span className="tabular-nums">v{project.version}</span>}
       </span>
     </footer>
   );
@@ -115,3 +165,4 @@ export function StatusBar({ active }: { active: SectionId }) {
 function StatusChip({ children, className }: { children: React.ReactNode; className?: string }) {
   return <span className={cn("inline-flex items-center gap-1.5", className)}>{children}</span>;
 }
+

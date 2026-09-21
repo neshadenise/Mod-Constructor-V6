@@ -11,14 +11,15 @@ import { compressionLabel, readDbpf, readDbpfResource } from "@/lib/modimport/db
 import { resourceTypeInfo } from "@/lib/modimport/resource-types";
 import { PARSER_VERSION, type ModProject } from "@/lib/modimport/types";
 import type { Aspiration, Asset, Career, NotificationTemplate, Project, Trait } from "@/lib/types";
-import { GROUP_DEFAULT, ResourceIdService, TYPE_STBL, normalizeKey } from "./ids";
+import { GROUP_DEFAULT, ResourceIdService, TYPE_SIMDATA, TYPE_STBL, normalizeKey } from "./ids";
 import {
   SERIALIZERS,
   type SerializedTuningResource,
   type SerializerContext,
   type ValidationResult as SerializerIssue,
 } from "./serializers";
-import { requiresSimData } from "./simdata";
+import { requiresSimData, type BuilderKind } from "./simdata";
+import { buildDonorIndex, makeCompanion, type SimDataDonor } from "./simdata-companion";
 import { FALLBACK_LOCALE, mergeLocalization, serializeStbl, stblInstance, type LocalizationEntry } from "./stbl";
 import { versionedName } from "./filenames";
 import {
@@ -48,6 +49,11 @@ export interface SnapshotInput {
   request: ExportRequest;
   builder?: BuilderContent;
   imported?: ImportedContent;
+  /**
+   * Extra imported mods used only as SimData donors for generated tuning.
+   * Their own resources are never added to the output.
+   */
+  donorSources?: ImportedContent[];
 }
 
 export interface SnapshotResult {
@@ -180,6 +186,16 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
     builder && request.mode !== "preserve-original" &&
     (builder.careers.length || builder.traits.length || builder.aspirations.length);
 
+  const donorPool: ImportedContent[] = [
+    ...(imported ? [imported] : []),
+    ...(input.donorSources ?? []),
+  ];
+  const donors = new Map<BuilderKind, SimDataDonor>();
+  for (const source of donorPool) {
+    const found = await buildDonorIndex(source.project, source.originals);
+    for (const [kind, donor] of found) if (!donors.has(kind)) donors.set(kind, donor);
+  }
+
   if (wantsBuilderOutput && builder) {
     const ctx: SerializerContext = { namespace: namespaceFor(builder), ids };
     const tuning: SerializedTuningResource[] = [];
@@ -232,12 +248,44 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
         compressionType: 0,
       });
       component.resourceIds.push(resource.resourceId);
+
       if (requiresSimData(resource.kind)) {
-        simDataGaps.push({
-          resourceId: resource.resourceId,
-          kind: resource.kind,
-          message: `${resource.tuningName} (${resource.kind}) requires a SimData companion that this build cannot generate.`,
+        const companion = makeCompanion(donors.get(resource.kind), {
+          nameKey: resource.stringRefs[0],
+          descriptionKey: resource.stringRefs[1],
         });
+        if (companion) {
+          const simDataId = `${resource.resourceId}:simdata`;
+          const simDataKey = normalizeKey({
+            type: TYPE_SIMDATA,
+            group: resource.key.group,
+            instance: resource.key.instance,
+          });
+          ids.reserveKey(simDataKey, simDataId);
+          resources.push({
+            resourceId: simDataId,
+            componentId,
+            resourceKey: simDataKey,
+            typeLabel: "SimData",
+            name: `${resource.tuningName} (SimData)`,
+            state: "created",
+            source: "builder-model",
+            currentHash: await checksum(companion.bytes),
+            canRebuild: true,
+            preserveRawBytes: false,
+            payload: companion.bytes,
+            memSize: companion.bytes.byteLength,
+            compressionType: 0,
+            notes: `SimData companion reused from ${companion.origin}; ${companion.report.applied.length} field(s) re-pointed at this record's strings.`,
+          });
+          component.resourceIds.push(simDataId);
+        } else {
+          simDataGaps.push({
+            resourceId: resource.resourceId,
+            kind: resource.kind,
+            message: `${resource.tuningName} (${resource.kind}) has no SimData companion — import a mod containing a ${resource.kind} so its SimData can be reused.`,
+          });
+        }
       }
     }
 
