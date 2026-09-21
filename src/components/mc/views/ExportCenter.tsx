@@ -28,7 +28,7 @@ import { useStore } from "@/lib/store";
 import { useAdvanced } from "@/lib/advanced-mode";
 import { downloadExportedFile, runExport } from "@/lib/modexport/pipeline";
 import { applyCreatorPrefix, normalizeCreatorPrefix, versionedName } from "@/lib/modexport/filenames";
-import { listImportedProjects, subscribeImports } from "@/lib/modexport/registry";
+import { hydrateImportRegistry, listImportedProjects, subscribeImports } from "@/lib/modexport/registry";
 import { listExportHistory, recordExport } from "@/lib/modexport/history";
 import { nonExportableKinds } from "@/lib/modexport/simdata";
 import {
@@ -105,6 +105,9 @@ export default function ExportCenter() {
   const store = useStore();
   const { advanced } = useAdvanced();
   const imports = useSyncExternalStore(subscribeImports, listImportedProjects, listImportedProjects);
+  useEffect(() => {
+    void hydrateImportRegistry();
+  }, []);
 
   const project = store.state.projects.find((p) => p.id === store.state.activeProjectId) ?? store.state.projects[0];
   const pid = project?.id;

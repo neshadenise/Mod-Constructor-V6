@@ -3,6 +3,7 @@
  * Imported originals stay in memory only — they are never persisted.
  */
 
+import { loadImportSession } from "@/lib/modimport/session-store";
 import type { ModProject } from "@/lib/modimport/types";
 
 export interface RegisteredImport {
@@ -49,3 +50,23 @@ export function subscribeImports(fn: () => void) {
   };
 }
 
+
+/**
+ * Rebuilds the registry from the stored import session so the Export Center
+ * sees imported mods after a reload, even when the Mod Importer screen has not
+ * been opened in this session. Safe to call repeatedly.
+ */
+let hydrated: Promise<void> | null = null;
+export function hydrateImportRegistry(): Promise<void> {
+  if (hydrated) return hydrated;
+  hydrated = loadImportSession()
+    .then((saved) => {
+      if (!saved) return;
+      for (const project of saved.projects) {
+        if (!registry.has(project.id)) registry.set(project.id, { project, originals: saved.bytes });
+      }
+      refresh();
+    })
+    .catch(() => undefined);
+  return hydrated;
+}
