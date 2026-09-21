@@ -40,7 +40,7 @@ import {
   type ModComponent,
   type ModProject,
 } from "@/lib/modimport/types";
-import { buildImportFiles } from "@/lib/modimport/save-to-project";
+import { importModIntoBuilders, saveModFilesToProject } from "@/lib/modimport/pipeline-actions";
 import { clearImportSession, loadImportSession, saveImportSession } from "@/lib/modimport/session-store";
 import { detectBuilders, type BuilderDetection } from "@/lib/modimport/detect-builder";
 import { extractBuilderRecords, type ExtractedKind } from "@/lib/modimport/to-builder";
