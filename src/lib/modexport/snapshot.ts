@@ -11,7 +11,7 @@ import { compressionLabel, readDbpf, readDbpfResource } from "@/lib/modimport/db
 import { resourceTypeInfo } from "@/lib/modimport/resource-types";
 import { PARSER_VERSION, type ModProject } from "@/lib/modimport/types";
 import type { Aspiration, Asset, Career, NotificationTemplate, Project, Trait } from "@/lib/types";
-import { GROUP_DEFAULT, ResourceIdService, TYPE_STBL, normalizeKey } from "./ids";
+import { GROUP_DEFAULT, ResourceIdService, TYPE_SIMDATA, TYPE_STBL, normalizeKey } from "./ids";
 import {
   SERIALIZERS,
   type SerializedTuningResource,
@@ -180,6 +180,8 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
   const wantsBuilderOutput =
     builder && request.mode !== "preserve-original" &&
     (builder.careers.length || builder.traits.length || builder.aspirations.length);
+
+  const donors = await buildDonorIndex(imported?.project, imported?.originals);
 
   if (wantsBuilderOutput && builder) {
     const ctx: SerializerContext = { namespace: namespaceFor(builder), ids };
