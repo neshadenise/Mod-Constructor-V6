@@ -13,6 +13,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useStore } from "@/lib/store";
+import { useExplorer } from "@/lib/explorer";
+import { analyzeUpload, type UploadInput } from "@/lib/modimport/analyze";
+import { IMPORT_STAGES, type ModProject } from "@/lib/modimport/types";
+import { detectBuilders, primaryBuilder } from "@/lib/modimport/detect-builder";
+import { importModIntoBuilders, saveModFilesToProject } from "@/lib/modimport/pipeline-actions";
+import { registerImportedProject } from "@/lib/modexport/registry";
 import { setBuilderSeed } from "@/lib/builder-seed";
 import { useAppNavigation } from "@/lib/navigation";
 import type { ProjectBundle } from "@/lib/types";
@@ -74,8 +80,12 @@ export function PackageImporter() {
   const active = store.state.activeProjectId ?? projects[0]?.id ?? "";
 
   const [staged, setStaged] = useState<Staged[]>([]);
-  const [gameFiles, setGameFiles] = useState<File[]>([]);
+  const [mods, setMods] = useState<ModProject[]>([]);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [stage, setStage] = useState("");
   const [dragging, setDragging] = useState(false);
+  const bytesRef = useRef<Map<string, Uint8Array>>(new Map());
+  const ex = useExplorer();
 
   const [targetId, setTargetId] = useState<string>("");
   const [selected, setSelected] = useState<Record<Kind, boolean>>({
