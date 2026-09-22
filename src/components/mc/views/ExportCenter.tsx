@@ -42,6 +42,18 @@ import {
 import { cn } from "@/lib/utils";
 import RebuildImportedPanel from "./RebuildImportedPanel";
 import { readDynasties } from "@/lib/dynasty/store";
+import { SIMDATA_CLASS, resolveSimDataMapping, simDataImportHelp } from "@/lib/modexport/simdata-mapping";
+import type { BuilderKind } from "@/lib/modexport/simdata";
+
+const SIMDATA_KINDS: BuilderKind[] = [
+  "career",
+  "career_track",
+  "career_level",
+  "trait",
+  "buff",
+  "aspiration",
+  "milestone",
+];
 
 const TARGETS: { value: ExportType; label: string; hint: string }[] = [
   { value: "complete-mod", label: "Complete Mod ZIP", hint: "Every owned component in one installable folder." },
