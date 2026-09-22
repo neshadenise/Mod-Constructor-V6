@@ -32,6 +32,8 @@ import { cn } from "@/lib/utils";
 import { useStore, useActiveProject } from "@/lib/store";
 import { useBuilderRecord, requestRevealRecord } from "@/lib/builder-record";
 import { projectAspirationDoc } from "@/lib/builder-projection";
+import { TdescRequirements } from "@/components/mc/builders/TdescRequirements";
+import { aspirationChecklist } from "@/lib/modexport/tdesc-check";
 import { useBuilderSeed } from "@/lib/builder-seed";
 import { useAdvanced } from "@/lib/advanced-mode";
 import { useAppNavigation } from "@/lib/navigation";
