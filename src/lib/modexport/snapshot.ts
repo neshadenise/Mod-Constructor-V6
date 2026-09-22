@@ -21,6 +21,7 @@ import {
 import { requiresSimData, type BuilderKind } from "./simdata";
 import { serializePackModule, validatePackModuleForExport } from "./pack-serializer";
 import { serializeNotification, validateNotificationForExport } from "./notification-serializer";
+import { serializeDynasty, validateDynastyForExport } from "./dynasty-serializer";
 import type { PackModule } from "@/lib/packs/types";
 import { buildDonorIndex, makeCompanion, type SimDataDonor } from "./simdata-companion";
 import { FALLBACK_LOCALE, mergeLocalization, serializeStbl, stblInstance, type LocalizationEntry } from "./stbl";
@@ -42,6 +43,8 @@ export interface BuilderContent {
   assets: Asset[];
   /** Pack Mechanics modules (clubs, royalty, legacy, pack rules). */
   packModules?: PackModule[];
+  /** Custom Dynasty documents. */
+  dynasties?: DynastyDoc[];
 }
 
 export interface ImportedContent {
@@ -190,7 +193,8 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
   const wantsBuilderOutput =
     builder && request.mode !== "preserve-original" &&
     (builder.careers.length || builder.traits.length || builder.aspirations.length ||
-      builder.notifications.length || (builder.packModules?.length ?? 0));
+      builder.notifications.length || (builder.packModules?.length ?? 0) ||
+      (builder.dynasties?.length ?? 0));
 
   const donorPool: ImportedContent[] = [
     ...(imported ? [imported] : []),
@@ -251,6 +255,14 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
     for (const notification of builder.notifications)
       take("Notification", notification, notification.name, validateNotificationForExport, (m) =>
         serializeNotification(m, ctx),
+      );
+    for (const dynasty of builder.dynasties ?? [])
+      take(
+        "Dynasty",
+        dynasty,
+        dynasty.identity?.displayName || "Untitled dynasty",
+        validateDynastyForExport,
+        (m) => serializeDynasty(m, ctx),
       );
     for (const pack of builder.packModules ?? [])
       take("Pack module", pack, pack.name, validatePackModuleForExport, (m) =>
