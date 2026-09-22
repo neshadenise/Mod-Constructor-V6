@@ -1,63 +1,32 @@
-import { useMemo, useState } from "react";
-import { Code2, Search, Copy, Plus, Tag } from "lucide-react";
+/**
+ * Snippets Library.
+ *
+ * A snippet is a reusable block of tuning text the creator pastes into other
+ * builders — it is deliberately NOT a compiled resource, so it has no export
+ * path of its own. Everything here reads and writes the real project store, so
+ * snippets survive reloads and appear in the project's saved data.
+ */
+
+import { useEffect, useMemo, useState } from "react";
+import { Code2, Search, Copy, Plus, Tag, Trash2, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useStore } from "@/lib/store";
+import type { Snippet } from "@/lib/types";
 
-type Snippet = {
-  id: string;
-  title: string;
-  category: "Buff" | "Objective" | "Interaction" | "Message" | "Tuning";
-  tags: string[];
-  body: string;
-};
-
-const INITIAL: Snippet[] = [
-  {
-    id: "s1",
-    title: "Confident buff (visible, 240m)",
-    category: "Buff",
-    tags: ["emotion", "confident"],
-    body: `<buff>\n  <emotion>Confident</emotion>\n  <weight>2</weight>\n  <duration_min>240</duration_min>\n  <visible>true</visible>\n</buff>`,
-  },
-  {
-    id: "s2",
-    title: "Promotion popup override",
-    category: "Message",
-    tags: ["promotion", "toast"],
-    body: `<message id="career_promotion">\n  <title>{sim} was promoted!</title>\n  <body>New rank: {rank}. Salary: {salary}</body>\n</message>`,
-  },
-  {
-    id: "s3",
-    title: "Skill autonomy multiplier x1.5",
-    category: "Tuning",
-    tags: ["autonomy", "skill"],
-    body: `<autonomy_score>\n  <interaction>Skill_Fitness</interaction>\n  <score>15</score>\n</autonomy_score>`,
-  },
-  {
-    id: "s4",
-    title: "Reach level 3 objective",
-    category: "Objective",
-    tags: ["career", "milestone"],
-    body: `<objective id="reach_level_3">\n  <goal>career.level >= 3</goal>\n  <reward>50 satisfaction</reward>\n</objective>`,
-  },
-  {
-    id: "s5",
-    title: "Social — Deep Conversation",
-    category: "Interaction",
-    tags: ["social", "conversation"],
-    body: `<interaction>\n  <name>deep_conversation</name>\n  <required_trait>Lucid Dreamer</required_trait>\n  <duration_min>15</duration_min>\n</interaction>`,
-  },
-];
-
-const CATS: ("All" | Snippet["category"])[] = ["All", "Buff", "Objective", "Interaction", "Message", "Tuning"];
+const CATS = ["All", "Buff", "Objective", "Interaction", "Message", "Tuning", "General"] as const;
+const EDITABLE_CATS = CATS.filter((c) => c !== "All");
+const LANGS: Snippet["language"][] = ["xml", "python", "text"];
 
 export function SnippetsLibrary() {
-  const [snippets, setSnippets] = useState<Snippet[]>(INITIAL);
+  const store = useStore();
+  const snippets = store.state.snippets;
+
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState<(typeof CATS)[number]>("All");
-  const [selected, setSelected] = useState<string>(INITIAL[0].id);
+  const [selected, setSelected] = useState<string>("");
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -65,7 +34,7 @@ export function SnippetsLibrary() {
       if (cat !== "All" && s.category !== cat) return false;
       if (!q) return true;
       return (
-        s.title.toLowerCase().includes(q) ||
+        s.name.toLowerCase().includes(q) ||
         s.tags.some((t) => t.toLowerCase().includes(q)) ||
         s.body.toLowerCase().includes(q)
       );
@@ -73,6 +42,25 @@ export function SnippetsLibrary() {
   }, [snippets, query, cat]);
 
   const active = snippets.find((s) => s.id === selected) ?? shown[0] ?? null;
+
+  /* Keep a valid selection as the list changes. */
+  useEffect(() => {
+    if (active && active.id !== selected) setSelected(active.id);
+  }, [active, selected]);
+
+  const createSnippet = () => {
+    const s = store.saveSnippet({
+      name: "New snippet",
+      category: "Tuning",
+      language: "xml",
+      body: "<!-- your snippet -->",
+      tags: [],
+    });
+    setSelected(s.id);
+    setCat("All");
+    setQuery("");
+    toast.success("Snippet created");
+  };
 
   return (
     <div className="space-y-4">
@@ -89,15 +77,7 @@ export function SnippetsLibrary() {
           </div>
         </div>
         <button
-          onClick={() => {
-            const id = `s${Date.now()}`;
-            setSnippets((s) => [
-              { id, title: "New snippet", category: "Tuning", tags: [], body: "<!-- your snippet -->" },
-              ...s,
-            ]);
-            setSelected(id);
-            toast.success("Snippet created");
-          }}
+          onClick={createSnippet}
           className="inline-flex items-center gap-1.5 rounded-md bg-[var(--blue)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90"
         >
           <Plus className="h-3.5 w-3.5" /> New Snippet
@@ -132,63 +112,144 @@ export function SnippetsLibrary() {
             ))}
           </div>
           <div className="max-h-[540px] space-y-0.5 overflow-y-auto pr-1">
-            {shown.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setSelected(s.id)}
-                className={cn(
-                  "flex w-full flex-col items-start rounded-md px-2 py-1.5 text-left transition-colors",
-                  selected === s.id ? "bg-accent" : "hover:bg-accent/60",
-                )}
-              >
-                <span className="text-xs font-semibold">{s.title}</span>
-                <span className="text-[10px] text-muted-foreground">{s.category}</span>
-              </button>
-            ))}
+            {snippets.length === 0 ? (
+              <div className="rounded-md border border-dashed border-border p-4 text-center text-[11px] text-muted-foreground">
+                No snippets yet. Create one to reuse tuning across your builders.
+              </div>
+            ) : shown.length === 0 ? (
+              <div className="rounded-md border border-dashed border-border p-4 text-center text-[11px] text-muted-foreground">
+                Nothing matches this search.
+              </div>
+            ) : (
+              shown.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setSelected(s.id)}
+                  className={cn(
+                    "flex w-full flex-col items-start rounded-md px-2 py-1.5 text-left transition-colors",
+                    active?.id === s.id ? "bg-accent" : "hover:bg-accent/60",
+                  )}
+                >
+                  <span className="flex items-center gap-1 text-xs font-semibold">
+                    {s.favorite && <Star className="h-3 w-3 fill-[var(--amber)] text-[var(--amber)]" />}
+                    {s.name}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {s.category} · {s.language}
+                  </span>
+                </button>
+              ))
+            )}
           </div>
         </aside>
 
         <section className="col-span-12 rounded-xl border border-border bg-card p-5 card-elevated md:col-span-8">
           {!active ? (
-            <div className="text-xs text-muted-foreground">Select a snippet.</div>
+            <div className="text-xs text-muted-foreground">
+              Select a snippet, or create one to get started.
+            </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {active.category}
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Input
+                    value={active.name}
+                    onChange={(e) => store.updateSnippet(active.id, { name: e.target.value })}
+                    placeholder="Snippet name"
+                    className="h-8 text-sm font-semibold"
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={active.category}
+                      onChange={(e) => store.updateSnippet(active.id, { category: e.target.value })}
+                      className="h-7 rounded-md border border-border bg-background px-2 text-[11px]"
+                    >
+                      {EDITABLE_CATS.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={active.language}
+                      onChange={(e) =>
+                        store.updateSnippet(active.id, {
+                          language: e.target.value as Snippet["language"],
+                        })
+                      }
+                      className="h-7 rounded-md border border-border bg-background px-2 text-[11px]"
+                    >
+                      {LANGS.map((l) => (
+                        <option key={l} value={l}>{l}</option>
+                      ))}
+                    </select>
+                    <Input
+                      value={active.tags.join(", ")}
+                      onChange={(e) =>
+                        store.updateSnippet(active.id, {
+                          tags: e.target.value.split(",").map((t) => t.trim()).filter(Boolean),
+                        })
+                      }
+                      placeholder="tags, comma separated"
+                      className="h-7 max-w-[240px] text-[11px]"
+                    />
                   </div>
-                  <h2 className="text-lg font-bold tracking-tight">{active.title}</h2>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {active.tags.map((t) => (
-                      <span
-                        key={t}
-                        className="inline-flex items-center gap-1 rounded-full border border-border bg-background/60 px-1.5 py-0.5 text-[10px]"
-                      >
-                        <Tag className="h-2.5 w-2.5" />
-                        {t}
-                      </span>
-                    ))}
-                  </div>
+                  {active.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {active.tags.map((t) => (
+                        <span
+                          key={t}
+                          className="inline-flex items-center gap-1 rounded-full border border-border bg-background/60 px-1.5 py-0.5 text-[10px]"
+                        >
+                          <Tag className="h-2.5 w-2.5" />
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <button
-                  onClick={() => {
-                    navigator.clipboard?.writeText(active.body);
-                    toast.success("Copied to clipboard");
-                  }}
-                  className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-[11px] font-medium hover:bg-accent"
-                >
-                  <Copy className="h-3 w-3" /> Copy
-                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    onClick={() => store.updateSnippet(active.id, { favorite: !active.favorite })}
+                    title={active.favorite ? "Remove from favourites" : "Add to favourites"}
+                    className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-accent"
+                  >
+                    <Star
+                      className={cn(
+                        "h-3 w-3",
+                        active.favorite && "fill-[var(--amber)] text-[var(--amber)]",
+                      )}
+                    />
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard?.writeText(active.body);
+                      toast.success("Copied to clipboard");
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-[11px] font-medium hover:bg-accent"
+                  >
+                    <Copy className="h-3 w-3" /> Copy
+                  </button>
+                  <button
+                    onClick={() => {
+                      store.deleteSnippet(active.id);
+                      setSelected("");
+                      toast.success("Snippet deleted");
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium text-[var(--red)] hover:bg-accent"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
               </div>
 
               <Textarea
                 value={active.body}
-                onChange={(e) =>
-                  setSnippets((s) => s.map((x) => (x.id === active.id ? { ...x, body: e.target.value } : x)))
-                }
+                onChange={(e) => store.updateSnippet(active.id, { body: e.target.value })}
                 className="min-h-[280px] font-mono text-[11px]"
               />
+              <p className="text-[10px] text-muted-foreground">
+                Snippets are reusable text you paste into other builders. They are saved with the
+                project but are not compiled into the package on their own.
+              </p>
             </div>
           )}
         </section>

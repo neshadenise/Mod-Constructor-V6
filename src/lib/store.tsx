@@ -118,7 +118,7 @@ export function makeDemoContent(projectId: ID) {
     internalId: "fashion_critic",
     description: "Judge the runway, shape the trends, and never repeat an outfit.",
     careerType: "standard",
-    ageGates: ["youngadult", "adult", "elder"] as Career["ageGates"],
+    ageGates: ["young-adult", "adult", "elder"] as Career["ageGates"],
     branches: [
       {
         id: uid(),
@@ -160,7 +160,7 @@ export function makeDemoContent(projectId: ID) {
     internalId: "trendsetter",
     description: "Trendsetters feel Confident in a fresh outfit and Uncomfortable repeating one.",
     category: "personality",
-    ageGates: ["teen", "youngadult", "adult", "elder"] as Trait["ageGates"],
+    ageGates: ["teen", "young-adult", "adult", "elder"] as Trait["ageGates"],
     buffs: [
       {
         id: uid(),

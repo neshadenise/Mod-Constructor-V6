@@ -41,6 +41,7 @@ import {
 } from "@/lib/modexport/types";
 import { cn } from "@/lib/utils";
 import RebuildImportedPanel from "./RebuildImportedPanel";
+import { readDynasties } from "@/lib/dynasty/store";
 
 const TARGETS: { value: ExportType; label: string; hint: string }[] = [
   { value: "complete-mod", label: "Complete Mod ZIP", hint: "Every owned component in one installable folder." },
@@ -121,6 +122,8 @@ export default function ExportCenter() {
       notifications: store.state.notifications.filter((n) => n.projectId === pid),
       assets: store.state.assets.filter((a) => a.projectId === pid),
       packModules: store.state.packModules.filter((m) => m.projectId === pid),
+      /* Dynasties keep their own per-project storage, so read them directly. */
+      dynasties: readDynasties(pid),
     };
   }, [project, pid, store.state]);
 
@@ -158,7 +161,7 @@ export default function ExportCenter() {
           {
             id: `builder:${builder.project.id}`,
             label: `${builder.project.name}.package`,
-            hint: `${builder.careers.length} careers · ${builder.traits.length} traits · ${builder.aspirations.length} aspirations · ${builder.packModules.length} pack modules`,
+            hint: `${builder.careers.length} careers · ${builder.traits.length} traits · ${builder.aspirations.length} aspirations · ${builder.packModules.length} pack modules · ${builder.dynasties.length} dynasties`,
             required: true,
           },
         ]

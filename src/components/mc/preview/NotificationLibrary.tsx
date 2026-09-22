@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { useBuilderSeed } from "@/lib/builder-seed";
-import type { NotificationTemplate } from "@/lib/types";
+import type { NotificationTemplate, NotificationVisual } from "@/lib/types";
 
 type DefaultSample = {
   kind: NotificationKind;
@@ -34,6 +34,15 @@ const KIND_OPTIONS: NotificationKind[] = [
   "success", "warning", "error", "info",
   "promotion", "reward", "relationship",
   "buff", "trait", "career", "aging",
+];
+
+/** How the notification is presented in-game. Each maps to a different UI. */
+const VISUALS: { value: NotificationVisual; label: string; hint: string }[] = [
+  { value: "toast", label: "Live Mode TNS", hint: "Corner notification, no interaction" },
+  { value: "modal", label: "Modal dialog", hint: "Blocking dialog with buttons" },
+  { value: "banner", label: "Banner", hint: "Wide banner across the top" },
+  { value: "milestone", label: "Milestone", hint: "Celebratory milestone card" },
+  { value: "phone", label: "Phone call", hint: "Incoming call from the Sim's phone" },
 ];
 
 const FILTERS = ["All", ...Array.from(new Set(DEFAULTS.map((s) => s.tag)))] as const;
@@ -269,6 +278,7 @@ export function NotificationLibrary() {
                 title: v.title!,
                 body: v.body!,
                 visual: v.visual!,
+                iconAssetId: v.iconAssetId,
                 previewKind: v.previewKind,
                 actions: v.actions ?? [],
               });
@@ -343,6 +353,13 @@ function TemplateDialog({
   const [body, setBody] = useState(initial?.body ?? "");
   const [previewKind, setPreviewKind] = useState<NotificationKind>((initial?.previewKind as NotificationKind) ?? "info");
   const [actionLabel, setActionLabel] = useState(initial?.actions[0]?.label ?? "");
+  const [visual, setVisual] = useState<NotificationVisual>(initial?.visual ?? "toast");
+  const [iconAssetId, setIconAssetId] = useState(initial?.iconAssetId ?? "");
+
+  const store = useStore();
+  const icons = store.state.assets.filter(
+    (a) => a.kind === "icon" || a.kind === "image",
+  );
 
   const canSubmit = name.trim() && title.trim() && body.trim();
 
@@ -366,6 +383,20 @@ function TemplateDialog({
           <Field label="Name (internal)">
             <input value={name} onChange={(e) => setName(e.target.value)} className={fieldClass} placeholder="promotion_reached_top" />
           </Field>
+          <Field label="Presentation type">
+            <select
+              value={visual}
+              onChange={(e) => setVisual(e.target.value as NotificationVisual)}
+              className={fieldClass}
+            >
+              {VISUALS.map((v) => (
+                <option key={v.value} value={v.value}>{v.label}</option>
+              ))}
+            </select>
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              {VISUALS.find((v) => v.value === visual)?.hint}
+            </div>
+          </Field>
           <Field label="Style">
             <select value={previewKind} onChange={(e) => setPreviewKind(e.target.value as NotificationKind)} className={fieldClass}>
               {KIND_OPTIONS.map((k) => <option key={k} value={k}>{k}</option>)}
@@ -376,6 +407,23 @@ function TemplateDialog({
           </Field>
           <Field label="Body">
             <textarea value={body} onChange={(e) => setBody(e.target.value)} className={cn(fieldClass, "min-h-[72px] resize-y")} placeholder="Your Sim reached the top of the Astronaut career." />
+          </Field>
+          <Field label="Icon">
+            <select
+              value={iconAssetId}
+              onChange={(e) => setIconAssetId(e.target.value)}
+              className={fieldClass}
+            >
+              <option value="">No icon (game default)</option>
+              {icons.map((a) => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
+            {icons.length === 0 && (
+              <div className="mt-1 text-[10px] text-muted-foreground">
+                Add an image in Project Assets to choose an icon here.
+              </div>
+            )}
           </Field>
           <Field label="Action label (optional)">
             <input value={actionLabel} onChange={(e) => setActionLabel(e.target.value)} className={fieldClass} placeholder="View career" />
@@ -415,7 +463,8 @@ function TemplateDialog({
               name: name.trim(),
               title: title.trim(),
               body: body.trim(),
-              visual: "toast",
+              visual,
+              iconAssetId: iconAssetId || undefined,
               previewKind,
               actions: actionLabel.trim() ? [{ label: actionLabel.trim(), kind: "primary" }] : [],
             })}

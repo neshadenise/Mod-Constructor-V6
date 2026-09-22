@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useStore, useActiveProject } from "@/lib/store";
 import { useBuilderRecord, requestRevealRecord } from "@/lib/builder-record";
+import { projectAspirationDoc } from "@/lib/builder-projection";
 import { useBuilderSeed } from "@/lib/builder-seed";
 import { useAdvanced } from "@/lib/advanced-mode";
 import { useAppNavigation } from "@/lib/navigation";
@@ -135,6 +136,7 @@ export function AspirationBuilder() {
     blank: () => blankAspirationDoc(),
     title: (d) => d.displayName,
     fromRecord: (rec) => migrateAspirationDoc(rec as Aspiration),
+    toRecord: (d) => projectAspirationDoc(d),
   });
 
   useBuilderSeed<Partial<AspirationDoc>>("aspiration", (payload) => {

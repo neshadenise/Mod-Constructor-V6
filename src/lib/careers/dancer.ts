@@ -273,7 +273,7 @@ export function makeDancerCareer({ projectId, uid, stamp }: DancerCareerOptions)
     description:
       "From sweeping the studio to selling out theaters. Train through four shared ranks, then specialize as a Stage Dancer, TikTok Star, or Choreographer.",
     careerType: "standard",
-    ageGates: ["teen", "youngadult", "adult", "elder"] as Career["ageGates"],
+    ageGates: ["teen", "young-adult", "adult", "elder"] as Career["ageGates"],
     branches: [
       branch("Studio Track", "Shared ranks 1-4 before choosing a specialization.", sharedLevels),
       branch(

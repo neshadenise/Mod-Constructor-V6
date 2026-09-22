@@ -28,3 +28,27 @@ no longer fires for builder content; "Allow tuning-only package" is no longer
 required. Verified: Demo Project_v0.1.0.package, 68,958 B, DBPF v2.1, 79
 entries (39 tuning + 39 SimData + 1 STBL), every companion reopened as DATA
 v0x101.
+
+## Done (2026-09-23) — Builder audit
+
+- Snippets Library now reads and writes the project store (create, edit, tag,
+  favourite, delete, persisted); documented as reusable text, not a resource.
+- Custom Dynasty has a real build path: `dynasty-serializer.ts` lowers identity,
+  hierarchy roles and values into snippet tuning + STBL, wired through
+  `snapshot.ts` and the Export Center.
+- Notification editor gained a presentation-type selector (TNS, modal, banner,
+  milestone, phone) and an icon picker bound to project assets.
+- Placeholder data removed: the fake "Compile" toasts are now real Save + open
+  Export Center actions, and the Career/Trait builders start empty instead of
+  seeded with demo values.
+- Exporter excludes incomplete records with an actionable `RESOURCE_EXCLUDED`
+  message and keeps the underlying validation codes in the report; the build
+  only fails when nothing at all is exportable.
+- Tests: `src/lib/modexport/__tests__/builders.test.ts` covers notification,
+  dynasty, draft projection and exclusion behaviour. 55 tests pass, typecheck
+  clean. Verified export: Demo Project_v0.1.0.package, 69,993 B, 81 entries
+  (41 tuning + 39 SimData + STBL), every companion reopened.
+
+## Remaining
+
+- Nothing open.

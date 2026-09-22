@@ -77,6 +77,7 @@ import { DynastyBuilder } from "./dynasty/DynastyBuilder";
 import { NotificationLibrary } from "./preview/NotificationLibrary";
 import { PreviewStudio } from "./preview/PreviewStudio";
 import { useBuilderRecord } from "@/lib/builder-record";
+import { projectCareerDraft, projectTraitDraftV5 } from "@/lib/builder-projection";
 import { BuilderRecordBar } from "./BuilderRecordBar";
 import { ImageField } from "./ImageField";
 import { CareerCoverSection } from "./career/CareerCoverSection";
@@ -999,12 +1000,11 @@ function Section({
 
 function CareerBuilder() {
   const { advanced } = useAdvanced();
+  const { navigate } = useAppNavigation();
 
   // Career-level state
-  const [name, setName] = useState("Interstellar Navigator");
-  const [description, setDescription] = useState(
-    "Chart deep-space routes and command the fleet. Requires strong Logic and Fitness.",
-  );
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Technical");
   const [careerType, setCareerType] = useState("FullTime");
   const [icon, setIcon] = useState("");
@@ -1172,6 +1172,7 @@ function CareerBuilder() {
     restore: restoreCareer,
     blank: blankCareer,
     title: (d) => d.name,
+    toRecord: (d) => projectCareerDraft(d),
     fromRecord: (rec) => {
       const c = rec as import("@/lib/types").Career;
       const mapped = careerPayloadToBranches(c as unknown as CareerPayload);
@@ -1353,9 +1354,12 @@ function CareerBuilder() {
             </GhostBtn>
             <PrimaryBtn
               icon={Play}
-              onClick={() => toast.success("Career compiled → epic_careers.package")}
+              onClick={() => {
+                record.save();
+                navigate("exporter");
+              }}
             >
-              Compile
+              Build
             </PrimaryBtn>
           </>
         }
@@ -2346,13 +2350,12 @@ const EMOTION_ICON: Record<EmotionV5, string> = {
 
 function LegacyTraitBuilder() {
   const { advanced } = useAdvanced();
+  const { navigate } = useAppNavigation();
   const [tab, setTab] = useState<TraitTab>("identity");
 
-  const [name, setName] = useState("Lucid Dreamer");
-  const [description, setDescription] = useState(
-    "This Sim experiences vivid dreams that grant temporary skill boosts on waking.",
-  );
-  const [icon, setIcon] = useState("ic_trait_lucid.png");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [icon, setIcon] = useState("");
   const [traitType, setTraitType] = useState<TraitType>("Personality");
   const [category, setCategory] = useState<TraitCategory>("Emotional");
   const [ages, setAges] = useState<Record<AgeId, boolean>>({
@@ -2606,6 +2609,7 @@ function LegacyTraitBuilder() {
     restore: restoreTrait,
     blank: blankTrait,
     title: (d) => d.name,
+    toRecord: (d) => projectTraitDraftV5(d),
     fromRecord: (rec) => {
       const t = rec as import("@/lib/types").Trait;
       return {
@@ -2767,9 +2771,12 @@ function LegacyTraitBuilder() {
             </GhostBtn>
             <PrimaryBtn
               icon={Play}
-              onClick={() => toast.success("Trait compiled → lucid_dreamer.package")}
+              onClick={() => {
+                record.save();
+                navigate("exporter");
+              }}
             >
-              Compile
+              Build
             </PrimaryBtn>
           </>
         }
