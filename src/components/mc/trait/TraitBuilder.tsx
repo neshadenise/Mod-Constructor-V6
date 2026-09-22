@@ -99,6 +99,7 @@ export function TraitBuilder() {
     blank: () => blankTraitDoc(),
     title: (d) => d.displayName,
     fromRecord: (rec) => migrateTraitDoc(rec as Trait),
+    toRecord: (d) => projectTraitDoc(d),
   });
 
   useBuilderSeed<Partial<TraitDoc>>("trait", (payload) => {
