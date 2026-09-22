@@ -2828,6 +2828,10 @@ function LegacyTraitBuilder() {
 
       {tab === "identity" && (
         <div className="space-y-4">
+          <TdescRequirements
+            resource="trait"
+            statuses={traitChecklist(projectTraitDraftV5(snapshotTrait()) as TraitRecord)}
+          />
           <Card title="Trait Identity">
             <div className="grid grid-cols-2 gap-3">
               <Field label="Trait Name" value={name} onChange={setName} />
