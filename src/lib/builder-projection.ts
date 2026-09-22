@@ -257,6 +257,7 @@ export interface AspirationDocShape {
   description?: string;
   category?: string;
   ids?: { internalName?: string };
+  rewardTrait?: { source?: string; projectResourceId?: string } | null;
   milestones?: {
     id?: string;
     uuid?: string;
