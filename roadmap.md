@@ -60,3 +60,12 @@ v0x101.
 
 ## Remaining
 - Nothing open.
+
+## Done (2026-09-25) — Aspiration template catalog
+- Rewrote every catalog template: 10 "Ready" templates (Knowledge, Creative, Athletic, Food, Romance, Popularity, Family, Fortune, Deviance, Hidden) now build a complete record — icon, description, notes, milestone icons/descriptions/points, objectives with verified base-game skill/career/relationship test refs, reward trait created in the project and linked, completion text and completion satisfaction reward. All validate 0 errors / 0 warnings / score 100.
+- 8 templates that need game ids we cannot verify offline (nature, occult, career, university, business, challenge, tutorial, custom) are labelled Draft with a "Requires configuration" list in the gallery and stay export-blocked by validation.
+- Aspiration reward trait now projects onto the canonical record (rewardTraitId) so the exporter and TDESC checklist see it.
+- Regression tests: src/lib/aspirations/__tests__/templates.test.ts (6 tests) — ready-template cleanliness, required objective fields, reward-trait linking, draft blocking, Knowledge structure, and a real DBPF export of a template record.
+
+## Remaining
+Nothing open.
