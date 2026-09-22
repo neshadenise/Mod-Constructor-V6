@@ -8,6 +8,7 @@ import { runExport } from "@/lib/modexport/pipeline";
 import { buildSnapshot } from "@/lib/modexport/snapshot";
 import { ResourceIdService, TYPE_TUNING, normalizeKey } from "@/lib/modexport/ids";
 import { mergeLocalization, checkReferences } from "@/lib/modexport/stbl";
+import { isSimData, readSimData } from "@/lib/modexport/simdata-binary";
 import {
   applyCreatorPrefix,
   folderName,
@@ -317,14 +318,33 @@ describe("builder export", () => {
     const pkg = job.outputFiles.find((f) => f.kind === "package")!;
     expect(pkg).toBeTruthy();
     const reopened = readDbpf(pkg.bytes);
-    // 1 career + 1 track + 2 levels + 1 trait + 1 buff + 1 aspiration + 1 milestone + 1 stbl
-    expect(reopened.entries.length).toBe(9);
+    // 8 tuning (career + track + 2 levels + trait + buff + aspiration + milestone)
+    // + 8 SimData companions + 1 stbl
+    expect(reopened.entries.length).toBe(17);
     const tuning = reopened.entries.filter((e) => e.typeNum === 0x0333406c);
     expect(tuning.length).toBe(8);
     expect(dec.decode(tuning[0]!.raw)).toContain("<I c=");
     const stbl = reopened.entries.find((e) => e.typeNum === 0x220557da)!;
     expect(parseStbl(stbl.raw).length).toBeGreaterThan(0);
     expect(pkg.verified).toBe(true);
+  });
+
+  it("gives every generated tuning a SimData companion that reopens", async () => {
+    const job = await runExport({ request: request({ exportType: "package-only" }), builder: builderContent() });
+    const pkg = job.outputFiles.find((f) => f.kind === "package")!;
+    const reopened = readDbpf(pkg.bytes);
+    const tuning = reopened.entries.filter((e) => e.typeNum === 0x0333406c);
+    const simdata = reopened.entries.filter((e) => e.typeNum === 0x545ac67a);
+    expect(simdata.length).toBe(tuning.length);
+    // Every companion shares its tuning's instance id and parses as DATA.
+    const tuningIds = new Set(tuning.map((e) => e.instance.toString(16)));
+    for (const entry of simdata) {
+      expect(tuningIds.has(entry.instance.toString(16))).toBe(true);
+      expect(isSimData(entry.raw)).toBe(true);
+      const parsed = readSimData(entry.raw);
+      expect(parsed.version).toBe(0x101);
+      expect(parsed.tables.length).toBeGreaterThan(0);
+    }
   });
 
   it("produces identical resource ids across repeated exports", async () => {
@@ -334,12 +354,13 @@ describe("builder export", () => {
     expect(keys(first.outputFiles[0]!.bytes)).toEqual(keys(second.outputFiles[0]!.bytes));
   });
 
-  it("warns about missing SimData companions but still produces a package", async () => {
+  it("no longer needs the tuning-only escape hatch for builder content", async () => {
     const job = await runExport({ request: request({ exportType: "package-only", allowTuningOnly: false }), builder: builderContent() });
     expect(job.status).toBe("ready");
-    expect(job.validationReport!.results.some((r) => r.code === "SIMDATA_UNSUPPORTED" && r.severity === "warning")).toBe(true);
-    expect(job.outputFiles.length).toBeGreaterThan(0);
+    expect(job.validationReport!.results.some((r) => r.code === "SIMDATA_UNSUPPORTED")).toBe(false);
+    expect(job.outputFiles.some((f) => f.kind === "package")).toBe(true);
   });
+
 
   it("blocks export when a required field is missing", async () => {
     const content = builderContent();
@@ -362,7 +383,11 @@ describe("builder export", () => {
     const job = await runExport({ request: request({ exportType: "validation-report" }), builder: builderContent() });
     expect(job.status).toBe("ready");
     expect(job.outputFiles[0]!.kind).toBe("report");
-    expect(JSON.parse(dec.decode(job.outputFiles[0]!.bytes)).results.length).toBeGreaterThan(0);
+    const report = JSON.parse(dec.decode(job.outputFiles[0]!.bytes));
+    expect(Array.isArray(report.results)).toBe(true);
+    // Clean builder content now reports no blocking findings at all.
+    expect(report.results.filter((r: { severity: string }) => r.severity === "error")).toHaveLength(0);
+
   });
 });
 

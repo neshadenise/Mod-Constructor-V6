@@ -15,7 +15,10 @@ import { readDbpf, readDbpfResource } from "@/lib/modimport/dbpf";
 import { parseTuning } from "@/lib/modimport/tuning";
 import type { ModProject } from "@/lib/modimport/types";
 import { isSimData, patchSimData, type SimDataPatchReport } from "./simdata-binary";
+import { buildCareerTrackSimData } from "./simdata-careertrack";
+import { templateForKind } from "./simdata-templates";
 import type { BuilderKind } from "./simdata";
+
 
 /** Tuning class (c="…") -> builder kind. */
 const CLASS_TO_KIND: Record<string, BuilderKind> = {
@@ -125,32 +128,67 @@ export interface CompanionResult {
 }
 
 /**
- * Produces a SimData companion for a generated tuning record from a donor of
- * the same class. Returns undefined when no donor is available — the caller
- * must then report the gap rather than emit a fabricated resource.
+ * Produces a SimData companion for a generated tuning record.
+ *
+ * Order of preference:
+ *   1. a donor of the same class taken from an imported mod,
+ *   2. the built-in Mod Constructor 5 template for that class,
+ *   3. for CareerTrack (variable-length row), the ported writer.
+ * Returns undefined only when none of those apply, so the caller can report
+ * the gap rather than emit a fabricated resource.
  */
 export function makeCompanion(
   donor: SimDataDonor | undefined,
-  opts: { nameKey?: string; descriptionKey?: string },
+  opts: {
+    kind?: BuilderKind;
+    nameKey?: string;
+    descriptionKey?: string;
+    /** Instance ids the CareerTrack SimData lists. */
+    levels?: string[];
+    branches?: string[];
+  },
 ): CompanionResult | undefined {
-  if (!donor) return undefined;
-  const patches = [
-    ...(opts.nameKey
-      ? NAME_COLUMNS[donor.kind].map((column) => ({ column, lockey: hexKey(opts.nameKey!) }))
-      : []),
-    ...(opts.descriptionKey
-      ? DESCRIPTION_COLUMNS[donor.kind].map((column) => ({
-          column,
-          lockey: hexKey(opts.descriptionKey!),
-        }))
-      : []),
-  ];
-  try {
-    const { bytes, report } = patchSimData(donor.bytes, patches);
-    return { bytes, report, origin: donor.origin };
-  } catch {
-    return undefined;
+  const kind = donor?.kind ?? opts.kind;
+  if (!kind) return undefined;
+
+  const source = donor ?? builtInDonor(kind);
+  if (source) {
+    const patches = [
+      ...(opts.nameKey ? NAME_COLUMNS[kind].map((column) => ({ column, lockey: hexKey(opts.nameKey!) })) : []),
+      ...(opts.descriptionKey
+        ? DESCRIPTION_COLUMNS[kind].map((column) => ({ column, lockey: hexKey(opts.descriptionKey!) }))
+        : []),
+    ];
+    try {
+      const { bytes, report } = patchSimData(source.bytes, patches);
+      return { bytes, report, origin: source.origin };
+    } catch {
+      /* fall through to the writer below */
+    }
   }
+
+  if (kind === "career_track") {
+    const bytes = buildCareerTrackSimData({
+      levels: opts.levels,
+      branches: opts.branches,
+      nameKey: hexKey(opts.nameKey ?? "0"),
+      descriptionKey: hexKey(opts.descriptionKey ?? "0"),
+    });
+    return {
+      bytes,
+      report: { applied: [{ column: "career_name", table: "Constructor", row: 0 }], skipped: [] },
+      origin: "built-in CareerTrack SimData writer",
+    };
+  }
+
+  return undefined;
+}
+
+/** The template set shipped with this build, used when no import can lend one. */
+function builtInDonor(kind: BuilderKind): SimDataDonor | undefined {
+  const template = templateForKind(kind);
+  if (!template) return undefined;
+  return { kind, bytes: template.bytes, origin: `built-in ${template.name} SimData template` };
 }
 
 function hexKey(ref: string): number {
@@ -158,3 +196,4 @@ function hexKey(ref: string): number {
   const n = Number.parseInt(clean, 16);
   return Number.isFinite(n) ? n >>> 0 : 0;
 }
+
