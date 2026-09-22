@@ -15,7 +15,10 @@ import { readDbpf, readDbpfResource } from "@/lib/modimport/dbpf";
 import { parseTuning } from "@/lib/modimport/tuning";
 import type { ModProject } from "@/lib/modimport/types";
 import { isSimData, patchSimData, type SimDataPatchReport } from "./simdata-binary";
+import { buildCareerTrackSimData } from "./simdata-careertrack";
+import { templateForKind } from "./simdata-templates";
 import type { BuilderKind } from "./simdata";
+
 
 /** Tuning class (c="…") -> builder kind. */
 const CLASS_TO_KIND: Record<string, BuilderKind> = {
