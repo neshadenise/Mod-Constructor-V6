@@ -249,7 +249,12 @@ export function TraitBuilder() {
         </nav>
 
         <div className="min-w-0">
-          {section === "identity" && <IdentitySection {...sectionProps} />}
+          {section === "identity" && (
+            <div className="space-y-4">
+              <IdentitySection {...sectionProps} />
+              <TdescRequirements resource="trait" statuses={traitChecklist(projectTraitDoc(doc) as Trait)} />
+            </div>
+          )}
           {section === "eligibility" && <EligibilitySection {...sectionProps} />}
           {section === "effects" && <EffectsSection {...sectionProps} />}
           {section === "acquisition" && <AcquisitionSection {...sectionProps} />}
