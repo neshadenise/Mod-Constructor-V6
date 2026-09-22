@@ -8,6 +8,7 @@ import { runExport } from "@/lib/modexport/pipeline";
 import { buildSnapshot } from "@/lib/modexport/snapshot";
 import { ResourceIdService, TYPE_TUNING, normalizeKey } from "@/lib/modexport/ids";
 import { mergeLocalization, checkReferences } from "@/lib/modexport/stbl";
+import { isSimData, readSimData } from "@/lib/modexport/simdata-binary";
 import {
   applyCreatorPrefix,
   folderName,
