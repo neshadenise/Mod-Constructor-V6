@@ -407,7 +407,7 @@ export default function ExportCenter() {
               checked={Boolean(request.allowTuningOnly)}
               onChange={(v) => patch({ allowTuningOnly: v })}
               label="Allow tuning-only package"
-              hint={`Required to export builder content: this build has no SimData writer, so ${nonExportableKinds().join(", ")} resources ship without their SimData companion and the game may ignore them.`}
+              hint="Ships generated tuning even when a resource has no SimData companion. Career, trait, buff, aspiration and milestone companions are generated automatically, so this is rarely needed."
             />
           </div>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
