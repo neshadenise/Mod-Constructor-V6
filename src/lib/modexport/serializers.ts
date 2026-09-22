@@ -148,7 +148,15 @@ export const careerSerializer: TuningSerializer<Career> = {
           out.push({ severity: "error", code: "LEVEL_BAD_SALARY", message: `Rank ${level.rank} of "${branch.name}" has a negative salary.` });
       }
     }
-    return out;
+    const schema: ValidationResult[] = tdescIssues("career", careerTunables(model), `Career "${model.name}"`);
+    for (const branch of model.branches) {
+      schema.push(...tdescIssues("career_track", trackTunables(branch), `Track "${branch.name}"`));
+      for (const level of branch.levels)
+        schema.push(
+          ...tdescIssues("career_level", levelTunables(level), `Rank ${level.rank} of "${branch.name}"`),
+        );
+    }
+    return mergeTdescIssues(out, schema);
   },
   serialize(model, ctx) {
     const base = model.internalId?.trim() || slug(model.name);
