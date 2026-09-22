@@ -30,7 +30,6 @@ import { downloadExportedFile, runExport } from "@/lib/modexport/pipeline";
 import { applyCreatorPrefix, normalizeCreatorPrefix, versionedName } from "@/lib/modexport/filenames";
 import { hydrateImportRegistry, listImportedProjects, subscribeImports } from "@/lib/modexport/registry";
 import { listExportHistory, recordExport } from "@/lib/modexport/history";
-import { nonExportableKinds } from "@/lib/modexport/simdata";
 import {
   DEFAULT_EXPORT_REQUEST,
   EXPORTER_VERSION,
