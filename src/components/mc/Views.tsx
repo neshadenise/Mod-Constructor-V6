@@ -2350,13 +2350,12 @@ const EMOTION_ICON: Record<EmotionV5, string> = {
 
 function LegacyTraitBuilder() {
   const { advanced } = useAdvanced();
+  const { navigate } = useAppNavigation();
   const [tab, setTab] = useState<TraitTab>("identity");
 
-  const [name, setName] = useState("Lucid Dreamer");
-  const [description, setDescription] = useState(
-    "This Sim experiences vivid dreams that grant temporary skill boosts on waking.",
-  );
-  const [icon, setIcon] = useState("ic_trait_lucid.png");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [icon, setIcon] = useState("");
   const [traitType, setTraitType] = useState<TraitType>("Personality");
   const [category, setCategory] = useState<TraitCategory>("Emotional");
   const [ages, setAges] = useState<Record<AgeId, boolean>>({
