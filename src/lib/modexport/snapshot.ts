@@ -25,6 +25,7 @@ import { serializeDynasty, validateDynastyForExport } from "./dynasty-serializer
 import type { PackModule } from "@/lib/packs/types";
 import type { DynastyDoc } from "@/lib/dynasty/schema";
 import { buildDonorIndex, makeCompanion, type SimDataDonor } from "./simdata-companion";
+import { resolveSimDataMapping, simDataImportHelp } from "./simdata-mapping";
 import { FALLBACK_LOCALE, mergeLocalization, serializeStbl, stblInstance, type LocalizationEntry } from "./stbl";
 import { versionedName } from "./filenames";
 import {
