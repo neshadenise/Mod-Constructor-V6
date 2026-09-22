@@ -69,3 +69,6 @@ v0x101.
 
 ## Remaining
 Nothing open.
+
+## Done (2026-09-22) — Career cover prompt targeting
+- Main career covers now use only the career name as their subject; branch covers use only the career name plus the selected branch name. Active-branch descriptions, levels, rewards and other unrelated builder text no longer leak into the generated image prompt.
