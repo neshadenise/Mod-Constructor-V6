@@ -1002,7 +1002,7 @@ function CareerBuilder() {
   const { advanced } = useAdvanced();
 
   // Career-level state
-  const [name, setName] = useState("Interstellar Navigator");
+  const [name, setName] = useState("");
   const [description, setDescription] = useState(
     "Chart deep-space routes and command the fleet. Requires strong Logic and Fitness.",
   );
@@ -1355,9 +1355,12 @@ function CareerBuilder() {
             </GhostBtn>
             <PrimaryBtn
               icon={Play}
-              onClick={() => toast.success("Career compiled → epic_careers.package")}
+              onClick={() => {
+                record.save();
+                navigate("exporter");
+              }}
             >
-              Compile
+              Build
             </PrimaryBtn>
           </>
         }
@@ -2770,9 +2773,12 @@ function LegacyTraitBuilder() {
             </GhostBtn>
             <PrimaryBtn
               icon={Play}
-              onClick={() => toast.success("Trait compiled → lucid_dreamer.package")}
+              onClick={() => {
+                record.save();
+                navigate("exporter");
+              }}
             >
-              Compile
+              Build
             </PrimaryBtn>
           </>
         }
