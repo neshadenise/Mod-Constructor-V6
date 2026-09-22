@@ -111,7 +111,12 @@ export function useBuilderRecord<S>(opts: {
   const create = useCallback(
     (name: string, draft: S): AnyRecord | null => {
       if (!projectId) return null;
-      const init = { projectId, name, builderState: draft as Record<string, unknown> };
+      const init = {
+        projectId,
+        ...(api.current.toRecord?.(draft) ?? {}),
+        name,
+        builderState: draft as Record<string, unknown>,
+      };
       if (kind === "career") return store.createCareer(init as never);
       if (kind === "trait") return store.createTrait(init as never);
       return store.createAspiration(init as never);
@@ -121,7 +126,11 @@ export function useBuilderRecord<S>(opts: {
 
   const update = useCallback(
     (id: ID, name: string, draft: S) => {
-      const patch = { name, builderState: draft as Record<string, unknown> };
+      const patch = {
+        ...(api.current.toRecord?.(draft) ?? {}),
+        name,
+        builderState: draft as Record<string, unknown>,
+      };
       if (kind === "career") store.updateCareer(id, patch);
       else if (kind === "trait") store.updateTrait(id, patch);
       else store.updateAspiration(id, patch);
