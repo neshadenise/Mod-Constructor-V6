@@ -372,11 +372,23 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
           simDataGaps.push({
             resourceId: resource.resourceId,
             kind: resource.kind,
-            message: `${resource.tuningName} (${resource.kind}) has no SimData companion — import a mod containing a ${resource.kind} so its SimData can be reused.`,
+            message: `${resource.tuningName} (${resource.kind}) has no SimData companion — ${simDataImportHelp(resource.kind)}`,
           });
         }
       }
     }
+
+    if (mappingsUsed.size) {
+      issues.push({
+        severity: "info",
+        code: "SIMDATA_SOURCE",
+        message:
+          "SimData companions: " +
+          [...mappingsUsed].map(([cls, label]) => `${cls} — ${label}`).join("; ") +
+          ".",
+      });
+    }
+
 
     // One STBL table per project, fallback locale.
     const locEntries: LocalizationEntry[] = tuning.flatMap((t) =>
