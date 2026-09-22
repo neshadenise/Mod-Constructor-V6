@@ -1431,6 +1431,10 @@ function CareerBuilder() {
       {/* --- IDENTITY --- */}
       {tab === "identity" && (
         <div className="space-y-3">
+          <TdescRequirements
+            resource="career"
+            statuses={careerChecklist(projectCareerDraft(snapshotCareer()) as CareerRecord)}
+          />
           <Card title="Career Identity">
             <div className="grid grid-cols-2 gap-3">
               <Field label="Career Name" value={name} onChange={setName} />
