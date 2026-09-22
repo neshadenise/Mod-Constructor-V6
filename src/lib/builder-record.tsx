@@ -81,7 +81,7 @@ export function useBuilderRecord<S>(opts: {
    * the real fields (`branches`, `buffs`, `milestones`, …). Builders MUST
    * supply this so what the creator authored actually compiles.
    */
-  toRecord?: (draft: S) => Partial<Career & Trait & Aspiration>;
+  toRecord?: (draft: S) => Partial<Career> | Partial<Trait> | Partial<Aspiration>;
 }): BuilderRecordApi<S> {
   const { kind } = opts;
   const store = useStore();
@@ -130,7 +130,7 @@ export function useBuilderRecord<S>(opts: {
         ...(api.current.toRecord?.(draft) ?? {}),
         name,
         builderState: draft as Record<string, unknown>,
-      };
+      } as never;
       if (kind === "career") store.updateCareer(id, patch);
       else if (kind === "trait") store.updateTrait(id, patch);
       else store.updateAspiration(id, patch);
