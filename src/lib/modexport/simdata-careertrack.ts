@@ -118,35 +118,11 @@ export function buildCareerTrackSimData(input: CareerTrackSimDataInput): Uint8Ar
   const branchListSize = branches.length * 8;
   const levelListSize = levels.length * 8;
 
-  const w = new Writer();
-
-  // header
-  w.ascii("DATA".slice(0, 0)); // keep the writer's cursor at 0 (no-op)
-  for (const ch of "DATA") w.u16(ch.charCodeAt(0)); // placeholder, rewritten below
-  return finish(w, branches, levels, branchListSize, levelListSize, input);
-}
-
-function finish(
-  _unused: Writer,
-  branches: bigint[],
-  levels: bigint[],
-  branchListSize: number,
-  levelListSize: number,
-  input: CareerTrackSimDataInput,
-): Uint8Array {
-  const w = new Writer();
+  const out = new Writer();
 
   /* ------------------------------ header ------------------------------ */
-  w.ascii("DAT".slice(0, 0)); // no-op, keeps the intent explicit
-  for (const ch of "DATA") {
-    // one byte per magic character
-    const tmp = new Uint8Array(1);
-    tmp[0] = ch.charCodeAt(0);
-    w.u16(tmp[0]!); // placeholder replaced below
-  }
-  // The magic must be 4 bytes, not 8 — rebuild cleanly.
-  const out = new Writer();
   out.u32(0x41544144); // "DATA" little-endian
+
   out.i32(0x101); // version
   out.i32(24); // table info offset (relative to this field)
   out.i32(2); // table count
