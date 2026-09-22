@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils";
 import { useStore, useActiveProject } from "@/lib/store";
 import { useBuilderRecord } from "@/lib/builder-record";
 import { projectTraitDoc } from "@/lib/builder-projection";
+import { TdescRequirements } from "@/components/mc/builders/TdescRequirements";
+import { traitChecklist } from "@/lib/modexport/tdesc-check";
 import { useBuilderSeed } from "@/lib/builder-seed";
 import { useAdvanced } from "@/lib/advanced-mode";
 import { migrateTraitDoc } from "@/lib/traits/migrate";
@@ -249,7 +251,12 @@ export function TraitBuilder() {
         </nav>
 
         <div className="min-w-0">
-          {section === "identity" && <IdentitySection {...sectionProps} />}
+          {section === "identity" && (
+            <div className="space-y-4">
+              <IdentitySection {...sectionProps} />
+              <TdescRequirements resource="trait" statuses={traitChecklist(projectTraitDoc(doc) as Trait)} />
+            </div>
+          )}
           {section === "eligibility" && <EligibilitySection {...sectionProps} />}
           {section === "effects" && <EffectsSection {...sectionProps} />}
           {section === "acquisition" && <AcquisitionSection {...sectionProps} />}

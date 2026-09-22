@@ -42,6 +42,18 @@ import {
 import { cn } from "@/lib/utils";
 import RebuildImportedPanel from "./RebuildImportedPanel";
 import { readDynasties } from "@/lib/dynasty/store";
+import { SIMDATA_CLASS, resolveSimDataMapping, simDataImportHelp } from "@/lib/modexport/simdata-mapping";
+import type { BuilderKind } from "@/lib/modexport/simdata";
+
+const SIMDATA_KINDS: BuilderKind[] = [
+  "career",
+  "career_track",
+  "career_level",
+  "trait",
+  "buff",
+  "aspiration",
+  "milestone",
+];
 
 const TARGETS: { value: ExportType; label: string; hint: string }[] = [
   { value: "complete-mod", label: "Complete Mod ZIP", hint: "Every owned component in one installable folder." },
@@ -349,6 +361,40 @@ export default function ExportCenter() {
               />
             </div>
           </div>
+        </Card>
+
+        <Card
+          title="SimData companions"
+          subtitle="Resource classes the game only loads with a companion data resource."
+        >
+          <ul className="space-y-1.5">
+            {SIMDATA_KINDS.map((kind) => {
+              const mapping = resolveSimDataMapping(kind, undefined);
+              const label =
+                mapping.source === "template"
+                  ? "Mapped template"
+                  : mapping.source === "written"
+                    ? "Generated from schema"
+                    : mapping.source === "imported"
+                      ? "Imported donor"
+                      : "No mapping";
+              return (
+                <li key={kind} className="rounded-md border border-border bg-background/50 px-2 py-1.5 text-[11px]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{SIMDATA_CLASS[kind]}</span>
+                    <span className={cn(mapping.source === "none" ? "text-destructive" : "text-primary")}>{label}</span>
+                  </div>
+                  {mapping.source === "none" && (
+                    <p className="mt-1 text-[10px] text-muted-foreground">{simDataImportHelp(kind)}</p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            Companion data is never invented: it is cloned and re-keyed from an imported or mapped template of the same
+            class, except career tracks, which are written from their documented schema.
+          </p>
         </Card>
 
         <Card title="Validation summary" subtitle="Run an export or a validation report to populate this.">

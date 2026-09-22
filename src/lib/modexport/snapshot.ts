@@ -25,6 +25,7 @@ import { serializeDynasty, validateDynastyForExport } from "./dynasty-serializer
 import type { PackModule } from "@/lib/packs/types";
 import type { DynastyDoc } from "@/lib/dynasty/schema";
 import { buildDonorIndex, makeCompanion, type SimDataDonor } from "./simdata-companion";
+import { resolveSimDataMapping, simDataImportHelp } from "./simdata-mapping";
 import { FALLBACK_LOCALE, mergeLocalization, serializeStbl, stblInstance, type LocalizationEntry } from "./stbl";
 import { versionedName } from "./filenames";
 import {
@@ -298,7 +299,23 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
       preserveOriginalBytes: false,
     };
 
+    const mappingsUsed = new Map<string, string>();
+
     for (const resource of tuning) {
+      if (requiresSimData(resource.kind)) {
+        const mapping = resolveSimDataMapping(resource.kind, donors.get(resource.kind));
+        if (mapping.source === "none") {
+          /* No real template exists for this class, so the resource is left
+             out rather than shipped with invented SimData. */
+          simDataGaps.push({
+            resourceId: resource.resourceId,
+            kind: resource.kind,
+            message: `${resource.tuningName} (${mapping.className}) was left out: ${simDataImportHelp(resource.kind)}`,
+          });
+          continue;
+        }
+        mappingsUsed.set(mapping.className, mapping.label);
+      }
       const payload = enc.encode(resource.xml);
       resources.push({
         resourceId: resource.resourceId,
@@ -355,11 +372,23 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
           simDataGaps.push({
             resourceId: resource.resourceId,
             kind: resource.kind,
-            message: `${resource.tuningName} (${resource.kind}) has no SimData companion — import a mod containing a ${resource.kind} so its SimData can be reused.`,
+            message: `${resource.tuningName} (${resource.kind}) has no SimData companion — ${simDataImportHelp(resource.kind)}`,
           });
         }
       }
     }
+
+    if (mappingsUsed.size) {
+      issues.push({
+        severity: "info",
+        code: "SIMDATA_SOURCE",
+        message:
+          "SimData companions: " +
+          [...mappingsUsed].map(([cls, label]) => `${cls} — ${label}`).join("; ") +
+          ".",
+      });
+    }
+
 
     // One STBL table per project, fallback locale.
     const locEntries: LocalizationEntry[] = tuning.flatMap((t) =>

@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { useBuilderSeed } from "@/lib/builder-seed";
 import type { NotificationTemplate, NotificationVisual } from "@/lib/types";
+import { TdescRequirements } from "@/components/mc/builders/TdescRequirements";
+import { notificationChecklist } from "@/lib/modexport/tdesc-check";
 
 type DefaultSample = {
   kind: NotificationKind;
@@ -428,6 +430,23 @@ function TemplateDialog({
           <Field label="Action label (optional)">
             <input value={actionLabel} onChange={(e) => setActionLabel(e.target.value)} className={fieldClass} placeholder="View career" />
           </Field>
+
+          <TdescRequirements
+            resource="notification"
+            statuses={notificationChecklist({
+              id: initial?.id ?? "draft",
+              projectId: initial?.projectId ?? "",
+              name: name.trim(),
+              visual,
+              title: title.trim(),
+              body: body.trim(),
+              iconAssetId: iconAssetId || undefined,
+              previewKind,
+              actions: actionLabel.trim() ? [{ label: actionLabel.trim(), kind: "primary" }] : [],
+              createdAt: initial?.createdAt ?? Date.now(),
+              updatedAt: initial?.updatedAt ?? Date.now(),
+            })}
+          />
 
           <div className="space-y-2.5 rounded-lg border border-border bg-[oklch(0.98_0.01_230)] p-3 [[data-preview-theme='dark']_&]:bg-[oklch(0.22_0.04_260)]">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Live preview</div>

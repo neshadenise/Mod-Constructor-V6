@@ -32,6 +32,8 @@ import { cn } from "@/lib/utils";
 import { useStore, useActiveProject } from "@/lib/store";
 import { useBuilderRecord, requestRevealRecord } from "@/lib/builder-record";
 import { projectAspirationDoc } from "@/lib/builder-projection";
+import { TdescRequirements } from "@/components/mc/builders/TdescRequirements";
+import { aspirationChecklist } from "@/lib/modexport/tdesc-check";
 import { useBuilderSeed } from "@/lib/builder-seed";
 import { useAdvanced } from "@/lib/advanced-mode";
 import { useAppNavigation } from "@/lib/navigation";
@@ -354,7 +356,15 @@ export function AspirationBuilder() {
         </nav>
 
         <div className="min-w-0">
-          {section === "identity" && <IdentitySection {...sectionProps} />}
+          {section === "identity" && (
+            <div className="space-y-4">
+              <IdentitySection {...sectionProps} />
+              <TdescRequirements
+                resource="aspiration"
+                statuses={aspirationChecklist(projectAspirationDoc(doc) as Aspiration)}
+              />
+            </div>
+          )}
           {section === "availability" && <AvailabilitySection {...sectionProps} />}
           {section === "rewards" && <RewardsSection {...sectionProps} />}
           {section === "gameplay" && <GameplaySection {...sectionProps} />}

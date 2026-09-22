@@ -10,6 +10,17 @@ import type { ResourceKey } from "@/lib/modimport/types";
 import type { Aspiration, Buff, Career, CareerBranch, CareerLevel, Trait } from "@/lib/types";
 import { GROUP_DEFAULT, ResourceIdService, TYPE_TUNING, localizationKey } from "./ids";
 import type { BuilderKind } from "./simdata";
+import {
+  aspirationTunables,
+  buffTunables,
+  careerTunables,
+  levelTunables,
+  mergeTdescIssues,
+  milestoneTunables,
+  tdescIssues,
+  trackTunables,
+  traitTunables,
+} from "./tdesc-check";
 
 export interface ValidationResult {
   severity: "error" | "warning" | "info";
@@ -148,7 +159,15 @@ export const careerSerializer: TuningSerializer<Career> = {
           out.push({ severity: "error", code: "LEVEL_BAD_SALARY", message: `Rank ${level.rank} of "${branch.name}" has a negative salary.` });
       }
     }
-    return out;
+    const schema: ValidationResult[] = tdescIssues("career", careerTunables(model), `Career "${model.name}"`);
+    for (const branch of model.branches) {
+      schema.push(...tdescIssues("career_track", trackTunables(branch), `Track "${branch.name}"`));
+      for (const level of branch.levels)
+        schema.push(
+          ...tdescIssues("career_level", levelTunables(level), `Rank ${level.rank} of "${branch.name}"`),
+        );
+    }
+    return mergeTdescIssues(out, schema);
   },
   serialize(model, ctx) {
     const base = model.internalId?.trim() || slug(model.name);
@@ -318,7 +337,10 @@ export const traitSerializer: TuningSerializer<Trait> = {
       if (buff.durationHours < 0)
         out.push({ severity: "error", code: "BUFF_BAD_DURATION", message: `Moodlet "${buff.name}" has a negative duration.` });
     }
-    return out;
+    const schema: ValidationResult[] = tdescIssues("trait", traitTunables(model), `Trait "${model.name}"`);
+    for (const buff of model.buffs)
+      schema.push(...tdescIssues("buff", buffTunables(buff), `Moodlet "${buff.name}"`));
+    return mergeTdescIssues(out, schema);
   },
   serialize(model, ctx) {
     const base = model.internalId?.trim() || slug(model.name);
@@ -446,7 +468,14 @@ export const aspirationSerializer: TuningSerializer<Aspiration> = {
       out.push({ severity: "error", code: "ASP_NO_ID", message: `Aspiration "${model.name}" has no internal id.` });
     if (!model.milestones.length)
       out.push({ severity: "error", code: "ASP_NO_MILESTONES", message: `Aspiration "${model.name}" has no milestones.` });
-    return out;
+    const schema: ValidationResult[] = tdescIssues(
+      "aspiration",
+      aspirationTunables(model),
+      `Aspiration "${model.name}"`,
+    );
+    for (const m of model.milestones)
+      schema.push(...tdescIssues("milestone", milestoneTunables(m), `Milestone "${m.name}"`));
+    return mergeTdescIssues(out, schema);
   },
   serialize(model, ctx) {
     const base = model.internalId?.trim() || slug(model.name);

@@ -78,6 +78,9 @@ import { NotificationLibrary } from "./preview/NotificationLibrary";
 import { PreviewStudio } from "./preview/PreviewStudio";
 import { useBuilderRecord } from "@/lib/builder-record";
 import { projectCareerDraft, projectTraitDraftV5 } from "@/lib/builder-projection";
+import { TdescRequirements } from "@/components/mc/builders/TdescRequirements";
+import { careerChecklist, traitChecklist } from "@/lib/modexport/tdesc-check";
+import type { Career as CareerRecord, Trait as TraitRecord } from "@/lib/types";
 import { BuilderRecordBar } from "./BuilderRecordBar";
 import { ImageField } from "./ImageField";
 import { CareerCoverSection } from "./career/CareerCoverSection";
@@ -1431,6 +1434,10 @@ function CareerBuilder() {
       {/* --- IDENTITY --- */}
       {tab === "identity" && (
         <div className="space-y-3">
+          <TdescRequirements
+            resource="career"
+            statuses={careerChecklist(projectCareerDraft(snapshotCareer()) as CareerRecord)}
+          />
           <Card title="Career Identity">
             <div className="grid grid-cols-2 gap-3">
               <Field label="Career Name" value={name} onChange={setName} />
@@ -2821,6 +2828,10 @@ function LegacyTraitBuilder() {
 
       {tab === "identity" && (
         <div className="space-y-4">
+          <TdescRequirements
+            resource="trait"
+            statuses={traitChecklist(projectTraitDraftV5(snapshotTrait()) as TraitRecord)}
+          />
           <Card title="Trait Identity">
             <div className="grid grid-cols-2 gap-3">
               <Field label="Trait Name" value={name} onChange={setName} />
