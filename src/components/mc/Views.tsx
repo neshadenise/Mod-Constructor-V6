@@ -1000,12 +1000,11 @@ function Section({
 
 function CareerBuilder() {
   const { advanced } = useAdvanced();
+  const { navigate } = useAppNavigation();
 
   // Career-level state
   const [name, setName] = useState("");
-  const [description, setDescription] = useState(
-    "Chart deep-space routes and command the fleet. Requires strong Logic and Fitness.",
-  );
+  const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Technical");
   const [careerType, setCareerType] = useState("FullTime");
   const [icon, setIcon] = useState("");
