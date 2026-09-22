@@ -77,6 +77,7 @@ import { DynastyBuilder } from "./dynasty/DynastyBuilder";
 import { NotificationLibrary } from "./preview/NotificationLibrary";
 import { PreviewStudio } from "./preview/PreviewStudio";
 import { useBuilderRecord } from "@/lib/builder-record";
+import { projectCareerDraft, projectTraitDraftV5 } from "@/lib/builder-projection";
 import { BuilderRecordBar } from "./BuilderRecordBar";
 import { ImageField } from "./ImageField";
 import { CareerCoverSection } from "./career/CareerCoverSection";
@@ -1172,6 +1173,7 @@ function CareerBuilder() {
     restore: restoreCareer,
     blank: blankCareer,
     title: (d) => d.name,
+    toRecord: (d) => projectCareerDraft(d),
     fromRecord: (rec) => {
       const c = rec as import("@/lib/types").Career;
       const mapped = careerPayloadToBranches(c as unknown as CareerPayload);
@@ -2606,6 +2608,7 @@ function LegacyTraitBuilder() {
     restore: restoreTrait,
     blank: blankTrait,
     title: (d) => d.name,
+    toRecord: (d) => projectTraitDraftV5(d),
     fromRecord: (rec) => {
       const t = rec as import("@/lib/types").Trait;
       return {
