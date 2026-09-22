@@ -369,7 +369,7 @@ export default function ExportCenter() {
         >
           <ul className="space-y-1.5">
             {SIMDATA_KINDS.map((kind) => {
-              const mapping = resolveSimDataMapping(kind);
+              const mapping = resolveSimDataMapping(kind, undefined);
               const label =
                 mapping.source === "template"
                   ? "Mapped template"
