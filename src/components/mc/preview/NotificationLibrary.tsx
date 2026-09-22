@@ -443,8 +443,8 @@ function TemplateDialog({
               iconAssetId: iconAssetId || undefined,
               previewKind,
               actions: actionLabel.trim() ? [{ label: actionLabel.trim(), kind: "primary" }] : [],
-              createdAt: initial?.createdAt ?? "",
-              updatedAt: initial?.updatedAt ?? "",
+              createdAt: initial?.createdAt ?? Date.now(),
+              updatedAt: initial?.updatedAt ?? Date.now(),
             })}
           />
 
