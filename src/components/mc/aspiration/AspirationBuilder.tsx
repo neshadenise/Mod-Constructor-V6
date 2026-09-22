@@ -136,6 +136,7 @@ export function AspirationBuilder() {
     blank: () => blankAspirationDoc(),
     title: (d) => d.displayName,
     fromRecord: (rec) => migrateAspirationDoc(rec as Aspiration),
+    toRecord: (d) => projectAspirationDoc(d),
   });
 
   useBuilderSeed<Partial<AspirationDoc>>("aspiration", (payload) => {
