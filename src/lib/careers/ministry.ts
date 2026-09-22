@@ -225,7 +225,7 @@ export function makeMinistryCareer({ projectId, uid, stamp }: MinistryCareerOpti
     description:
       "Full-time church ministry. Three shared levels of volunteering and coordination, then specialize after Level 3 as Church Leadership, Hospitality Ministry, or Worship & Creative Arts.",
     careerType: "standard",
-    ageGates: ["youngadult", "adult", "elder"] as Career["ageGates"],
+    ageGates: ["young-adult", "adult", "elder"] as Career["ageGates"],
     branches: [
       branch("Ministry Track", "Shared levels 1-3 before the branch point.", sharedLevels),
       branch(
