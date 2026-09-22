@@ -20,6 +20,7 @@ import {
 } from "./serializers";
 import { requiresSimData, type BuilderKind } from "./simdata";
 import { serializePackModule, validatePackModuleForExport } from "./pack-serializer";
+import { serializeNotification, validateNotificationForExport } from "./notification-serializer";
 import type { PackModule } from "@/lib/packs/types";
 import { buildDonorIndex, makeCompanion, type SimDataDonor } from "./simdata-companion";
 import { FALLBACK_LOCALE, mergeLocalization, serializeStbl, stblInstance, type LocalizationEntry } from "./stbl";
@@ -204,6 +205,7 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
   if (wantsBuilderOutput && builder) {
     const ctx: SerializerContext = { namespace: namespaceFor(builder), ids };
     const tuning: SerializedTuningResource[] = [];
+    const excludedRecords: { label: string; name: string }[] = [];
 
     /**
      * One incomplete record must not sink the whole build. A record whose
