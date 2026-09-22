@@ -12,5 +12,9 @@
 - [x] Package Importer now runs game files through the same analyze/group/validate pipeline as the Mod Importer (shared `modimport/pipeline-actions.ts`), saving files + hydrating builders.
 - [x] Detach-preview button replaced with a working full-screen toggle; AI icon button in the property inspector opens the icon generator; command palette "AI icon" opens the Icon Library.
 
+## Done (2026-09-22)
+- [x] Pack mechanics build generators: clubs, royalty, legacy and pack rules now lower into snippet tuning + STBL and are written into the exported package (`src/lib/modexport/pack-serializer.ts`). Build-support badges now report real capability (no SimData synthesis, no Python generator).
+
 ## Remaining
-- [ ] Pack mechanics: some build generators are still unimplemented (already marked in the UI).
+- [ ] Nothing open.
+

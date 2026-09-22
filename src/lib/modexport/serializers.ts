@@ -56,19 +56,19 @@ export function escapeXml(value: string) {
     .replace(/"/g, "&quot;");
 }
 
-const slug = (s: string) =>
+export const slug = (s: string) =>
   s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "unnamed";
 
-function tunable(name: string, value: string | number | boolean) {
+export function tunable(name: string, value: string | number | boolean) {
   return `  <T n="${name}">${escapeXml(String(value))}</T>`;
 }
 
-function list(name: string, values: string[]) {
+export function list(name: string, values: string[]) {
   if (!values.length) return "";
   return [`  <L n="${name}">`, ...values.map((v) => `    <T>${escapeXml(v)}</T>`), `  </L>`].join("\n");
 }
 
-function doc(
+export function doc(
   className: string,
   instance: string,
   modulePath: string,
@@ -85,7 +85,7 @@ function doc(
   ].join("\n");
 }
 
-function keyFor(ctx: SerializerContext, kind: BuilderKind, name: string, resourceId: string) {
+export function keyFor(ctx: SerializerContext, kind: BuilderKind, name: string, resourceId: string) {
   const key = ctx.ids.generateResourceKey({
     namespace: ctx.namespace,
     kind,
@@ -97,7 +97,7 @@ function keyFor(ctx: SerializerContext, kind: BuilderKind, name: string, resourc
   return key;
 }
 
-function stringFor(
+export function stringFor(
   ctx: SerializerContext,
   kind: BuilderKind,
   name: string,
