@@ -218,12 +218,22 @@ export function AspirationLanding({
                 }}
                 className="rounded-md border border-border bg-card px-2.5 py-2 text-left transition-colors hover:bg-muted"
               >
-                <div className="text-[12px] font-semibold">{t.label}</div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-[12px] font-semibold">{t.label}</div>
+                  <Badge tone={t.status === "ready" ? "ok" : "warn"}>
+                    {t.status === "ready" ? "Ready" : "Draft"}
+                  </Badge>
+                </div>
                 <div className="text-[10.5px] text-muted-foreground">{t.blurb}</div>
                 <div className="mt-1 font-mono text-[10px] text-muted-foreground">
-                  {t.structure.length} milestones ·{" "}
-                  {t.structure.reduce((n, [, o]) => n + o.length, 0)} objectives
+                  {t.milestones.length} milestones · {templateObjectiveCount(t)} objectives
                 </div>
+                {t.status === "draft" && (
+                  <div className="mt-1 text-[10px] leading-snug text-amber-600 dark:text-amber-400">
+                    Requires configuration — export stays blocked until you fill in:{" "}
+                    {(t.requiresConfiguration ?? []).join(" ")}
+                  </div>
+                )}
               </button>
             ))}
           </div>
