@@ -192,7 +192,7 @@ export function AspirationBuilder() {
           projectId: project.id,
           name: t.rewardTrait.name,
           description: t.rewardTrait.description,
-          category: "reward",
+          category: "bonus",
         }).id;
     }
     record.loadDraft(
