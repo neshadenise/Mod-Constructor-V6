@@ -298,7 +298,23 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
       preserveOriginalBytes: false,
     };
 
+    const mappingsUsed = new Map<string, string>();
+
     for (const resource of tuning) {
+      if (requiresSimData(resource.kind)) {
+        const mapping = resolveSimDataMapping(resource.kind, donors.get(resource.kind));
+        if (mapping.source === "none") {
+          /* No real template exists for this class, so the resource is left
+             out rather than shipped with invented SimData. */
+          simDataGaps.push({
+            resourceId: resource.resourceId,
+            kind: resource.kind,
+            message: `${resource.tuningName} (${mapping.className}) was left out: ${simDataImportHelp(resource.kind)}`,
+          });
+          continue;
+        }
+        mappingsUsed.set(mapping.className, mapping.label);
+      }
       const payload = enc.encode(resource.xml);
       resources.push({
         resourceId: resource.resourceId,
