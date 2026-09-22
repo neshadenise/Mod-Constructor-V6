@@ -356,7 +356,15 @@ export function AspirationBuilder() {
         </nav>
 
         <div className="min-w-0">
-          {section === "identity" && <IdentitySection {...sectionProps} />}
+          {section === "identity" && (
+            <div className="space-y-4">
+              <IdentitySection {...sectionProps} />
+              <TdescRequirements
+                resource="aspiration"
+                statuses={aspirationChecklist(projectAspirationDoc(doc) as Aspiration)}
+              />
+            </div>
+          )}
           {section === "availability" && <AvailabilitySection {...sectionProps} />}
           {section === "rewards" && <RewardsSection {...sectionProps} />}
           {section === "gameplay" && <GameplaySection {...sectionProps} />}
