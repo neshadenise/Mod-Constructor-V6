@@ -19,6 +19,8 @@ import {
   type ValidationResult as SerializerIssue,
 } from "./serializers";
 import { requiresSimData, type BuilderKind } from "./simdata";
+import { serializePackModule, validatePackModuleForExport } from "./pack-serializer";
+import type { PackModule } from "@/lib/packs/types";
 import { buildDonorIndex, makeCompanion, type SimDataDonor } from "./simdata-companion";
 import { FALLBACK_LOCALE, mergeLocalization, serializeStbl, stblInstance, type LocalizationEntry } from "./stbl";
 import { versionedName } from "./filenames";
@@ -37,6 +39,8 @@ export interface BuilderContent {
   aspirations: Aspiration[];
   notifications: NotificationTemplate[];
   assets: Asset[];
+  /** Pack Mechanics modules (clubs, royalty, legacy, pack rules). */
+  packModules?: PackModule[];
 }
 
 export interface ImportedContent {
@@ -184,7 +188,8 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
   /* ------------------ builder content: rebuild into a package ----------- */
   const wantsBuilderOutput =
     builder && request.mode !== "preserve-original" &&
-    (builder.careers.length || builder.traits.length || builder.aspirations.length);
+    (builder.careers.length || builder.traits.length || builder.aspirations.length ||
+      (builder.packModules?.length ?? 0));
 
   const donorPool: ImportedContent[] = [
     ...(imported ? [imported] : []),
@@ -211,6 +216,11 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
     for (const aspiration of builder.aspirations) {
       issues.push(...SERIALIZERS.aspiration.validate(aspiration));
       tuning.push(...SERIALIZERS.aspiration.serialize(aspiration, ctx));
+    }
+
+    for (const pack of builder.packModules ?? []) {
+      issues.push(...validatePackModuleForExport(pack));
+      tuning.push(...serializePackModule(pack, ctx));
     }
 
     const componentId = `builder:${builder.project.id}`;

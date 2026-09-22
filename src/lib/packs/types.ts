@@ -184,15 +184,20 @@ export interface BuildSupport {
   packageWriter: boolean;
 }
 
-/** Truthful defaults — only UI + structured data exist today. */
+/**
+ * Truthful capability map for this build. Pack modules lower into snippet
+ * tuning + STBL and are written into the exported .package. SimData companions
+ * are only ever reused from imported donors (never synthesized), and there is
+ * no Python generator.
+ */
 export const CURRENT_BUILD_SUPPORT: BuildSupport = {
   uiConfig: true,
   projectData: true,
-  xmlGenerator: false,
+  xmlGenerator: true,
   simDataGenerator: false,
-  stblGenerator: false,
+  stblGenerator: true,
   pythonGenerator: false,
-  packageWriter: false,
+  packageWriter: true,
 };
 
 /* ------------------------------------------------------------------ *

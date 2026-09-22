@@ -121,6 +121,7 @@ export default function ExportCenter() {
       aspirations: store.state.aspirations.filter((a) => a.projectId === pid),
       notifications: store.state.notifications.filter((n) => n.projectId === pid),
       assets: store.state.assets.filter((a) => a.projectId === pid),
+      packModules: store.state.packModules.filter((m) => m.projectId === pid),
     };
   }, [project, pid, store.state]);
 
@@ -158,7 +159,7 @@ export default function ExportCenter() {
           {
             id: `builder:${builder.project.id}`,
             label: `${builder.project.name}.package`,
-            hint: `${builder.careers.length} careers · ${builder.traits.length} traits · ${builder.aspirations.length} aspirations`,
+            hint: `${builder.careers.length} careers · ${builder.traits.length} traits · ${builder.aspirations.length} aspirations · ${builder.packModules.length} pack modules`,
             required: true,
           },
         ]
