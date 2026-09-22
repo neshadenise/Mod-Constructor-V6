@@ -362,12 +362,15 @@ describe("builder export", () => {
   });
 
 
-  it("blocks export when a required field is missing", async () => {
+  it("excludes a record with a missing required field but still builds the rest", async () => {
     const content = builderContent();
     content.careers[0]!.branches = [];
     const job = await runExport({ request: request({ exportType: "package-only" }), builder: content });
-    expect(job.status).toBe("failed");
+    expect(job.status).toBe("ready");
     expect(job.validationReport!.results.some((r) => r.code === "CAREER_NO_BRANCH")).toBe(true);
+    /* The incomplete career is reported and left out; the rest still ships. */
+    expect(job.warnings.some((w) => w.code === "RESOURCE_EXCLUDED")).toBe(true);
+    expect(job.outputFiles.length).toBeGreaterThan(0);
   });
 
   it("exports a re-importable builder project source", async () => {
@@ -511,12 +514,17 @@ describe("failure handling", () => {
     const snapshotBefore = JSON.stringify(content);
     content.traits[0]!.internalId = "";
     content.traits[0]!.name = "";
+    /* Nothing else is exportable either, so the whole job must fail. */
+    content.careers = [];
+    content.aspirations = [];
     const job = await runExport({ request: request({ exportType: "package-only" }), builder: content });
     expect(job.status).toBe("failed");
     expect(job.outputFiles).toHaveLength(0);
     expect(job.logs.some((l) => l.level === "error")).toBe(true);
     content.traits[0]!.internalId = "trendsetter";
     content.traits[0]!.name = "Trendsetter";
+    content.careers = JSON.parse(snapshotBefore).careers;
+    content.aspirations = JSON.parse(snapshotBefore).aspirations;
     expect(JSON.stringify(content)).toBe(snapshotBefore);
   });
 
