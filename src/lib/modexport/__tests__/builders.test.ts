@@ -132,7 +132,10 @@ describe("Notification builder", () => {
 
 describe("Custom Dynasty builder", () => {
   it("rejects a dynasty with no name, description or roles", () => {
-    const codes = validateDynastyForExport(blankDynastyDoc({ projectId: "p1" })).map((i) => i.code);
+    const blank = blankDynastyDoc({ projectId: "p1" });
+    blank.identity.displayName = "";
+    blank.identity.internalName = "";
+    const codes = validateDynastyForExport(blank).map((i) => i.code);
     expect(codes).toContain("DYNASTY_NO_NAME");
     expect(codes).toContain("DYNASTY_NO_DESCRIPTION");
     expect(codes).toContain("DYNASTY_NO_ROLES");
@@ -173,8 +176,9 @@ describe("Builder drafts reach the canonical record", () => {
 
   it("projects a trait document onto canonical buffs", () => {
     const patch = projectTraitDoc({
-      identity: { displayName: "Night Owl", description: "Up late." },
-      effects: [{ kind: "buff", name: "Wide Awake", description: "Alert at night." }],
+      displayName: "Night Owl",
+      description: "Up late.",
+      effects: [{ kind: "buff", label: "Wide Awake", condition: "At night." }],
     } as never);
     expect(patch.name).toBe("Night Owl");
     expect(patch.buffs?.length).toBe(1);
