@@ -235,6 +235,9 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
             .map((e) => e.message)
             .join(" ")} Fix this in the builder and export again.`,
         });
+        /* Keep the individual reasons in the report, downgraded: the build
+           itself still succeeds because the record was left out. */
+        issues.push(...found.map((i) => ({ ...i, severity: "warning" as const })));
         return;
       }
       issues.push(...found);
