@@ -383,7 +383,11 @@ describe("builder export", () => {
     const job = await runExport({ request: request({ exportType: "validation-report" }), builder: builderContent() });
     expect(job.status).toBe("ready");
     expect(job.outputFiles[0]!.kind).toBe("report");
-    expect(JSON.parse(dec.decode(job.outputFiles[0]!.bytes)).results.length).toBeGreaterThan(0);
+    const report = JSON.parse(dec.decode(job.outputFiles[0]!.bytes));
+    expect(Array.isArray(report.results)).toBe(true);
+    // Clean builder content now reports no blocking findings at all.
+    expect(report.results.filter((r: { severity: string }) => r.severity === "error")).toHaveLength(0);
+
   });
 });
 
