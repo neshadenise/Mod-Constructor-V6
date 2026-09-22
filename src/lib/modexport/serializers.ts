@@ -468,7 +468,14 @@ export const aspirationSerializer: TuningSerializer<Aspiration> = {
       out.push({ severity: "error", code: "ASP_NO_ID", message: `Aspiration "${model.name}" has no internal id.` });
     if (!model.milestones.length)
       out.push({ severity: "error", code: "ASP_NO_MILESTONES", message: `Aspiration "${model.name}" has no milestones.` });
-    return out;
+    const schema: ValidationResult[] = tdescIssues(
+      "aspiration",
+      aspirationTunables(model),
+      `Aspiration "${model.name}"`,
+    );
+    for (const m of model.milestones)
+      schema.push(...tdescIssues("milestone", milestoneTunables(m), `Milestone "${m.name}"`));
+    return mergeTdescIssues(out, schema);
   },
   serialize(model, ctx) {
     const base = model.internalId?.trim() || slug(model.name);
