@@ -266,14 +266,18 @@ describe("TDESC required fields", () => {
   it("flags missing aspiration milestones", () => {
     const issues = tdescIssues(
       "aspiration",
-      aspirationTunables(completeAspiration({ milestones: [] })),
+      aspirationTunables({ ...completeAspiration(), milestones: [] }),
       "Aspiration",
     );
-    expect(issues.some((i) => i.message.includes("objectives") || i.message.includes("milestone"))).toBe(true);
+    expect(issues.some((i) => i.message.includes("AspirationTrack.objectives"))).toBe(true);
   });
 
   it("flags a notification with no body", () => {
-    const n = completeNotification({ body: "" });
+    const n: NotificationTemplate = {
+      id: "n1", projectId: "p1", name: "promo", visual: "toast",
+      title: "Promoted", body: "", previewKind: "promotion", actions: [],
+      createdAt: 0, updatedAt: 0,
+    };
     const missing = notificationChecklist(n).filter((f) => !f.present && f.level === "required");
     expect(missing.map((f) => f.field)).toContain("dialog_text");
   });
