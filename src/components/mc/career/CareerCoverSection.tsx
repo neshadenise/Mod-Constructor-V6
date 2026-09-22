@@ -76,9 +76,15 @@ export function CareerCoverSection({
   }, [activeBranchId, branches]);
 
   const branchName = branches.find((b) => b.id === scope)?.name;
+  // Keep the AI subject unambiguous. The main cover is inferred only from the
+  // career name; a branch cover is inferred only from career + branch names.
+  // In particular, never let whichever branch is open leak into main art.
   const scopedContext: CoverPromptContext = useMemo(
-    () => (scope === "career" ? context : { ...context, branchName }),
-    [context, scope, branchName],
+    () => ({
+      careerName: context.careerName,
+      ...(scope === "career" ? {} : { branchName }),
+    }),
+    [context.careerName, scope, branchName],
   );
 
   const autoPrompt = useMemo(

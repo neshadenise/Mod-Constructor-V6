@@ -92,9 +92,10 @@ const CAREER_HINTS: { match: RegExp; env: string; action: string; mood: string; 
 ];
 
 function hint(ctx: CoverPromptContext) {
-  const hay = [ctx.careerName, ctx.branchName, ctx.category, ctx.careerDescription]
-    .filter(Boolean)
-    .join(" ");
+  // The title is the source of truth for automatic cover generation. Freeform
+  // descriptions and category labels often contain story details that pull the
+  // image away from the actual profession.
+  const hay = [ctx.careerName, ctx.branchName].filter(Boolean).join(" ");
   return (
     CAREER_HINTS.find((h) => h.match.test(hay)) ?? {
       env: "a believable workplace matching the profession",
@@ -123,7 +124,11 @@ export function buildCoverPrompt(
   options: CoverPromptOptions = {},
 ): string {
   const h = hint(ctx);
-  const subject = ctx.branchName ? `${ctx.careerName} — ${ctx.branchName}` : ctx.careerName;
+  const careerName = ctx.careerName.trim() || "unspecified career";
+  const branchName = ctx.branchName?.trim();
+  const subject = branchName
+    ? `career named "${careerName}", specifically its "${branchName}" branch`
+    : `career named "${careerName}"`;
   const count = options.simCount ?? 3;
   const mood = options.mood && options.mood !== "Auto" ? options.mood : h.mood;
   const env = options.environment?.trim() || h.env;
@@ -131,20 +136,10 @@ export function buildCoverPrompt(
   const camera = options.cameraAngle || CAMERA_ANGLES[0];
 
   const bits: string[] = [
-    `A ${mood.toLowerCase()} life-simulation scene showing ${count} original Sim-like characters working as ${subject || "professionals"} in ${env}.`,
+    `Create cover art for the ${subject}. Treat that exact title${branchName ? " and branch name" : ""} as the authoritative profession and make the depicted work unmistakably match it.`,
+    `A ${mood.toLowerCase()} life-simulation scene showing ${count} original Sim-like characters actively doing that work in ${env}.`,
     `They are ${focus}.`,
   ];
-
-  if (ctx.branchDescription) bits.push(`Career path focus: ${ctx.branchDescription}.`);
-  else if (ctx.careerDescription) bits.push(`Career context: ${ctx.careerDescription}.`);
-
-  if (ctx.promotionTitles?.length)
-    bits.push(`Progression from ${ctx.promotionTitles[0]} up to ${ctx.promotionTitles[ctx.promotionTitles.length - 1]}.`);
-  if (ctx.skills?.length) bits.push(`Skills on display: ${ctx.skills.slice(0, 4).join(", ")}.`);
-  if (ctx.traits?.length) bits.push(`Personality of the workers: ${ctx.traits.slice(0, 3).join(", ")}.`);
-  if (ctx.rewards?.length) bits.push(`Career rewards visible in the space: ${ctx.rewards.slice(0, 3).join(", ")}.`);
-  if (ctx.events?.length) bits.push(`Hint at career events like ${ctx.events.slice(0, 2).join(" and ")}.`);
-  if (ctx.workOutfit) bits.push(`Work outfit: ${ctx.workOutfit}.`);
 
   bits.push(`Props: ${options.props?.trim() || h.props}.`);
   if (options.setting && options.setting !== "Auto") bits.push(`${options.setting} setting.`);
