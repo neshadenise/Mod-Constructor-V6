@@ -205,22 +205,62 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
     const ctx: SerializerContext = { namespace: namespaceFor(builder), ids };
     const tuning: SerializedTuningResource[] = [];
 
-    for (const career of builder.careers) {
-      issues.push(...SERIALIZERS.career.validate(career));
-      tuning.push(...SERIALIZERS.career.serialize(career, ctx));
-    }
-    for (const trait of builder.traits) {
-      issues.push(...SERIALIZERS.trait.validate(trait));
-      tuning.push(...SERIALIZERS.trait.serialize(trait, ctx));
-    }
-    for (const aspiration of builder.aspirations) {
-      issues.push(...SERIALIZERS.aspiration.validate(aspiration));
-      tuning.push(...SERIALIZERS.aspiration.serialize(aspiration, ctx));
-    }
+    /**
+     * One incomplete record must not sink the whole build. A record whose
+     * validation has errors is left out of the package and reported as an
+     * actionable warning naming what to fix; everything valid still exports.
+     */
+    const take = <T>(
+      label: string,
+      model: T,
+      name: string,
+      validate: (m: T) => SerializerIssue[],
+      serialize: (m: T) => SerializedTuningResource[],
+    ) => {
+      const found = validate(model);
+      const errors = found.filter((i) => i.severity === "error");
+      if (errors.length) {
+        excludedRecords.push({ label, name });
+        issues.push({
+          severity: "warning",
+          code: "RESOURCE_EXCLUDED",
+          message: `${label} "${name || "Untitled"}" was left out of the package — ${errors
+            .map((e) => e.message)
+            .join(" ")} Fix this in the builder and export again.`,
+        });
+        return;
+      }
+      issues.push(...found);
+      tuning.push(...serialize(model));
+    };
 
-    for (const pack of builder.packModules ?? []) {
-      issues.push(...validatePackModuleForExport(pack));
-      tuning.push(...serializePackModule(pack, ctx));
+    for (const career of builder.careers)
+      take("Career", career, career.name, SERIALIZERS.career.validate, (m) =>
+        SERIALIZERS.career.serialize(m, ctx),
+      );
+    for (const trait of builder.traits)
+      take("Trait", trait, trait.name, SERIALIZERS.trait.validate, (m) =>
+        SERIALIZERS.trait.serialize(m, ctx),
+      );
+    for (const aspiration of builder.aspirations)
+      take("Aspiration", aspiration, aspiration.name, SERIALIZERS.aspiration.validate, (m) =>
+        SERIALIZERS.aspiration.serialize(m, ctx),
+      );
+    for (const notification of builder.notifications)
+      take("Notification", notification, notification.name, validateNotificationForExport, (m) =>
+        serializeNotification(m, ctx),
+      );
+    for (const pack of builder.packModules ?? [])
+      take("Pack module", pack, pack.name, validatePackModuleForExport, (m) =>
+        serializePackModule(m, ctx),
+      );
+
+    if (excludedRecords.length && !tuning.length) {
+      issues.push({
+        severity: "error",
+        code: "ALL_RECORDS_EXCLUDED",
+        message: `Nothing could be compiled: all ${excludedRecords.length} builder record(s) are incomplete. Fix the problems listed above, then export again.`,
+      });
     }
 
     const componentId = `builder:${builder.project.id}`;
