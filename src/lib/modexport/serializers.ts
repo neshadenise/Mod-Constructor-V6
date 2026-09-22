@@ -337,7 +337,10 @@ export const traitSerializer: TuningSerializer<Trait> = {
       if (buff.durationHours < 0)
         out.push({ severity: "error", code: "BUFF_BAD_DURATION", message: `Moodlet "${buff.name}" has a negative duration.` });
     }
-    return out;
+    const schema: ValidationResult[] = tdescIssues("trait", traitTunables(model), `Trait "${model.name}"`);
+    for (const buff of model.buffs)
+      schema.push(...tdescIssues("buff", buffTunables(buff), `Moodlet "${buff.name}"`));
+    return mergeTdescIssues(out, schema);
   },
   serialize(model, ctx) {
     const base = model.internalId?.trim() || slug(model.name);
