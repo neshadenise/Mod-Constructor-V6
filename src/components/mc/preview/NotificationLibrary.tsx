@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { useBuilderSeed } from "@/lib/builder-seed";
 import type { NotificationTemplate, NotificationVisual } from "@/lib/types";
+import { TdescRequirements } from "@/components/mc/builders/TdescRequirements";
+import { notificationChecklist } from "@/lib/modexport/tdesc-check";
 
 type DefaultSample = {
   kind: NotificationKind;
