@@ -29,6 +29,10 @@ import {
 const MODULE_PATH = "snippets.snippet";
 const CLASS_NAME = "Snippet";
 
+/** A reference only exports when it actually points at something. */
+const refId = (ref?: { instanceId?: string; projectResourceId?: string }) =>
+  ref?.instanceId?.trim() || ref?.projectResourceId?.trim() || "";
+
 const label = (d: DynastyDoc) =>
   d.identity?.displayName?.trim() || d.identity?.typeName?.trim() || "Untitled dynasty";
 
@@ -109,7 +113,7 @@ export function validateDynastyForExport(d: DynastyDoc): ValidationResult[] {
       });
   }
 
-  if (!d.identity?.icon?.id && !d.identity?.crest?.id)
+  if (!refId(d.identity?.icon) && !refId(d.identity?.crest))
     out.push({
       severity: "warning",
       code: "DYNASTY_NO_ICON",
@@ -175,8 +179,8 @@ export function serializeDynasty(
           tunable("may_recruit", role.mayRecruit),
           tunable("may_punish", role.mayPunish),
           tunable("may_reward", role.mayReward),
-          role.trait?.id ? tunable("role_trait", role.trait.id) : "",
-          role.buff?.id ? tunable("role_buff", role.buff.id) : "",
+          refId(role.trait) ? tunable("role_trait", refId(role.trait)) : "",
+          refId(role.buff) ? tunable("role_buff", refId(role.buff)) : "",
         ],
         [
           { key: nameStr.key, value: nameStr.value },
@@ -206,7 +210,7 @@ export function serializeDynasty(
           tunable("prestige_effect", value.prestigeEffect),
           tunable("unity_effect", value.unityEffect),
           tunable("relationship_effect", value.relationshipEffect),
-          value.buff?.id ? tunable("value_buff", value.buff.id) : "",
+          refId(value.buff) ? tunable("value_buff", refId(value.buff)) : "",
         ],
         [
           { key: nameStr.key, value: nameStr.value },
@@ -244,9 +248,9 @@ export function serializeDynasty(
       tunable("membership_structure", d.membership?.structure ?? ""),
       tunable("min_members", d.size?.minMembers ?? 0),
       tunable("max_members", d.size?.maxMembers ?? 0),
-      tunable("succession_mode", d.succession?.mode ?? ""),
-      d.identity.icon?.id ? tunable("icon", d.identity.icon.id) : "",
-      d.identity.crest?.id ? tunable("crest", d.identity.crest.id) : "",
+      tunable("succession_structure", d.succession?.structure ?? ""),
+      refId(d.identity.icon) ? tunable("icon", refId(d.identity.icon)) : "",
+      refId(d.identity.crest) ? tunable("crest", refId(d.identity.crest)) : "",
       d.identity.requiredPack ? tunable("required_pack", d.identity.requiredPack) : "",
       roleRefs.length ? list("roles", roleRefs) : "",
       valueRefs.length ? list("values", valueRefs) : "",
