@@ -10,6 +10,17 @@ import type { ResourceKey } from "@/lib/modimport/types";
 import type { Aspiration, Buff, Career, CareerBranch, CareerLevel, Trait } from "@/lib/types";
 import { GROUP_DEFAULT, ResourceIdService, TYPE_TUNING, localizationKey } from "./ids";
 import type { BuilderKind } from "./simdata";
+import {
+  aspirationTunables,
+  buffTunables,
+  careerTunables,
+  levelTunables,
+  mergeTdescIssues,
+  milestoneTunables,
+  tdescIssues,
+  trackTunables,
+  traitTunables,
+} from "./tdesc-check";
 
 export interface ValidationResult {
   severity: "error" | "warning" | "info";
