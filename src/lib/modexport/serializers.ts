@@ -33,6 +33,11 @@ export interface SerializedTuningResource {
   stringRefs: string[];
   /** Strings this resource contributes to the STBL table. */
   strings: { key: string; value: string }[];
+  /**
+   * Instance ids this resource's SimData companion has to list (career tracks
+   * carry their level and branch ids inside the SimData, not just the tuning).
+   */
+  simDataRefs?: { levels?: string[]; branches?: string[] };
 }
 
 export interface TuningSerializer<TModel> {
@@ -232,6 +237,7 @@ function serializeTrack(career: Career, branch: CareerBranch, ctx: SerializerCon
     className: "CareerTrack",
     modulePath: "careers.career_tuning",
     tuningType: "career_track",
+    simDataRefs: { levels: levelRefs, branches: [] },
     xml: doc("CareerTrack", trackKey.instance, "careers.career_tuning", tuningName, "career_track", body),
     stringRefs: [nameStr.ref, descStr.ref],
     strings: [
