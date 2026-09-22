@@ -37,11 +37,7 @@ function project(): Project {
 }
 
 function ctx(): SerializerContext {
-  return {
-    project: project(),
-    namespace: "audit",
-    ids: new ResourceIdService("audit"),
-  } as SerializerContext;
+  return { namespace: "audit", ids: new ResourceIdService() };
 }
 
 function completeTrait(over: Partial<Trait> = {}): Trait {
@@ -201,10 +197,10 @@ describe("Exporter excludes incomplete records", () => {
       request: request(),
       builder: builder({ careers: [completeCareer({ branches: [] })] }),
     });
-    const excluded = job.result?.issues.filter((i) => i.code === "RESOURCE_EXCLUDED") ?? [];
+    const excluded = job.warnings.concat(job.errors as never[]).filter((i) => i.code === "RESOURCE_EXCLUDED") ;
     expect(excluded.length).toBeGreaterThan(0);
     expect(excluded[0].message).toMatch(/Dancer/);
-    const pkg = job.result?.files.find((f) => f.name.endsWith(".package"));
+    const pkg = job.outputFiles.find((f) => f.name.endsWith(".package"));
     expect(pkg).toBeDefined();
     const xml = readDbpf(pkg!.bytes).entries.map((e) => dec.decode(e.raw)).join("\n");
     expect(xml).toContain("Trendsetter");
@@ -220,7 +216,7 @@ describe("Exporter excludes incomplete records", () => {
         aspirations: [],
       }),
     });
-    const codes = job.result?.issues.map((i) => i.code) ?? [];
+    const codes = job.warnings.concat(job.errors as never[]).map((i) => i.code) ;
     expect(codes).toContain("ALL_RECORDS_EXCLUDED");
   });
 
@@ -229,7 +225,7 @@ describe("Exporter excludes incomplete records", () => {
       request: request(),
       builder: builder({ notifications: [notification()], dynasties: [completeDynasty()] }),
     });
-    const pkg = job.result?.files.find((f) => f.name.endsWith(".package"));
+    const pkg = job.outputFiles.find((f) => f.name.endsWith(".package"));
     expect(pkg).toBeDefined();
     const text = readDbpf(pkg!.bytes).entries.map((e) => dec.decode(e.raw)).join("\n");
     expect(text).toContain("dialog_title");
