@@ -25,6 +25,16 @@ import {
 import type { Aspiration, Career, NotificationTemplate, Project, Trait } from "@/lib/types";
 import type { SerializerContext } from "@/lib/modexport/serializers";
 
+import {
+  aspirationTunables,
+  careerChecklist,
+  mergeTdescIssues,
+  notificationChecklist,
+  tdescIssues,
+  traitTunables,
+} from "@/lib/modexport/tdesc-check";
+import { resolveSimDataMapping, simDataImportHelp } from "@/lib/modexport/simdata-mapping";
+
 const dec = new TextDecoder();
 
 function project(): Project {
@@ -234,5 +244,66 @@ describe("Exporter excludes incomplete records", () => {
     const text = readDbpf(pkg!.bytes).entries.map((e) => dec.decode(e.raw)).join("\n");
     expect(text).toContain("dialog_title");
     expect(text).toContain("house_ashford");
+  });
+});
+
+/* --------------------------- TDESC requirements -------------------------- */
+
+describe("TDESC required fields", () => {
+  it("reports every career tunable as present for a complete career", () => {
+    const missing = careerChecklist(completeCareer()).filter((f) => !f.present && f.level === "required");
+    expect(missing).toEqual([]);
+  });
+
+  it("flags the missing description tunable with its TDESC class and doc link", () => {
+    const issues = tdescIssues("trait", traitTunables(completeTrait({ description: "" })), "Trait \"Trendsetter\"");
+    const required = issues.filter((i) => i.code === "TDESC_MISSING_REQUIRED");
+    expect(required.length).toBe(1);
+    expect(required[0].message).toContain("Trait.trait_description");
+    expect(required[0].message).toContain("https://tdesc.lot51.cc/");
+  });
+
+  it("flags missing aspiration milestones", () => {
+    const issues = tdescIssues(
+      "aspiration",
+      aspirationTunables(completeAspiration({ milestones: [] })),
+      "Aspiration",
+    );
+    expect(issues.some((i) => i.message.includes("objectives") || i.message.includes("milestone"))).toBe(true);
+  });
+
+  it("flags a notification with no body", () => {
+    const n = completeNotification({ body: "" });
+    const missing = notificationChecklist(n).filter((f) => !f.present && f.level === "required");
+    expect(missing.map((f) => f.field)).toContain("dialog_text");
+  });
+
+  it("does not double-report a field a builder rule already covers", () => {
+    const existing = [{ severity: "error" as const, code: "TRAIT_NO_DESC", message: "x", fieldPath: "description" }];
+    const merged = mergeTdescIssues(
+      existing,
+      tdescIssues("trait", traitTunables(completeTrait({ description: "" })), "Trait"),
+    );
+    expect(merged.filter((i) => i.fieldPath === "description").length).toBe(1);
+  });
+});
+
+describe("SimData mappings", () => {
+  it("maps every builder class the exporter can ship", () => {
+    for (const kind of ["career", "career_level", "trait", "buff", "aspiration", "milestone"] as const) {
+      expect(resolveSimDataMapping(kind, undefined).source).toBe("template");
+    }
+    expect(resolveSimDataMapping("career_track", undefined).source).toBe("written");
+  });
+
+  it("prefers an imported donor over the shipped template", () => {
+    const donor = { kind: "trait" as const, bytes: new Uint8Array([1, 2, 3]), origin: "imported mod" };
+    expect(resolveSimDataMapping("trait", donor).source).toBe("imported");
+  });
+
+  it("gives actionable import instructions when no mapping exists", () => {
+    const help = simDataImportHelp("career");
+    expect(help).toContain("Import");
+    expect(help.length).toBeGreaterThan(20);
   });
 });
