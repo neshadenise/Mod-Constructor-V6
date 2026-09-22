@@ -257,6 +257,7 @@ export interface AspirationDocShape {
   description?: string;
   category?: string;
   ids?: { internalName?: string };
+  rewardTrait?: { source?: string; projectResourceId?: string } | null;
   milestones?: {
     id?: string;
     uuid?: string;
@@ -279,12 +280,24 @@ export function projectAspirationDoc(doc: AspirationDocShape): Partial<Aspiratio
       .filter(Boolean),
   }));
 
+  // The reward trait is a project reference in the editor; the canonical
+  // record stores the trait record id so the exporter can link the resource.
+  const reward = doc.rewardTrait as
+    | { source?: string; projectResourceId?: string }
+    | null
+    | undefined;
+  const rewardTraitId =
+    reward && reward.source === "project" && reward.projectResourceId
+      ? reward.projectResourceId
+      : undefined;
+
   return {
     name,
     internalId: String(doc.ids?.internalName ?? "").trim() || slugId(name, "aspiration"),
     description: String(doc.description ?? "").trim(),
     category: String(doc.category ?? "").trim(),
     milestones,
+    ...(rewardTraitId ? { rewardTraitId } : {}),
   } as Partial<Aspiration>;
 }
 

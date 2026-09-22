@@ -179,10 +179,35 @@ export function AspirationBuilder() {
   };
 
   const createFromTemplate = (t: AspirationTemplate) => {
-    record.loadDraft(docFromTemplate(t, doc.ids.namespace));
+    // A ready template that awards a reward trait ships that trait with it: the
+    // record is created in the project first, then linked by its stable id.
+    let rewardTraitId: string | undefined;
+    if (t.rewardTrait && project) {
+      const existing = store.state.traits.find(
+        (tr) => tr.projectId === project.id && tr.name === t.rewardTrait!.name,
+      );
+      rewardTraitId =
+        existing?.id ??
+        store.createTrait({
+          projectId: project.id,
+          name: t.rewardTrait.name,
+          description: t.rewardTrait.description,
+          category: "bonus",
+        }).id;
+    }
+    record.loadDraft(
+      docFromTemplate(t, doc.ids.namespace, {
+        ...(rewardTraitId ? { rewardTraitId } : {}),
+        ...(t.rewardTrait ? { rewardTraitName: t.rewardTrait.name } : {}),
+      }),
+    );
     setMode("edit");
     setSection("identity");
-    toast.success(`Started from the ${t.label} template`);
+    if (t.status === "draft")
+      toast.warning(
+        `${t.label} is a draft template — fill in the fields it lists before exporting.`,
+      );
+    else toast.success(`Started from the ${t.label} template`);
   };
 
   const duplicate = (id: string) => {
