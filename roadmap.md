@@ -52,3 +52,11 @@ v0x101.
 ## Remaining
 
 - Nothing open.
+
+## Done (2026-09-24) — TDESC requirement checks
+- Required/recommended tunable table per class derived from the Lot51 TDESC browser (src/lib/gamedata/required-fields.ts), checked at export (src/lib/modexport/tdesc-check.ts) and shown inline in the Career, Trait, Aspiration and Notification builders with a link to the class schema.
+- SimData companions are only cloned/re-keyed from an imported donor or a mapped template (CareerTrack written from its documented schema); anything with no mapping is left out with import instructions. Provenance listed in the exporter.
+- Verified in preview: Demo Project_v0.1.0.package, 69,993 B, DBPF v2.1, 81 entries; 0 errors. 63 tests pass, typecheck clean.
+
+## Remaining
+- Nothing open.
