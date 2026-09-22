@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils";
 import { useStore, useActiveProject } from "@/lib/store";
 import { useBuilderRecord } from "@/lib/builder-record";
 import { projectTraitDoc } from "@/lib/builder-projection";
+import { TdescRequirements } from "@/components/mc/builders/TdescRequirements";
+import { traitChecklist } from "@/lib/modexport/tdesc-check";
 import { useBuilderSeed } from "@/lib/builder-seed";
 import { useAdvanced } from "@/lib/advanced-mode";
 import { migrateTraitDoc } from "@/lib/traits/migrate";
