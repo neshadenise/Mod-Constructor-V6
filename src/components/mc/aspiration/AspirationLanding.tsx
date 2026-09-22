@@ -34,7 +34,7 @@ import {
 } from "@/lib/aspirations/schema";
 import { validateAspiration } from "@/lib/aspirations/validate";
 import { requiredPacks, resolveRef, type ResolveContext } from "@/lib/aspirations/resolver";
-import { ASPIRATION_TEMPLATES, type AspirationTemplate } from "@/lib/aspirations/templates";
+import { ASPIRATION_TEMPLATES, templateObjectiveCount, type AspirationTemplate } from "@/lib/aspirations/templates";
 import {
   Badge,
   Btn,
