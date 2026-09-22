@@ -74,6 +74,14 @@ export function useBuilderRecord<S>(opts: {
    * (created from the dashboard, an import, or an older version).
    */
   fromRecord?: (rec: Career | Trait | Aspiration) => S;
+  /**
+   * Lower the editor draft onto the record's canonical typed fields.
+   *
+   * `builderState` is opaque to the rest of the app — the exporter only reads
+   * the real fields (`branches`, `buffs`, `milestones`, …). Builders MUST
+   * supply this so what the creator authored actually compiles.
+   */
+  toRecord?: (draft: S) => Partial<Career & Trait & Aspiration>;
 }): BuilderRecordApi<S> {
   const { kind } = opts;
   const store = useStore();
