@@ -162,20 +162,22 @@ export function validateSnapshot(
       );
   }
 
-  // SimData capability. Never blocks the export: companions are reused from
-  // imported mods when available, and the remainder ships as tuning-only with
-  // a loud warning instead of a dead end.
+  // SimData capability. Companions come from an imported donor of the same
+  // class, the built-in template set, or the CareerTrack writer. Anything left
+  // over ships tuning-only with a loud warning instead of a dead end.
   if (simDataGaps.length) {
     const kinds = [...new Set(simDataGaps.map((g) => g.kind))].join(", ");
+    const unsupported = nonExportableKinds();
     results.push(
       v("warning", "SIMDATA_UNSUPPORTED",
         `${simDataGaps.length} generated resource(s) (${kinds}) are exported without a SimData companion. ` +
-        "The Sims 4 needs one for these classes, so import a mod containing the same resource type (or a Lot51 tuning template) " +
-        "and this exporter will reuse its SimData automatically. Non-exportable classes in this build: " +
-        `${nonExportableKinds().join(", ")}.`,
+        "The Sims 4 needs one for these classes, so import a mod containing the same resource type " +
+        "and this exporter will reuse its SimData automatically." +
+        (unsupported.length ? ` Classes with no built-in template: ${unsupported.join(", ")}.` : ""),
       ),
     );
   }
+
 
   // Missing required components.
   const required = snapshot.components.filter((c) => c.required);
