@@ -287,3 +287,61 @@ export function projectAspirationDoc(doc: AspirationDocShape): Partial<Aspiratio
     milestones,
   } as Partial<Aspiration>;
 }
+
+/* ---------------------------------------------- legacy V5 trait draft --- */
+
+/** The V5-parity trait editor keeps its own draft shape. */
+export interface TraitDraftV5Shape {
+  name?: string;
+  description?: string;
+  category?: string;
+  ages?: Record<string, boolean>;
+  blockAging?: Record<string, boolean>;
+  blockedEmotions?: string[];
+  voiceEffect?: string;
+  socialInteractions?: string[];
+  commodities?: { commodity: string; weight: number }[];
+  buffReplacements?: { from: string; to: string }[];
+  buffs?: {
+    id?: string;
+    name?: string;
+    description?: string;
+    emotion?: string;
+    weight?: number;
+    duration?: string;
+    rules?: unknown[];
+  }[];
+}
+
+/** "4h" → 4, "Permanent" → 1000 (the sentinel the V5 editor round-trips). */
+function parseDuration(d: unknown): number {
+  const s = String(d ?? "").trim();
+  if (/^perm/i.test(s)) return 1000;
+  const n = parseFloat(s);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+export function projectTraitDraftV5(draft: TraitDraftV5Shape): Partial<Trait> {
+  const name = String(draft.name ?? "").trim();
+  return {
+    name,
+    internalId: slugId(name, "trait"),
+    description: String(draft.description ?? "").trim(),
+    category: TRAIT_CATEGORY_MAP[String(draft.category)] ?? "personality",
+    ageGates: gatesFrom(draft.ages),
+    buffs: (draft.buffs ?? []).map((b, i) => ({
+      id: String(b.id ?? `b${i + 1}`),
+      name: String(b.name ?? "").trim(),
+      description: String(b.description ?? "").trim(),
+      emotion: toEmotion(b.emotion),
+      weight: Math.max(0, Number(b.weight) || 0),
+      durationHours: parseDuration(b.duration),
+      rules: (b.rules ?? []) as Buff["rules"],
+    })),
+    socialInteractions: (draft.socialInteractions ?? []).map(String).filter(Boolean),
+    commodityWeights: draft.commodities ?? [],
+    buffReplacements: draft.buffReplacements ?? [],
+    blockedAges: gatesFrom(draft.blockAging),
+    voiceEffect: draft.voiceEffect && draft.voiceEffect !== "None" ? draft.voiceEffect : undefined,
+  } as Partial<Trait>;
+}
