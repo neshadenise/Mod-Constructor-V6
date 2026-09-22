@@ -189,7 +189,7 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
   const wantsBuilderOutput =
     builder && request.mode !== "preserve-original" &&
     (builder.careers.length || builder.traits.length || builder.aspirations.length ||
-      (builder.packModules?.length ?? 0));
+      builder.notifications.length || (builder.packModules?.length ?? 0));
 
   const donorPool: ImportedContent[] = [
     ...(imported ? [imported] : []),
