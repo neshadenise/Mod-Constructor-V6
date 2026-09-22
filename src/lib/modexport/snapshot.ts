@@ -261,9 +261,13 @@ export async function buildSnapshot(input: SnapshotInput): Promise<SnapshotResul
 
       if (requiresSimData(resource.kind)) {
         const companion = makeCompanion(donors.get(resource.kind), {
+          kind: resource.kind,
           nameKey: resource.stringRefs[0],
           descriptionKey: resource.stringRefs[1],
+          levels: resource.simDataRefs?.levels,
+          branches: resource.simDataRefs?.branches,
         });
+
         if (companion) {
           const simDataId = `${resource.resourceId}:simdata`;
           const simDataKey = normalizeKey({
