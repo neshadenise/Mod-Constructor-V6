@@ -18,3 +18,13 @@
 ## Remaining
 - [ ] Nothing open.
 
+
+## Done (2026-09-22) — Real SimData companions
+Generated career/track/level/trait/buff/aspiration/milestone tuning now ships
+with a real SimData companion: an imported donor of the same class when one
+exists, otherwise the built-in Mod Constructor 5 template set, and a ported
+from-scratch writer for CareerTrack (variable-length row). SIMDATA_UNSUPPORTED
+no longer fires for builder content; "Allow tuning-only package" is no longer
+required. Verified: Demo Project_v0.1.0.package, 68,958 B, DBPF v2.1, 79
+entries (39 tuning + 39 SimData + 1 STBL), every companion reopened as DATA
+v0x101.
