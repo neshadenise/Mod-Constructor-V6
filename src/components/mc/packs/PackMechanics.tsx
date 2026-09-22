@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { PACK_CATALOG, PACK_TIER_LABEL, findPack } from "@/lib/packs/catalog";
 import { countRules, validatePackModule, type PackIssue } from "@/lib/packs/validate";
 import {
+  CURRENT_BUILD_SUPPORT,
   emptyConditionGroup, emptyLoc, emptyNotify, emptyRef, rid,
   type ClubModuleData, type LegacyModuleData, type PackMechanicModuleData,
   type PackModule, type PackModuleKind, type RoyaltyModuleData, type SuccessionMode, type HeirMode,
